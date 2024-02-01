@@ -1,0 +1,12 @@
+---
+title: "Correlation Overview"
+author: "Leandro Ledesma"
+date: "2024-02-01"
+output: html_document
+---
+
+
+### A simple explanation
+
+A correlation analysis will tell you to what degree two numeric variables are related to each other. This document will link below scripts that will calculate correlations by hand and by well known built in functions in R. Essentially, a correlation takes the variability of two numeric variables and determines by how much the variability is similar to each other. The best way I think about is by having an excel sheet with two columns, both comprised of numeric values. If I were to arrange the numbers in first column from least to greatest, will I see a similar pattern in the adjacent column? Meaning will I see numbers also descend somewhat from least to greatest, or maybe the opposite, from greatest to least? This could indicate that these variables are related to each other. On the contrary, if I see that the numbers of the adjacent column are scatter around, then there probably is little or no shared variability.
+
