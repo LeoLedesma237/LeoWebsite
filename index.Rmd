@@ -19,18 +19,15 @@ output: html_document
 
 # **Welcome**
 
-Hello! My name is Leandro Ledesma and I am a 2nd year PhD student at the University of Houston. Welcome to my website! The purpose of this site is to manage my scripts that clean, preprocess, and analyze current and previous projects. Please feel free to explore the tabs above for further information. Additionally, RMarkdown scripts will be provided below that walk through different statistical approaches. Use them as templates for your own studies. 
+Hello! My name is Leandro Ledesma and I am a 2nd year PhD student at the University of Houston. Welcome to my website! The purpose of this site is to manage my scripts that clean, preprocess, and analyze current and previous projects. Please feel free to explore the tabs above for further information. Additionally, RMarkdown scripts will be provided below that will walk you through different statistical approaches that are commonly used in behavioral research. Use them as templates for your own studies. 
 
 
-## How to use
+### Statistical Approaches
 
 1. fork the repo for this website and follow instructions on read me to get set up. [https://github.com/CrumpLab/LabJournalWebsite](https://github.com/CrumpLab/LabJournalWebsite)
 
 2. Blog/journal what you are doing in R, by editing the Journal.Rmd. See the [Journal page](https://crumplab.github.io/LabJournalWebsite/Journal.html) for an example of what to do to get started learning R.
 
-3. See the [links page](https://crumplab.github.io/LabJournalWebsite/Links.html) for lots of helpful links on learning R.
-
-4. Change everything to make it your own.
 
 
 </div>
