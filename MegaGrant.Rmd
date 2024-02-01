@@ -16,4 +16,4 @@ For my master's thesis, I am curious to investigate if language related measures
 
 ### Data Cleaning
 
-Step 1: The Master Excel sheet that contained all of the ID's from the study and the data that was associated to it needed to be cleaned. After cleaning the final likely ID number for this study is [700]() 
+Step 1: The Master Excel sheet that contained all of the ID's from the study and the data that was associated to it needed to be cleaned. After cleaning the final likely ID number for this study is [700](https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/ID.Cleaning.html) 
