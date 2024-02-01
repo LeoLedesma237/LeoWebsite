@@ -33,7 +33,7 @@ Hello! My name is Leandro Ledesma and I am a 2nd year PhD student at the Univers
 </div>
 <div class="col-sm-6">
 
-### [Crump Lab: Human Cognition and Performance](https://crumplab.github.io)
+
 
 <a href = "https://crumplab.github.io">
 ![](images/Me.jpg)
