@@ -9,4 +9,10 @@ output:
 knitr::opts_chunk$set(message=FALSE,warning=FALSE, cache=TRUE)
 ```
 
-This document serves to track data cleaning for MegaGrant data. For context, 
+This document serves to track data cleaning for MegaGrant data. For context, this was a study that took place in Russia that investigated how rearing in an institutionalized environment reflected behaviorally and neurophysiolologically in adulthood. Several different measures were collected from participants including: demographic information, medical records, IQ, executive function, quality of life, delinquency, language abilities, and EEG data. 
+
+For my master's thesis, I am curious to investigate if language related measures are associated with neurophysiological measures, specifically with power of certain frequency bands in resting-state EEG (rsEEG). 
+
+
+### Data Cleaning
+
