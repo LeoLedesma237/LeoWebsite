@@ -6,7 +6,7 @@ output: html_document
 ---
 ### Our data
 
-We will be using the following data from the Data Sets of the 'Statistical Methods for Psychology by David C. Howell' website. This data set contains the variables Height and Weight. We will be calculating by hand the degree of relationship between these two variables.
+We will be using the following data from the Data Sets of the 'Statistical Methods for Psychology by David C. Howell' website. This data set contains the variables Height, Weight and Sex. We will be calculating by hand the degree of relationship between these two variables.
 
 ### Universal block code settings
 
@@ -21,6 +21,7 @@ knitr::opts_chunk$set(message = FALSE)
 ```{r load in packages, warning = FALSE}
 library(tidyverse)
 library(ggplot2)
+library(kableExtra)
 
 ```
 
@@ -38,6 +39,7 @@ str(data)
 
 ### Plot the data
 
+From plotting the data below, we can predict that there is likely to be a relationship between Height and Weight. 
 
 ```{r plot the data}
 # Create a scatterplot
@@ -56,4 +58,41 @@ data %>%
 
 
 ```
+
+### Covariance
+
+We need to calculate the **covariance**, which is the shared variance between two numeric variables. The equation is as follows:
+
+\begin{align*}
+
+cov_{XY} = \frac {\Sigma (X - \overline{X}) (Y - \overline{Y})} {N - 1}
+
+\end{align*}
+
+In R, we can use the mutate() functions from the 'tidyverse' packaged to help us manipulate numeric vectors. These manipulations will help us get the covariance. We will need to calculate the mean of both variables then subtract each score from their respective mean. The deviations of both variables will be multiplied together and then the remaining vector is summed into one number. Lastly we divide by our degrees of freedom, which in this case is $N - 1$. Below we will display a table that shows every single transformation (added column) to the x and y variables, ending with the covariance. 
+
+```{r calculating the covariance}
+# Change the variable names to x and y 
+data <- rename(data, x = Height, y = Weight)
+
+# Calculate the covariance
+data %>%
+  mutate(mean.x = mean(x),
+         mean.y = mean(y),
+         deviations.x = x - mean.x,
+         deviations.y = y - mean.y,
+         multp.xy = deviations.x * deviations.y,
+         sum = sum(multp.xy),
+         df = nrow(data) - 1,
+         cov.xy = sum/df) %>%
+  round(3) %>%
+  head() %>%
+  kbl() %>%
+  kable_styling()
+```
+
+### Pearson Product-Moment Correlation Coefficient (r)
+
+The covariance alone does not give us enough information to know if the two variables have a relationship with each other. We need to standardize the covariance by dividing it by the standard deviations of both variables. This will give us the **correlation coefficient**.
+
 

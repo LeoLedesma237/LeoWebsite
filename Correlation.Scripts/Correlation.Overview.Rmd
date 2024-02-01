@@ -62,7 +62,6 @@ iris %>%
 [[Click here to view script]](https://leoledesma237.github.io/LeoWebsite/Correlation.Scripts/Correlation.by.Hand.html)
 
 
-
 ### Calculating a correlation using R functions
 
 
