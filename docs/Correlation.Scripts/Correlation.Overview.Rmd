@@ -2,7 +2,9 @@
 title: "Correlation Overview"
 author: "Leandro Ledesma"
 date: "2024-02-01"
-output: html_document
+output: 
+  html_document:
+    theme: flatly
 ---
 
 
@@ -53,5 +55,16 @@ iris %>%
 
 
 ```
+
+### Calculating a correlation by hand
+
+
+
+
+
+
+### Calculating a correlation using R functions
+
+
 
 
