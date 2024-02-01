@@ -8,15 +8,50 @@ output: html_document
 
 ### A simple explanation:
 
-A correlation analysis will tell you to what degree two numeric variables are related to each other. This document will link below scripts that will calculate correlations by hand and by well known built in functions in R. Essentially, a correlation takes the variability of two numeric variables and determines by how much the variability is similar to each other. The best way I think about is by having an excel sheet with two columns, both comprised of numeric values. If I were to arrange the numbers in first column from least to greatest, will I see a similar pattern in the adjacent column? Meaning will I see numbers also descend somewhat from least to greatest, or maybe the opposite, from greatest to least? This could indicate that these variables are related to each other. On the contrary, if I see that the numbers of the adjacent column are scatter around, then there probably is little or no shared variability.
+A correlation analysis will tell you to what degree two numeric variables are related to each other. This document will link below scripts that will calculate correlations by hand and by well known built in functions in R. Essentially, a correlation takes the variability of two numeric variables and determines by how much their variability is similar to each other. The best way I think about it is by having an excel sheet with two columns, both comprised of numeric values. If I were to arrange the numbers in first column from least to greatest, will I see a similar pattern in the adjacent column? Meaning, will I see numbers also descend somewhat from least to greatest, or maybe the opposite, from greatest to least? This could indicate to me that these variables are related to each other. On the contrary, if I see that the numbers of the adjacent column are scatter around, then there is probably little or no shared variability.
 
 ### More mathematical explanation:
 
-A limitation to the explanation above is that there is some subjectivity in determining if the arrangement of the second column is similar to that of the first. And even if they are similar it is more difficult to express to what degree, not to mention that this explanation will not get you published anytime soon. To mathematically investigate the existence of this relationship, we need to be introduce to **covariance**. This is a numerical representation of how much variance is shared between the two variables. The equation is described as:
+A limitation to the explanation above is that there is some subjectivity in determining by examining columns alone whether two variables are similar to each other, let alone to what degree. Additionally, do not expect many publications by explaining shared variability between to variables because they 'looked similar' to you. To mathematically investigate the existence of this relationship, we need to become familiar with **covariance**. This is a numerical representation of how much variance is shared between two variables. The equation is described as:
 
 \begin{align*}
 
 cov_{XY} = \frac {\Sigma (X - \overline{X}) (Y - \overline{Y})} {N - 1}
 
 \end{align*}
+
+The covariance, however, does not tell the full the story. It needs to be standardized to take into account the spread of the variance from both variables. Doing so will give us the **Pearson Product-Moment Correlation Coefficient (r)**. This statistic explains the strength of the relationship between the variables in a scale from -1 to +1, where the father away it is from 0, the stronger the relationship.
+
+\begin{align*}
+
+r = \frac {cov_{XY}} {S_{x}S_{y}}
+
+\end{align*}
+
+There is more nuance to this but this is explaining most of what you need to know. 
+
+### Visualizing the data:
+
+It also helps to visualize the data and add a regression line through it (more on this in the regression section). If we see a pattern in our dots that is reflected by a line aiming for a corner of the graph, either the top right or bottom left corner, then that potentially indicates a relationship between the variables. If, however, the dots are randomly scattered and the regression line is horizontal, then that is likely to indicate no relationship.  
+
+```{r, echo = FALSE, message = FALSE, warning= FALSE, out.width= "70%", fig.align='center'}
+library(tidyverse)
+library(ggplot2)
+
+iris %>%
+  ggplot(aes(x=Sepal.Width, y = Sepal.Length)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_bw() +
+  labs(title = "A scatterplot of Sepal Width and Sepal Length\nfrom the iris dataset",
+       x = "Sepal Width",
+       y = "Sepal Length") +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12))
+
+
+```
+
 
