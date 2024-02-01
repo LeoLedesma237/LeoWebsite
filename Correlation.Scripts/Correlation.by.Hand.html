@@ -359,6 +359,45 @@ display: none;
 
 <div id="our-data" class="section level3">
 <h3>Our data</h3>
+<p>We will be using the following data from the Data Sets of the
+‘Statistical Methods for Psychology by David C. Howell’ website. This
+data set contains the variables Height and Weight. We will be
+calculating by hand the degree of relationship between these two
+variables.</p>
+</div>
+<div id="universal-block-code-settings" class="section level3">
+<h3>Universal block code settings</h3>
+<pre class="r"><code>knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(comment = NULL)
+knitr::opts_chunk$set(message = FALSE)</code></pre>
+</div>
+<div id="load-in-the-data-manipulation-packages" class="section level3">
+<h3>Load in the data manipulation packages</h3>
+<pre class="r"><code>library(tidyverse)</code></pre>
+<pre><code>Warning: package &#39;tibble&#39; was built under R version 4.2.3</code></pre>
+<pre><code>Warning: package &#39;tidyr&#39; was built under R version 4.2.3</code></pre>
+<pre><code>Warning: package &#39;purrr&#39; was built under R version 4.2.3</code></pre>
+<pre><code>Warning: package &#39;dplyr&#39; was built under R version 4.2.3</code></pre>
+<pre><code>Warning: package &#39;forcats&#39; was built under R version 4.2.3</code></pre>
+<pre class="r"><code>library(ggplot2)</code></pre>
+</div>
+<div id="load-in-the-data" class="section level3">
+<h3>Load in the data</h3>
+<pre class="r"><code># Load in the data
+data &lt;- read.delim(&quot;https://www.uvm.edu/~statdhtx/methods8/DataFiles/Ex9-31.dat&quot;)
+
+# Explore the data
+dim(data)</code></pre>
+<pre><code>[1] 57  3</code></pre>
+<pre class="r"><code>str(data)</code></pre>
+<pre><code>&#39;data.frame&#39;:   57 obs. of  3 variables:
+ $ Sex   : int  1 1 1 1 1 1 1 1 1 1 ...
+ $ Height: num  70 67 72 75 68 69 71.5 71 72 69 ...
+ $ Weight: int  150 140 180 190 145 150 164 140 142 136 ...</code></pre>
+</div>
+<div id="plot-the-data" class="section level3">
+<h3>Plot the data</h3>
+<pre class="r"><code># Create a scatterplot</code></pre>
 </div>
 
 

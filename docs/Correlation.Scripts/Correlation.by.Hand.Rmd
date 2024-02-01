@@ -4,10 +4,56 @@ author: "Leandro Ledesma"
 date: "2024-02-01"
 output: html_document
 ---
+### Our data
 
-```{r setup, include=FALSE}
+We will be using the following data from the Data Sets of the 'Statistical Methods for Psychology by David C. Howell' website. This data set contains the variables Height and Weight. We will be calculating by hand the degree of relationship between these two variables.
+
+### Universal block code settings
+
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(comment = NULL)
+knitr::opts_chunk$set(message = FALSE)
 ```
 
-### Our data
+### Load in the data manipulation packages
+
+```{r load in packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+
+```
+
+### Load in the data
+
+```{r load the data}
+# Load in the data
+data <- read.delim("https://www.uvm.edu/~statdhtx/methods8/DataFiles/Ex9-31.dat")
+
+# Explore the data
+dim(data)
+str(data)
+
+```
+
+### Plot the data
+
+
+```{r plot the data}
+# Create a scatterplot
+data %>%
+  ggplot(aes(x = Height, y = Weight)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_bw() +
+  labs(title = "Scatterplot of Height and Weight",
+       x = "Height",
+       y = "Weight") +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12))
+
+
+```
 
