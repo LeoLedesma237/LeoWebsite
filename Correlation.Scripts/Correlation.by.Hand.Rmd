@@ -76,7 +76,7 @@ In R, we can use the mutate() functions from the 'tidyverse' packaged to help us
 data <- rename(data, x = Height, y = Weight)
 
 # Calculate the covariance
-data %>%
+data.cov <- data %>%
   mutate(mean.x = mean(x),
          mean.y = mean(y),
          deviations.x = x - mean.x,
@@ -85,7 +85,10 @@ data %>%
          sum = sum(multp.xy),
          df = nrow(data) - 1,
          cov.xy = sum/df) %>%
-  round(3) %>%
+  round(3)
+  
+# Print the dataset
+data.cov %>%
   head() %>%
   kbl() %>%
   kable_styling()
@@ -96,3 +99,46 @@ data %>%
 The covariance alone does not give us enough information to know if the two variables have a relationship with each other. We need to standardize the covariance by dividing it by the standard deviations of both variables. This will give us the **correlation coefficient**.
 
 
+\begin{align*}
+
+r = \frac {cov_{XY}} {S_{x}S_{y}}
+
+\end{align*}
+
+However, since we are doing this by hand, we will also need to calculate the sample standard deviation of each variable. The formula for that is: 
+
+\begin{align*}
+
+s = \sqrt{ \frac {\Sigma (X - \overline{X})^{2}}{N - 1}}
+
+\end{align*}
+
+
+```{r calculating the correlation coefficient}
+# Calculating the correlation coefficient
+data.s <- data.cov %>%
+  transmute(x = x,
+            y = y,
+            mean.x = mean(x),
+            mean.y = mean(y),
+            deviations.x = x - mean.x,
+            deviations.y = y - mean.y,
+            `deviations.x^2` = deviations.x^2,
+            `deviations.y^2` = deviations.y^2,
+            SS.x = sum(`deviations.x^2`),
+            SS.y = sum(`deviations.y^2`),
+            df = nrow(data) - 1,
+            var.x = SS.x/df,
+            var.y = SS.y/df,
+            s.x = sqrt(var.x),
+            s.y = sqrt(var.y)) %>%
+  round(3)
+
+# Print the dataset
+data.s %>%
+  head() %>%
+  kbl() %>%
+  kable_styling()
+
+# These calculates were verified with built in r functions. 
+```

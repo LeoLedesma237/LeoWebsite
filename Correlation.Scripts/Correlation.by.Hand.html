@@ -657,7 +657,7 @@ column) to the x and y variables, ending with the covariance.</p>
 data &lt;- rename(data, x = Height, y = Weight)
 
 # Calculate the covariance
-data %&gt;%
+data.cov &lt;- data %&gt;%
   mutate(mean.x = mean(x),
          mean.y = mean(y),
          deviations.x = x - mean.x,
@@ -666,7 +666,10 @@ data %&gt;%
          sum = sum(multp.xy),
          df = nrow(data) - 1,
          cov.xy = sum/df) %&gt;%
-  round(3) %&gt;%
+  round(3)
+  
+# Print the dataset
+data.cov %&gt;%
   head() %&gt;%
   kbl() %&gt;%
   kable_styling()</code></pre>
@@ -929,6 +932,379 @@ the two variables have a relationship with each other. We need to
 standardize the covariance by dividing it by the standard deviations of
 both variables. This will give us the <strong>correlation
 coefficient</strong>.</p>
+<p><span class="math display">\[\begin{align*}
+
+r = \frac {cov_{XY}} {S_{x}S_{y}}
+
+\end{align*}\]</span></p>
+<p>However, since we are doing this by hand, we will also need to
+calculate the sample standard deviation of each variable. The formula
+for that is:</p>
+<p><span class="math display">\[\begin{align*}
+
+s = \sqrt{ \frac {\Sigma (X - \overline{X})^{2}}{N - 1}}
+
+\end{align*}\]</span></p>
+<pre class="r"><code># Calculating the correlation coefficient
+data.s &lt;- data.cov %&gt;%
+  transmute(x = x,
+            y = y,
+            mean.x = mean(x),
+            mean.y = mean(y),
+            deviations.x = x - mean.x,
+            deviations.y = y - mean.y,
+            `deviations.x^2` = deviations.x^2,
+            `deviations.y^2` = deviations.y^2,
+            SS.x = sum(`deviations.x^2`),
+            SS.y = sum(`deviations.y^2`),
+            df = nrow(data) - 1,
+            var.x = SS.x/df,
+            var.y = SS.y/df,
+            s.x = sqrt(var.x),
+            s.y = sqrt(var.y)) %&gt;%
+  round(3)
+
+# Print the dataset
+data.s %&gt;%
+  head() %&gt;%
+  kbl() %&gt;%
+  kable_styling()</code></pre>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:right;">
+x
+</th>
+<th style="text-align:right;">
+y
+</th>
+<th style="text-align:right;">
+mean.x
+</th>
+<th style="text-align:right;">
+mean.y
+</th>
+<th style="text-align:right;">
+deviations.x
+</th>
+<th style="text-align:right;">
+deviations.y
+</th>
+<th style="text-align:right;">
+deviations.x^2
+</th>
+<th style="text-align:right;">
+deviations.y^2
+</th>
+<th style="text-align:right;">
+SS.x
+</th>
+<th style="text-align:right;">
+SS.y
+</th>
+<th style="text-align:right;">
+df
+</th>
+<th style="text-align:right;">
+var.x
+</th>
+<th style="text-align:right;">
+var.y
+</th>
+<th style="text-align:right;">
+s.x
+</th>
+<th style="text-align:right;">
+s.y
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+70
+</td>
+<td style="text-align:right;">
+150
+</td>
+<td style="text-align:right;">
+70.754
+</td>
+<td style="text-align:right;">
+158.263
+</td>
+<td style="text-align:right;">
+-0.754
+</td>
+<td style="text-align:right;">
+-8.263
+</td>
+<td style="text-align:right;">
+0.569
+</td>
+<td style="text-align:right;">
+68.280
+</td>
+<td style="text-align:right;">
+373.561
+</td>
+<td style="text-align:right;">
+19449.05
+</td>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:right;">
+6.671
+</td>
+<td style="text-align:right;">
+347.305
+</td>
+<td style="text-align:right;">
+2.583
+</td>
+<td style="text-align:right;">
+18.636
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+67
+</td>
+<td style="text-align:right;">
+140
+</td>
+<td style="text-align:right;">
+70.754
+</td>
+<td style="text-align:right;">
+158.263
+</td>
+<td style="text-align:right;">
+-3.754
+</td>
+<td style="text-align:right;">
+-18.263
+</td>
+<td style="text-align:right;">
+14.095
+</td>
+<td style="text-align:right;">
+333.543
+</td>
+<td style="text-align:right;">
+373.561
+</td>
+<td style="text-align:right;">
+19449.05
+</td>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:right;">
+6.671
+</td>
+<td style="text-align:right;">
+347.305
+</td>
+<td style="text-align:right;">
+2.583
+</td>
+<td style="text-align:right;">
+18.636
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+72
+</td>
+<td style="text-align:right;">
+180
+</td>
+<td style="text-align:right;">
+70.754
+</td>
+<td style="text-align:right;">
+158.263
+</td>
+<td style="text-align:right;">
+1.246
+</td>
+<td style="text-align:right;">
+21.737
+</td>
+<td style="text-align:right;">
+1.552
+</td>
+<td style="text-align:right;">
+472.490
+</td>
+<td style="text-align:right;">
+373.561
+</td>
+<td style="text-align:right;">
+19449.05
+</td>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:right;">
+6.671
+</td>
+<td style="text-align:right;">
+347.305
+</td>
+<td style="text-align:right;">
+2.583
+</td>
+<td style="text-align:right;">
+18.636
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+75
+</td>
+<td style="text-align:right;">
+190
+</td>
+<td style="text-align:right;">
+70.754
+</td>
+<td style="text-align:right;">
+158.263
+</td>
+<td style="text-align:right;">
+4.246
+</td>
+<td style="text-align:right;">
+31.737
+</td>
+<td style="text-align:right;">
+18.025
+</td>
+<td style="text-align:right;">
+1007.227
+</td>
+<td style="text-align:right;">
+373.561
+</td>
+<td style="text-align:right;">
+19449.05
+</td>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:right;">
+6.671
+</td>
+<td style="text-align:right;">
+347.305
+</td>
+<td style="text-align:right;">
+2.583
+</td>
+<td style="text-align:right;">
+18.636
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+68
+</td>
+<td style="text-align:right;">
+145
+</td>
+<td style="text-align:right;">
+70.754
+</td>
+<td style="text-align:right;">
+158.263
+</td>
+<td style="text-align:right;">
+-2.754
+</td>
+<td style="text-align:right;">
+-13.263
+</td>
+<td style="text-align:right;">
+7.587
+</td>
+<td style="text-align:right;">
+175.911
+</td>
+<td style="text-align:right;">
+373.561
+</td>
+<td style="text-align:right;">
+19449.05
+</td>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:right;">
+6.671
+</td>
+<td style="text-align:right;">
+347.305
+</td>
+<td style="text-align:right;">
+2.583
+</td>
+<td style="text-align:right;">
+18.636
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+69
+</td>
+<td style="text-align:right;">
+150
+</td>
+<td style="text-align:right;">
+70.754
+</td>
+<td style="text-align:right;">
+158.263
+</td>
+<td style="text-align:right;">
+-1.754
+</td>
+<td style="text-align:right;">
+-8.263
+</td>
+<td style="text-align:right;">
+3.078
+</td>
+<td style="text-align:right;">
+68.280
+</td>
+<td style="text-align:right;">
+373.561
+</td>
+<td style="text-align:right;">
+19449.05
+</td>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:right;">
+6.671
+</td>
+<td style="text-align:right;">
+347.305
+</td>
+<td style="text-align:right;">
+2.583
+</td>
+<td style="text-align:right;">
+18.636
+</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code># These calculates were verified with built in r functions. </code></pre>
 </div>
 
 
