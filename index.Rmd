@@ -17,9 +17,10 @@ output: html_document
 <div class="row" style="padding-top: 30px;">
 <div class="col-sm-6">
 
-# **My Lab Journal**
+# **Welcome**
 
-This is a template example for lab journaling. Students in Matt Crump's Human Cognition and Performance Lab will use this template to learn R, and other things. Students can replace this text with more fun things. People not in my lab can use this too.
+Hello! My name is Leandro Ledesma and I am a 2nd year PhD student at the University of Houston. Welcome to my website! The purpose of this site is to manage my scripts that clean, preprocess, and analyze current and previous projects. Please feel free to explore the tabs above for further information. Additionally, RMarkdown scripts will be provided below that walk through different statistical approaches. Use them as templates for your own studies. 
+
 
 ## How to use
 
