@@ -16,7 +16,8 @@ For my master's thesis, I am curious to investigate if language related measures
 
 ### Data Cleaning
 
-Step 1: The Master Excel sheet that contained all of the ID's from the study and the data that was associated to it needed to be cleaned. After cleaning the final likely ID number for this study is [700](https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/ID.Cleaning.html). 
+Step 1: The Master Excel sheet that contained all of the ID's from the study and the data that was associated to it needed to be cleaned. After cleaning the final likely ID number for this study is 700. [[Click here to view script]](https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/ID.Cleaning.html) 
 
-Step 2: Now that we know our sample size, we need to investigate how many subjects contain data for the variables we are interested. Our predictor will be spelling capabilities (ARFA) and the our outcome is rsEEG. Additionally, we want to control for Sex, Age, Group, and IQ. From our 700 ID's, [602](https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/Ideal.data.html) have these data present. 
+Step 2: Now that we know our sample size, we need to investigate how many subjects contain data for the variables we are interested. Our predictor will be spelling capabilities (ARFA) and the our outcome is rsEEG. Additionally, we want to control for Sex, Age, Group, and IQ. From our 700 ID's, 602 have these data present. [[Click here to view script]](https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/Ideal.data.html)
+
 
