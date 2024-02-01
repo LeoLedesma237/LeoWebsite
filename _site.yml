@@ -5,7 +5,7 @@ navbar:
     - text: "Home"
       href: index.html
     - text: "MegaGrant"
-      href: Journal.html
+      href: MegaGrant.html
     - text: "Links"
       href: Links.html
 output_dir: "docs"
