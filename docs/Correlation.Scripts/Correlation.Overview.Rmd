@@ -59,7 +59,7 @@ iris %>%
 ### Calculating a correlation by hand
 
 
-[[Click here to view script]]()
+[[Click here to view script]](https://leoledesma237.github.io/LeoWebsite/Correlation.Scripts/Correlation.by.Hand.html)
 
 
 
