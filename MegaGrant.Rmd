@@ -20,4 +20,4 @@ For my master's thesis, I am curious to investigate if language related measures
 
 **Step 2**: Now that we know our sample size, we need to investigate how many subjects contain data for the variables we are interested. Our predictor will be spelling capabilities (ARFA) and the our outcome is rsEEG. Additionally, we want to control for Sex, Age, Group, and IQ. From our 700 ID's, 602 have these data present. [[Click here to view script]](https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/Ideal.data.html)
 
-
+**Step 3**: As mentioned in step 2, even though we identified our ideal N for our analysis, this would only be possible if all rsEEG recordings had no issues throughout the preprocessing pipeline. [[rename.link]](https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/Verify.rsEEG.html)
