@@ -1,0 +1,84 @@
+---
+title: "EEG Preprocessing"
+author: "Leandro Ledesma"
+date: "2024-02-02"
+output: html_document
+---
+
+### Universal block code settings
+
+```{r universal block code setting}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+```
+
+### Load in the data manipulation packages first
+
+```{r load in packages, message= FALSE, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+library(gt)
+```
+
+### Load in the data
+
+We will do the same transformation to our excel file to obtain the same 602 ID's. 
+
+```{r load in the data}
+# The cleaned master excel file is saved locally on my times computer
+# In my documents > Master's Project
+
+# Set working directory
+setwd("~/Masters Project")
+
+# Load in the data
+masterData <- read_excel("MegaGrant_TBL_.xlsx")
+
+# Select the variables of interest from our masterData
+# Keep only the rows that have no missing data
+finalData <- masterData %>%
+  select(ID, Sex, Age, Group, CFIT, ARFA, RAW) %>%
+  filter(complete.cases(.))
+
+# Check the dimension of our final data
+dim(finalData)
+
+```
+
+
+### Verifying number of EEG files
+
+We need to verify how many number of resting-state EEG files are present in our database. According to our previous RMarkdown document (Step 2) and our output from the code above, we should have 602 unique ID's that have the following data: Sex, Age, Group, CFIT, ARFA, and rsEEG. Let's verify if this is the case by comparing how many of our 602 IDs have resting state EEG on the server.
+
+To do this, we will record all of the file names from the rsEEG on the server, extract the ID number from the file names then compare them to our 602 IDs. 
+
+```{r verifying EEG files, warning = FALSE}
+# Set the working directory 
+setwd("Y:/STUDY 1/All EEG Files Organized/RAW")
+
+# Load in all of the file names
+file.names <- list.files()
+
+# Extract only the .eeg files from all of the files
+file.names.eeg <- file.names[grepl(".eeg", file.names)]
+
+# Extract the ID's from the remaining EEG files
+rsEEG.IDs <- as.numeric(gsub(".*?([0-9]+).*", "\\1", file.names.eeg))   
+
+# Get the length of the ID's
+length(rsEEG.IDs)
+
+# Obtain the ID's that match in both vectors
+intersect.IDs <- intersect(rsEEG.IDs, finalData$ID)
+
+# Let's get the length of the IDs that matched
+length(intersect.IDs)
+
+```
+We see that the ouput returned from matching the IDs in our master excel sheet and from all the rsEEG file names matched. Thus we can continue since there are no discrepancies. 
+
+### Brief Overview
+
+The original resting-state EEG (rsEEG) data contained both eyes open and eyes closed conditions. These conditions were fortu
