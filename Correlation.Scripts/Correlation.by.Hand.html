@@ -945,18 +945,18 @@ for that is:</p>
 s = \sqrt{ \frac {\Sigma (X - \overline{X})^{2}}{N - 1}}
 
 \end{align*}\]</span></p>
-<pre class="r"><code># Calculating the correlation coefficient
+<pre class="r"><code># Calculating standard devations for both variables
 data.s &lt;- data.cov %&gt;%
   transmute(x = x,
             y = y,
             mean.x = mean(x),
             mean.y = mean(y),
-            deviations.x = x - mean.x,
-            deviations.y = y - mean.y,
-            `deviations.x^2` = deviations.x^2,
-            `deviations.y^2` = deviations.y^2,
-            SS.x = sum(`deviations.x^2`),
-            SS.y = sum(`deviations.y^2`),
+            dev.x = x - mean.x,
+            dev.y = y - mean.y,
+            `dev.x^2` = dev.x^2,
+            `dev.y^2` = dev.y^2,
+            SS.x = sum(`dev.x^2`),
+            SS.y = sum(`dev.y^2`),
             df = nrow(data) - 1,
             var.x = SS.x/df,
             var.y = SS.y/df,
@@ -985,16 +985,16 @@ mean.x
 mean.y
 </th>
 <th style="text-align:right;">
-deviations.x
+dev.x
 </th>
 <th style="text-align:right;">
-deviations.y
+dev.y
 </th>
 <th style="text-align:right;">
-deviations.x^2
+dev.x^2
 </th>
 <th style="text-align:right;">
-deviations.y^2
+dev.y^2
 </th>
 <th style="text-align:right;">
 SS.x
@@ -1304,7 +1304,291 @@ s.y
 </tr>
 </tbody>
 </table>
-<pre class="r"><code># These calculates were verified with built in r functions. </code></pre>
+<pre class="r"><code># The standard deviations were verified with built in r functions. 
+
+# Calculating the correlation coefficient
+data.r &lt;- data.cov %&gt;%
+  mutate(r = cov.xy/(data.s$s.x * data.s$s.y)) %&gt;%
+  round(3)
+
+# Print the dataset
+data.r %&gt;%
+  head() %&gt;%
+  kbl() %&gt;%
+  kable_styling()</code></pre>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:right;">
+Sex
+</th>
+<th style="text-align:right;">
+x
+</th>
+<th style="text-align:right;">
+y
+</th>
+<th style="text-align:right;">
+mean.x
+</th>
+<th style="text-align:right;">
+mean.y
+</th>
+<th style="text-align:right;">
+deviations.x
+</th>
+<th style="text-align:right;">
+deviations.y
+</th>
+<th style="text-align:right;">
+multp.xy
+</th>
+<th style="text-align:right;">
+sum
+</th>
+<th style="text-align:right;">
+df
+</th>
+<th style="text-align:right;">
+cov.xy
+</th>
+<th style="text-align:right;">
+r
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+70
+</td>
+<td style="text-align:right;">
+150
+</td>
+<td style="text-align:right;">
+70.754
+</td>
+<td style="text-align:right;">
+158.263
+</td>
+<td style="text-align:right;">
+-0.754
+</td>
+<td style="text-align:right;">
+-8.263
+</td>
+<td style="text-align:right;">
+6.234
+</td>
+<td style="text-align:right;">
+1627.184
+</td>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:right;">
+29.057
+</td>
+<td style="text-align:right;">
+0.604
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+67
+</td>
+<td style="text-align:right;">
+140
+</td>
+<td style="text-align:right;">
+70.754
+</td>
+<td style="text-align:right;">
+158.263
+</td>
+<td style="text-align:right;">
+-3.754
+</td>
+<td style="text-align:right;">
+-18.263
+</td>
+<td style="text-align:right;">
+68.567
+</td>
+<td style="text-align:right;">
+1627.184
+</td>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:right;">
+29.057
+</td>
+<td style="text-align:right;">
+0.604
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+72
+</td>
+<td style="text-align:right;">
+180
+</td>
+<td style="text-align:right;">
+70.754
+</td>
+<td style="text-align:right;">
+158.263
+</td>
+<td style="text-align:right;">
+1.246
+</td>
+<td style="text-align:right;">
+21.737
+</td>
+<td style="text-align:right;">
+27.076
+</td>
+<td style="text-align:right;">
+1627.184
+</td>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:right;">
+29.057
+</td>
+<td style="text-align:right;">
+0.604
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+75
+</td>
+<td style="text-align:right;">
+190
+</td>
+<td style="text-align:right;">
+70.754
+</td>
+<td style="text-align:right;">
+158.263
+</td>
+<td style="text-align:right;">
+4.246
+</td>
+<td style="text-align:right;">
+31.737
+</td>
+<td style="text-align:right;">
+134.742
+</td>
+<td style="text-align:right;">
+1627.184
+</td>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:right;">
+29.057
+</td>
+<td style="text-align:right;">
+0.604
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+68
+</td>
+<td style="text-align:right;">
+145
+</td>
+<td style="text-align:right;">
+70.754
+</td>
+<td style="text-align:right;">
+158.263
+</td>
+<td style="text-align:right;">
+-2.754
+</td>
+<td style="text-align:right;">
+-13.263
+</td>
+<td style="text-align:right;">
+36.532
+</td>
+<td style="text-align:right;">
+1627.184
+</td>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:right;">
+29.057
+</td>
+<td style="text-align:right;">
+0.604
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+69
+</td>
+<td style="text-align:right;">
+150
+</td>
+<td style="text-align:right;">
+70.754
+</td>
+<td style="text-align:right;">
+158.263
+</td>
+<td style="text-align:right;">
+-1.754
+</td>
+<td style="text-align:right;">
+-8.263
+</td>
+<td style="text-align:right;">
+14.497
+</td>
+<td style="text-align:right;">
+1627.184
+</td>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:right;">
+29.057
+</td>
+<td style="text-align:right;">
+0.604
+</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code># The correlation coefficeint was verified with built in r functions.</code></pre>
 </div>
 
 
