@@ -5,4 +5,110 @@ date: "2024-02-02"
 output: html_document
 ---
 
-SE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+### Our data
+
+We will be using the same data set in the 'Calculating a correlation by hand' html document. This data set contains the variables Height, Weight and Sex. We will be calculating by hand the degree of relationship between these two variables.
+
+### Universal block code settings
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(comment = NULL)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+### Load in the data manipulation packages
+
+```{r load in packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(kableExtra)
+library(ggpubr)
+
+```
+
+### Load in the data
+
+```{r load the data}
+# Load in the data
+data <- read.delim("https://www.uvm.edu/~statdhtx/methods8/DataFiles/Ex9-31.dat")
+
+# Explore the data
+dim(data)
+str(data)
+
+```
+
+### Plot the data
+
+From plotting the data below, we can predict that there is likely to be a relationship between Height and Weight. 
+
+```{r plot the data}
+# Create a scatterplot
+data %>%
+  ggplot(aes(x = Height, y = Weight)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_bw() +
+  labs(title = "Scatterplot of Height and Weight",
+       x = "Height",
+       y = "Weight") +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12))
+
+
+```
+
+
+### Hypothesis testing
+
+In research, we care about investigating relationships between our variables so we can then make inferences about how they would work in the real world. To do this, we collect some data (sample) and then use some statistical methods to come to real world (population) conclusions. However, before we can get that far, we need to check the assumption of normality. This can be done mathematically or visually (we will be using the former). If our data look normally distributed then we can be confident our following results will be generalizable.  
+
+### Assumption of normality
+
+Let's use a histogram for both our x and y variables to see if they look normally distributed.
+
+```{r checking assumption of normality, out.width = "90%", warning = FALSE}
+# Create a histogram for our x value
+plot.1 <- data %>%
+ ggplot(aes(x= Height)) +
+  geom_histogram(aes(y = ..density..), 
+                 color = "black", 
+                 fill = "white", bins = 7) +
+  stat_function(fun = dnorm, args = list(mean = mean(data$Height, na.rm = TRUE), 
+                                         sd = sd(data$Height, na.rm = TRUE)), 
+                color = "black",
+                linewidth = 1) +
+  theme_classic() +
+  labs(x = "Height") 
+
+# Create a histogram for our y value
+plot.2 <- data %>%
+ ggplot(aes(x= Weight)) +
+  geom_histogram(aes(y = ..density..), 
+                 color = "black", 
+                 fill = "white", bins = 7) +
+  stat_function(fun = dnorm, args = list(mean = mean(data$Weight, na.rm = TRUE), 
+                                         sd = sd(data$Weight, na.rm = TRUE)), 
+                color = "black",
+                linewidth = 1) +
+  theme_classic() +
+  labs(x = "Weight") 
+
+# Print the graphs
+ggarrange(plot.1, plot.2)
+  
+
+```
+
+The graphs above do not look normally distributed. Thus, the following results should be taken with a grain of salt. In this case, we should be using robust methods to have some idea on how much these findgins generalize. More on that on a future RMarkdown document. 
+
+### Calculating the correlation coefficient and significance
+
+```{r calculating correlation coefficient}
+
+
+
+```
