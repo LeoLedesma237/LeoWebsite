@@ -392,22 +392,66 @@ finalData &lt;- masterData %&gt;%
 # Check the dimension of our final data
 dim(finalData)</code></pre>
 <pre><code>[1] 602   7</code></pre>
-<p>The following document contains code used the preprocess the EEG
-data.</p>
 </div>
 <div id="verifying-number-of-eeg-files" class="section level3">
 <h3>Verifying number of EEG files</h3>
 <p>We need to verify how many number of resting-state EEG files are
 present in our database. According to our previous RMarkdown document
-(Step 2), we should have 602 unique ID’s that have the following data:
-Sex, Age, Group, CFIT, ARFA, and rsEEG. Let’s verify if this is the case
-by comparing how many of our 602 IDs have resting state EEG on the
-server.</p>
+(Step 2) and our output from the code above, we should have 602 unique
+ID’s that have the following data: Sex, Age, Group, CFIT, ARFA, and
+rsEEG. Let’s verify if this is the case by comparing how many of our 602
+IDs have resting state EEG on the server.</p>
+<p>To do this, we will record all of the file names from the rsEEG on
+the server, extract the ID number from the file names then compare them
+to our 602 IDs.</p>
+<pre class="r"><code># Set the working directory 
+setwd(&quot;Y:/STUDY 1/All EEG Files Organized/RAW&quot;)
+
+# Load in all of the file names
+file.names &lt;- list.files()
+
+# Extract only the .eeg files from all of the files
+file.names.eeg &lt;- file.names[grepl(&quot;.eeg&quot;, file.names)]
+
+# Extract the ID&#39;s from the remaining EEG files
+rsEEG.IDs &lt;- as.numeric(gsub(&quot;.*?([0-9]+).*&quot;, &quot;\\1&quot;, file.names.eeg))   
+
+# Get the length of the ID&#39;s
+length(rsEEG.IDs)</code></pre>
+<pre><code>[1] 640</code></pre>
+<pre class="r"><code># Obtain the ID&#39;s that match in both vectors
+intersect.IDs &lt;- intersect(rsEEG.IDs, finalData$ID)
+
+# Let&#39;s get the length of the IDs that matched
+length(intersect.IDs)</code></pre>
+<pre><code>[1] 602</code></pre>
+<p>We see that the ouput returned from matching the IDs in our master
+excel sheet and from all the rsEEG file names matched. Thus we can
+continue since there are no discrepancies.</p>
 </div>
-<div id="brief-overview" class="section level3">
-<h3>Brief Overview</h3>
+<div id="brief-preprocessing-scripts-overview" class="section level3">
+<h3>Brief preprocessing scripts overview</h3>
 <p>The original resting-state EEG (rsEEG) data contained both eyes open
-and eyes closed conditions. These conditions were fortu</p>
+and eyes closed conditions. These conditions were fortunately marked in
+the data, however, there were files that had these markers missing,
+leading them to be excluded from the analysis. rsEEG data with the
+correct markers (eyes open) were then preprocessed with three scripts in
+MATLAB that used EEGLAB plugin functions. Here is a brief description of
+what each script did.</p>
+<ol style="list-style-type: decimal">
+<li><p>Separated eyes-open and eyes-closed rsEEG segments from the
+original recordings.</p></li>
+<li><p>Added channels, filtered data 0.5 - 45 Hz, resampled to 500 Hz,
+identified bad channels using the ‘pop_clean_rawdata’ function and
+interpolated them using a spherical method, removed EEG data that had
+more than 75 microVolts or less than -75 microVolts, and re-referenced
+to the whole head.</p></li>
+<li><p>Run ICA with PCA</p></li>
+<li><p>Use MARA to remove additional artifacts</p></li>
+</ol>
+</div>
+<div id="section" class="section level3">
+<h3></h3>
 </div>
 
 

@@ -1,5 +1,5 @@
 ---
-title: "EEG Preprocessing"
+title: "rsEEG Preprocessing"
 author: "Leandro Ledesma"
 date: "2024-02-02"
 output: html_document
@@ -48,7 +48,7 @@ dim(finalData)
 ```
 
 
-### Verifying number of EEG files
+### Verifying number of rsEEG files
 
 We need to verify how many number of resting-state EEG files are present in our database. According to our previous RMarkdown document (Step 2) and our output from the code above, we should have 602 unique ID's that have the following data: Sex, Age, Group, CFIT, ARFA, and rsEEG. Let's verify if this is the case by comparing how many of our 602 IDs have resting state EEG on the server.
 
@@ -79,6 +79,18 @@ length(intersect.IDs)
 ```
 We see that the ouput returned from matching the IDs in our master excel sheet and from all the rsEEG file names matched. Thus we can continue since there are no discrepancies. 
 
-### Brief Overview
+### Brief preprocessing scripts overview
 
-The original resting-state EEG (rsEEG) data contained both eyes open and eyes closed conditions. These conditions were fortu
+The original resting-state EEG (rsEEG) data contained both eyes open and eyes closed conditions. These conditions were fortunately marked in the data, however, there were files that had these markers missing, leading them to be excluded from the analysis. rsEEG data with the correct markers (eyes open) were then preprocessed with three scripts in MATLAB that used EEGLAB plugin functions. Here is a brief description of what each script did.
+
+1) Separated eyes-open and eyes-closed rsEEG segments from the original recordings.
+
+2) Added channels, filtered data 0.5 - 45 Hz, resampled to 500 Hz, identified bad channels using the 'pop_clean_rawdata' function and interpolated them using a spherical method, removed EEG data that had more than 75 microVolts or less than -75 microVolts, and re-referenced to the whole head.
+
+3) Run ICA with PCA
+
+4) Use MARA to remove additional artifacts
+
+### 
+
+

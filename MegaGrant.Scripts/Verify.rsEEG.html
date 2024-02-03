@@ -13,7 +13,7 @@
 
 <meta name="date" content="2024-02-02" />
 
-<title>EEG Preprocessing</title>
+<title>rsEEG Preprocessing</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -350,7 +350,7 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">EEG Preprocessing</h1>
+<h1 class="title toc-ignore">rsEEG Preprocessing</h1>
 <h4 class="author">Leandro Ledesma</h4>
 <h4 class="date">2024-02-02</h4>
 
@@ -392,22 +392,135 @@ finalData &lt;- masterData %&gt;%
 # Check the dimension of our final data
 dim(finalData)</code></pre>
 <pre><code>[1] 602   7</code></pre>
-<p>The following document contains code used the preprocess the EEG
-data.</p>
 </div>
-<div id="verifying-number-of-eeg-files" class="section level3">
-<h3>Verifying number of EEG files</h3>
+<div id="verifying-number-of-rseeg-files" class="section level3">
+<h3>Verifying number of rsEEG files</h3>
 <p>We need to verify how many number of resting-state EEG files are
 present in our database. According to our previous RMarkdown document
-(Step 2), we should have 602 unique ID’s that have the following data:
-Sex, Age, Group, CFIT, ARFA, and rsEEG. Let’s verify if this is the case
-by comparing how many of our 602 IDs have resting state EEG on the
-server.</p>
+(Step 2) and our output from the code above, we should have 602 unique
+ID’s that have the following data: Sex, Age, Group, CFIT, ARFA, and
+rsEEG. Let’s verify if this is the case by comparing how many of our 602
+IDs have resting state EEG on the server.</p>
+<p>To do this, we will record all of the file names from the rsEEG on
+the server, extract the ID number from the file names then compare them
+to our 602 IDs.</p>
+<pre class="r"><code># Set the working directory 
+setwd(&quot;Y:/STUDY 1/All EEG Files Organized/RAW&quot;)
+
+# Load in all of the file names
+file.names &lt;- list.files()
+
+# Extract only the .eeg files from all of the files
+file.names.eeg &lt;- file.names[grepl(&quot;.eeg&quot;, file.names)]
+
+# Extract the ID&#39;s from the remaining EEG files
+rsEEG.IDs &lt;- as.numeric(gsub(&quot;.*?([0-9]+).*&quot;, &quot;\\1&quot;, file.names.eeg))   
+
+# Get the length of the ID&#39;s
+length(rsEEG.IDs)</code></pre>
+<pre><code>[1] 640</code></pre>
+<pre class="r"><code># Obtain the ID&#39;s that match in both vectors
+intersect.IDs &lt;- intersect(rsEEG.IDs, finalData$ID)
+
+# Let&#39;s get the length of the IDs that matched
+length(intersect.IDs)</code></pre>
+<pre><code>[1] 602</code></pre>
+<p>We see that the ouput returned from matching the IDs in our master
+excel sheet and from all the rsEEG file names matched. Thus we can
+continue since there are no discrepancies.</p>
 </div>
-<div id="brief-overview" class="section level3">
-<h3>Brief Overview</h3>
+<div id="brief-preprocessing-scripts-overview" class="section level3">
+<h3>Brief preprocessing scripts overview</h3>
 <p>The original resting-state EEG (rsEEG) data contained both eyes open
-and eyes closed conditions. These conditions were fortu</p>
+and eyes closed conditions. These conditions were fortunately marked in
+the data, however, there were files that had these markers missing,
+leading them to be excluded from the analysis. rsEEG data with the
+correct markers (eyes open) were then preprocessed with three scripts in
+MATLAB that used EEGLAB plugin functions. Here is a brief description of
+what each script did.</p>
+<ol style="list-style-type: decimal">
+<li><p>Separated eyes-open and eyes-closed rsEEG segments from the
+original recordings.</p></li>
+<li><p>Added channels, filtered data 0.5 - 45 Hz, resampled to 500 Hz,
+identified bad channels using the ‘pop_clean_rawdata’ function and
+interpolated them using a spherical method, removed EEG data that had
+more than 75 microVolts or less than -75 microVolts, and re-referenced
+to the whole head.</p></li>
+<li><p>Ran ICA with PCA</p></li>
+<li><p>Used MARA to remove additional artifacts</p></li>
+</ol>
+</div>
+<div id="files-excluded-along-the-way" class="section level3">
+<h3>Files excluded along the way</h3>
+<p>As mentioned, not all rsEEG files made it to the end of the
+preprocessing pipeline, either because markers were missing or the data
+was too noisy that those files were exluded. Additionally, we are
+interested in how many files made it to the end of the preprocessing
+script that also have data for our predictors and variables we are
+trying to control.</p>
+<p>Thus, now we will go to each folder that contains the output of all
+the scripts and determine how many of our 602 ID’s made it to the
+end.</p>
+<pre class="r"><code># Create a vector with the names of all the pathways for each preprocessed EEG data
+working.directories &lt;- c(&quot;Y:/STUDY 1/All EEG Files Organized/Preprocessed_RAW/RAW_eyes_open_and_eyes_closed&quot;,
+                         &quot;Y:/STUDY 1/All EEG Files Organized/Preprocessed_RAW/RAW_eyes_open_and_eyes_closed_before_ICA&quot;,
+                         &quot;Y:/STUDY 1/All EEG Files Organized/Preprocessed_RAW/RAW_eyes_open_and_eyes_closed_after_ICA&quot;,
+                         &quot;Y:/STUDY 1/All EEG Files Organized/Preprocessed_RAW/RAW_eyes_open_and_eyes_closed_after_component_rejection&quot;)
+
+# Create a vector with the name for our list
+list.names &lt;- c(&quot;Remaining rsEEG: Contained Eyes Open Marker&quot;,
+                &quot;Remaining rsEEG: Survived Main Preprocessing&quot;,
+                &quot;Remaining rsEEG: No problems with ICA&quot;,
+                &quot;Remaining rsEEG: No problems with MARA&quot;)
+
+# Create a list to keep the output from our for loop
+remaining.rsEEG &lt;- list()
+
+# Create a for loop that will check how many files made it through each preprocessing stage
+# We are only interested in the ID&#39;s that match our 602 sample
+for(ii in 1:length(working.directories)) {
+  
+  # set working directory
+  setwd(working.directories[ii])
+  
+  # Obtain all of the file names
+  all.files &lt;- list.files()
+  
+  # extract only the eyes open files
+  eyes.open.files &lt;- all.files[grepl(&quot;EyesOpen&quot;,all.files)]
+  
+  # extract the IDs from the file names
+  rsEEG.IDs &lt;- as.numeric(gsub(&quot;.*?([0-9]+).*&quot;, &quot;\\1&quot;, eyes.open.files))   
+
+  # Intersect with our 602 IDs of interest
+  remaining.IDs &lt;- intersect(rsEEG.IDs, finalData$ID)
+
+  # Save the number intersected ID&#39;s into a list
+  remaining.rsEEG[[ii]] &lt;- length(remaining.IDs)
+  
+  # Name our list by iteration
+  names(remaining.rsEEG)[ii] &lt;- list.names[ii]
+}
+
+# Print our list outputs
+remaining.rsEEG</code></pre>
+<pre><code>$`Remaining rsEEG: Contained Eyes Open Marker`
+[1] 519
+
+$`Remaining rsEEG: Survived Main Preprocessing`
+[1] 517
+
+$`Remaining rsEEG: No problems with ICA`
+[1] 517
+
+$`Remaining rsEEG: No problems with MARA`
+[1] 517</code></pre>
+<p>From our output, we see that we lost a majority of ID’s after the
+first preprocessing step 602 - 519 = 83 because they had no eyes-open
+marker. Additionally, 2 files did not make it passed the main
+preprocessing script (script 2) and as expected, there were no issues
+with the following two scripts. Thus, our final usable rsEEG recordings
+are 517.</p>
 </div>
 
 
