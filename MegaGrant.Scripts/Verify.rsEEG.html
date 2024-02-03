@@ -495,15 +495,16 @@ for(ii in 1:length(working.directories)) {
   # Intersect with our 602 IDs of interest
   remaining.IDs &lt;- intersect(rsEEG.IDs, finalData$ID)
 
-  # Save the number intersected ID&#39;s into a list
-  remaining.rsEEG[[ii]] &lt;- length(remaining.IDs)
+  # Save the  intersected ID&#39;s into a list
+  remaining.rsEEG[[ii]] &lt;- remaining.IDs
   
   # Name our list by iteration
   names(remaining.rsEEG)[ii] &lt;- list.names[ii]
 }
 
-# Print our list outputs
-remaining.rsEEG</code></pre>
+# Print out the number of remaining ID&#39;s for each list
+remaining.rsEEG %&gt;%
+  lapply(., function(x) length(x))</code></pre>
 <pre><code>$`Remaining rsEEG: Contained Eyes Open Marker`
 [1] 519
 
@@ -521,6 +522,63 @@ marker. Additionally, 2 files did not make it passed the main
 preprocessing script (script 2) and as expected, there were no issues
 with the following two scripts. Thus, our final usable rsEEG recordings
 are 517.</p>
+</div>
+<div id="investigating-segmentation-length" class="section level3">
+<h3>Investigating segmentation length</h3>
+<p>We do not want to keep files that had too much data removed from them
+during the preprocessing pipeline. Specifically, this refers to
+segmentation rejection, where segments of data that are too noisy are
+deleted. We will use a threshold of 80% rsEEG data remaining for our
+inclusion- any file will less will be removed.</p>
+<p>Along with our saved rsEEG files for each preprocessing script, excel
+sheets were also created that gives us information about the data after
+its manipulate. We will now investigate the excel sheets containg the
+length of rsEEG data remaining after segmentation rejection.</p>
+<pre class="r"><code># Set working directory 
+setwd(&quot;Y:/STUDY 1/All EEG Files Organized/Preprocessed_RAW/RAW_eyes_open_and_eyes_closed_before_ICA&quot;)
+
+# Load in all of the file names
+file.names &lt;- list.files()
+
+# Extract only the .eeg files from all of the files
+file.names.csv &lt;- file.names[grepl(&quot;.csv&quot;, file.names)]
+
+# Create a list to save the read in csv files
+list.csv &lt;- list()
+
+# Create a loop to read in each CSV file
+for(ii in 1:length(file.names.csv)) {
+
+  # load in data and save it into an object
+  current.csv &lt;- read.csv(file.names.csv[[ii]])
+  
+  # Create a new variable with the ID number alone
+  current.csv &lt;- current.csv %&gt;%
+    mutate(IDs = as.numeric(gsub(&quot;.*?([0-9]+).*&quot;, &quot;\\1&quot;, SubjectID)))
+  
+  # Save the transformed dataset into the list
+  list.csv[[ii]] &lt;- current.csv
+  
+}
+
+# Combined all csv&#39;s into one
+all.csv &lt;- list.csv %&gt;%
+  do.call(rbind,.) %&gt;%
+  data.frame()
+
+# Obtain the median rsEEG recording
+rsEEG.length.median &lt;- median(all.csv$StartingMin)
+
+# Create the threshold cut off
+cut.off &lt;- .8 * rsEEG.length.median
+
+# Create a variable indicating if the rsEEG made the cut off or not
+all.csv &lt;- all.csv %&gt;%
+  mutate(Threshold = ifelse(RemainingMin &gt; cut.off, &quot;Eligible&quot;, &quot;Excluded&quot;))
+eligible.csv &lt;- all.csv %&gt;% filter(Threshold == &quot;Eligible&quot;)
+
+# Intersect the ID&#39;s that have enough rsEEG data with those ID&#39;s that survived the preprocessing steps from above
+rsEEG.intersect &lt;- intersect(eligible.csv$IDs, remaining.rsEEG[[4]])</code></pre>
 </div>
 
 
