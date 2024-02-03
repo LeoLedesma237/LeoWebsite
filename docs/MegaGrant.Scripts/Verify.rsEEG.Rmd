@@ -204,3 +204,5 @@ rsEEG.intersect <- intersect(eligible.csv$IDs, remaining.rsEEG[[4]])
 length(rsEEG.intersect)
 
 ```
+
+After checking the lengths of each recording, 465 rsEEG files made the cut. This will be our final sample size for rsEEG. 
