@@ -1,0 +1,37 @@
+---
+title: "Fast Fourier Transforming rsEEG"
+author: "Leandro Ledesma"
+date: "2024-02-04"
+output: html_document
+---
+
+### Universal block code settings
+
+```{r universal block code setting}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+```
+
+### Load in the data manipulation packages first
+
+```{r load in packages, message= FALSE, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+library(gt)
+```
+
+### Load in the data
+
+The previous scripts resulted in 465 rsEEG files that were fully preprocessed and ready for fast Fourier transform (FFT). However, we need to verify that all the rsEEG files made it through the processing with no problems. Thus we will be examining the number of files in the directory that survived the FFT portion.
+
+```{r load the data}
+# Set working directory
+setwd("Y:/STUDY 1/All EEG Files Organized/Preprocessed_RAW/RAW_eyes_open_and_eyes_closed_FFT")
+
+
+
+```
+
+
