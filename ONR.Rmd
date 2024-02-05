@@ -1,30 +1,20 @@
 ---
-title: "ONR"
-author: "Leandro Ledesma"
-date: "2024-02-05"
-output: html_document
+title: "Individual Differences in Response to Stress Study Overview"
+output:
+  html_document
+
 ---
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ``` 
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+This document serves to track data cleaning for the Individual Differences in Response to Stress: Behavioral and Neurophysiological Correlates study. However, that name is a mouthful and most members in the lab know it as the study for the Office of Naval Research (ONR). Thus, the rest of this document will refer to this study and its data as ONR (I must specify that we are not a part of ONR in anyway- we are just collaborating with them).
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+This study is investigating how different stressors (intense exercise and sleep deprivation) influence cognitive performance in virtual reality (VR). We are predominantly interested in their effects on inhibition and working memory. To measure these constructs, we developed a Go/No-Go (GnG) and Nback paradigm in VR that is compatible with EEG recordings. This will allow us to not only capture their behavioral performance in these tasks but also reveal brain activity that is associated with the behavior (Special thanks to Hechmi Kilani and Devante Williams for designing these paradigms). There are other data collected for the ONR study including: physiological measures (heart rate, blood oxygen saturation, breathing rate), hormone levels, epigenetics, language capabilities, and more. This document will solely focus on the behavioral data from the GnG and Nback, and their EEG.
 
-```{r cars}
-summary(cars)
-```
+### Data Cleaning
 
-## Including Plots
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
