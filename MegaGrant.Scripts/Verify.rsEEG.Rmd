@@ -206,3 +206,16 @@ length(rsEEG.intersect)
 ```
 
 After checking the lengths of each recording, 465 rsEEG files made the cut. This will be our final sample size for rsEEG. 
+
+### Saving files
+
+We will be saving these files as a CSV for later usage
+
+```{r save the data}
+# Set the saving directory
+setwd("C:/Users/lledesma.TIMES/Documents/Masters Project")
+
+# Save the 406 IDs that intersected
+write.csv(data.frame(IDs = rsEEG.intersect), file = "Preprocessed.rsEEG.csv")
+
+```
