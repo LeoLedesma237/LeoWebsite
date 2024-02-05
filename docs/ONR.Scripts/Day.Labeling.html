@@ -357,24 +357,44 @@ display: none;
 </div>
 
 
-<div id="load-in-packages" class="section level1">
-<h1>Load in packages</h1>
-<p>library(tidyverse) library(readxl) library(gdata) # Use startsWith
-function library(base) #subset strings library(scales) library(rio)</p>
-<p>library(purrr)</p>
+<div id="universal-block-code-settings" class="section level3">
+<h3>Universal block code settings</h3>
+<pre class="r"><code>knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)</code></pre>
 </div>
-<div id="create-an-empty-character-vector-to-store-id-number" class="section level1">
-<h1>Create an empty character vector to store ID number</h1>
-<p>ID_numbers_before100 &lt;- character(99)</p>
+<div id="load-in-the-data-manipulation-packages-first" class="section level3">
+<h3>Load in the data manipulation packages first</h3>
+<pre class="r"><code># Load in packages
+library(tidyverse)
+library(readxl)
+library(gdata) # Use startsWith function
+library(base) #subset strings
+library(scales)
+library(rio)
+library(purrr)</code></pre>
 </div>
-<div id="use-sprintf-to-format-the-values-with-leading-zeros-so-it-creates-a-vector-starting-at-001-and-goes-up-to-099" class="section level1">
-<h1>Use sprintf to format the values with leading zeros so it creates a
-vector starting at 001 and goes up to 099</h1>
-<p>for (i in 1:99) { ID_numbers_before100[i] &lt;- sprintf(“%03d”, i) }
-ID_numbers_before100</p>
-<p>ID_numbers_after100 &lt;- character(601)</p>
-<p>for (i in 1:600) { ID_numbers_after100[i] &lt;- i + 99 }</p>
-<p>ID_numbers = c(ID_numbers_before100,ID_numbers_after100)</p>
+<div id="create-ids-with-leading-zeroes" class="section level3">
+<h3>Create ID’s with leading zeroes</h3>
+<pre class="r"><code># Create an empty character vector to store ID numbers
+ID.numbers &lt;- character(999)
+
+# Use sprintf to format the values with leading zeros so it creates a vector with zeroes in fron of each number smaller than 100
+for (i in 1:999) {
+  ID.numbers[i] &lt;- sprintf(&quot;%03d&quot;, i)
+}
+
+# Check to see if the zeroes were added
+head(ID.numbers,99)</code></pre>
+<pre><code> [1] &quot;001&quot; &quot;002&quot; &quot;003&quot; &quot;004&quot; &quot;005&quot; &quot;006&quot; &quot;007&quot; &quot;008&quot; &quot;009&quot; &quot;010&quot; &quot;011&quot; &quot;012&quot;
+[13] &quot;013&quot; &quot;014&quot; &quot;015&quot; &quot;016&quot; &quot;017&quot; &quot;018&quot; &quot;019&quot; &quot;020&quot; &quot;021&quot; &quot;022&quot; &quot;023&quot; &quot;024&quot;
+[25] &quot;025&quot; &quot;026&quot; &quot;027&quot; &quot;028&quot; &quot;029&quot; &quot;030&quot; &quot;031&quot; &quot;032&quot; &quot;033&quot; &quot;034&quot; &quot;035&quot; &quot;036&quot;
+[37] &quot;037&quot; &quot;038&quot; &quot;039&quot; &quot;040&quot; &quot;041&quot; &quot;042&quot; &quot;043&quot; &quot;044&quot; &quot;045&quot; &quot;046&quot; &quot;047&quot; &quot;048&quot;
+[49] &quot;049&quot; &quot;050&quot; &quot;051&quot; &quot;052&quot; &quot;053&quot; &quot;054&quot; &quot;055&quot; &quot;056&quot; &quot;057&quot; &quot;058&quot; &quot;059&quot; &quot;060&quot;
+[61] &quot;061&quot; &quot;062&quot; &quot;063&quot; &quot;064&quot; &quot;065&quot; &quot;066&quot; &quot;067&quot; &quot;068&quot; &quot;069&quot; &quot;070&quot; &quot;071&quot; &quot;072&quot;
+[73] &quot;073&quot; &quot;074&quot; &quot;075&quot; &quot;076&quot; &quot;077&quot; &quot;078&quot; &quot;079&quot; &quot;080&quot; &quot;081&quot; &quot;082&quot; &quot;083&quot; &quot;084&quot;
+[85] &quot;085&quot; &quot;086&quot; &quot;087&quot; &quot;088&quot; &quot;089&quot; &quot;090&quot; &quot;091&quot; &quot;092&quot; &quot;093&quot; &quot;094&quot; &quot;095&quot; &quot;096&quot;
+[97] &quot;097&quot; &quot;098&quot; &quot;099&quot;</code></pre>
 <div id="section" class="section level14">
 <p class="heading"></p>
 </div>

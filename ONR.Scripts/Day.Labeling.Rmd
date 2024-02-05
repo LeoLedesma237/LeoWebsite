@@ -5,11 +5,17 @@ date: "2024-02-05"
 output: html_document
 ---
 
+### Universal block code settings
 
+```{r universal block code setting}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+```
 
+### Load in the data manipulation packages first
 
-
-
+```{r load in packages, message= FALSE, warning = FALSE}
 # Load in packages
 library(tidyverse)
 library(readxl)
@@ -17,140 +23,135 @@ library(gdata) # Use startsWith function
 library(base) #subset strings
 library(scales)
 library(rio)
-
 library(purrr)
+```
 
-# Create an empty character vector to store ID number
-ID_numbers_before100 <- character(99)
 
-# Use sprintf to format the values with leading zeros so it creates a vector starting at 001 and goes up to 099
-for (i in 1:99) {
-  ID_numbers_before100[i] <- sprintf("%03d", i)
-}
-ID_numbers_before100
+### Create ID's with leading zeroes
 
-ID_numbers_after100 <- character(601)
+```{r first block}
+# Create an empty character vector to store ID numbers
+ID.numbers <- character(999)
 
-for (i in 1:600) {
-  ID_numbers_after100[i] <- i + 99
+# Use sprintf to format the values with leading zeros so it creates a vector with zeroes in fron of each number smaller than 100
+for (i in 1:999) {
+  ID.numbers[i] <- sprintf("%03d", i)
 }
 
-ID_numbers = c(ID_numbers_before100,ID_numbers_after100)
+# Check to see if the zeroes were added
+head(ID.numbers,99)
+
+```
 
 
-##############
-############## This next set of code is for OH-ONR Folder ##########
-##############
+### Load in the data
 
+These next few sections are a bit complex. ONR behavioral data is saved locally on two separate computers (UH-ONR and UH-ONR2). This is because we are using two rooms for data collection, each with their own VR systems. Every day around 3:00 AM, data saved locally on these computers are transfered to a secure server where they are saved in separate folders. Inside these directories, there are folders with ID names (ex: 001 or 015) that contain CSVs representing performance during the VR task. Each CSV corresponds to a GnG or an Nback task completed on one of the four testing days. Additionally these CSV files are named weirdly (foreshadowing a problem that will have to be fixed). 
 
+This first chunk of code is going into both directories on the server and recording the pathways of participants that have behavioral data saved. 
 
+```{r obtaining pathways with behavioral data for each subject, warning = FALSE}
 # set working directory for ONR computer 1
 setwd("M:/VR_CSVs/UH-ONR")
 
 # let's get the names of all the files in the folder
-ONR_file_names <- list.files()
-complete_IDs <- list()
+file.names.UH_ONR <- list.files()
 
-# ID numbers that are present
-for(ii in 1:length(ONR_file_names)) {
-  if(ONR_file_names[ii] %in% ID_numbers) {
-    wd <- paste("M:/VR_CSVs/UH-ONR","/",ONR_file_names[ii],sep="")
-    setwd(wd)
-    GnG_Nback_files <- list.files()
-    if(length(GnG_Nback_files) == 8) {
-      print(paste(ID_numbers[ii], "is present and has 8 files"))
-      complete_IDs[[ii]] <- ID_numbers[ii]
-    } else {
-      print(paste(ID_numbers[ii], "is present but does not have 8 files"))
-    }
-  }
-}
-
-
-# Changing the code to import everything, doesn't matter if the participant finished all four days
-# Create a for loop that obtains the pathway for every participant we have in the UH-ONR folder
-File_Pathway_ONR1 <- list()
-for(ii in 1:length(ONR_file_names)) {
-  if(ONR_file_names[ii] %in% ID_numbers) {
-    Pathway= "M:/VR_CSVs/UH-ONR/"
-    Current_ID = ONR_file_names[ii]
-    Pathway_ID = paste(Pathway,Current_ID, sep="")
-    File_Pathway_ONR1[ii] <- Pathway_ID
-    
-  }
-}
-
-File_Pathway_ONR1 <- unlist(File_Pathway_ONR1)
-
-# Obtain the pathway and name of all csv in each folder in UH_ONR
-# These pathways will be used later to import all the data
-
-ONR1_CSVs_Per_Folder <- list()
-ONR1_All_pathways_in_Folder <- list()
-ONR1_All_pathways_to_be_read <- list()
-for(ii in 1:length(File_Pathway_ONR1)) {
-  setwd(File_Pathway_ONR1[ii])
-  Current_Pathway = File_Pathway_ONR1[ii]
-  for(iii in 1:length(list.files())) {
-    All_CSVs_in_Folder <- list.files()
-    ONR1_All_pathways_in_Folder[iii] <- paste(Current_Pathway,"/",All_CSVs_in_Folder[iii],sep="")
-    
-  }
-  
-  ONR1_All_pathways_to_be_read[[ii]] <- unlist(ONR1_All_pathways_in_Folder)
-}
-
-ONR1_All_pathways_to_be_read <- unlist(ONR1_All_pathways_to_be_read)
-ONR1_All_pathways_to_be_read <- unique(ONR1_All_pathways_to_be_read)
-
-
-##############
-############## This next set of code is for OH-ONR2 Folder ##########
-##############
-
-# Now we do the same as above except this time its for UH-ONR2
-
-# set working directory for ONR computer 2
+# set working directory for ONR computer 1
 setwd("M:/VR_CSVs/UH-ONR2")
 
 # let's get the names of all the files in the folder
-ONR_file_names <- list.files()
-complete_IDs <- list()
+file.names.UH_ONR2 <- list.files()
 
+# Obtain the intersected IDs from both computers
+intersect.IDs.UH_ONR <- intersect(file.names.UH_ONR,ID.numbers)
+intersect.IDs.UH_ONR2 <- intersect(file.names.UH_ONR2,ID.numbers)
 
-File_Pathway_ONR2 <- list()
-for(ii in 1:length(ONR_file_names)) {
-  if(ONR_file_names[ii] %in% ID_numbers) {
-    Pathway= "M:/VR_CSVs/UH-ONR2/"
-    Current_ID = ONR_file_names[ii]
-    Pathway_ID = paste(Pathway,Current_ID, sep="")
-    File_Pathway_ONR2[ii] <- Pathway_ID
-    
-  }
-}
+# Create two pathways using the intersected IDs
+ID.folder.UH_ONR <- paste("M:/VR_CSVs/UH-ONR/",intersect.IDs.UH_ONR,"/", sep="")
+ID.folder.UH_ONR2 <- paste("M:/VR_CSVs/UH-ONR2/",intersect.IDs.UH_ONR2,"/", sep="")
 
-File_Pathway_ONR2 <- unlist(File_Pathway_ONR2)
+```
 
-# Obtain the pathway and name of all csv in each folder in UH_ONR
-# These pathways will be used later to import all the data
+This next chunk of code is using the pathways from above to record the names and pathways of each CSV file in Computer 1 and saving them as a data frame. 
 
-ONR2_CSVs_Per_Folder <- list()
-ONR2_All_pathways_in_Folder <- list()
-ONR2_All_pathways_to_be_read <- list()
-for(ii in 1:length(File_Pathway_ONR2)) {
-  setwd(File_Pathway_ONR2[ii])
-  Current_Pathway = File_Pathway_ONR2[ii]
-  for(iii in 1:length(list.files())) {
-    All_CSVs_in_Folder <- list.files()
-    ONR2_All_pathways_in_Folder[iii] <- paste(Current_Pathway,"/",All_CSVs_in_Folder[iii],sep="")
-    
-  }
+```{r obtain pathway csvs and computer data frame for computer 1}
+
+# Create a for loop to go into each pathway of a subject's ID folder and extract the names of CSV's present there
+# Do this for both pathways
+# Computer 1
+CSVs.UH_ONR <- list()
+
+for(ii in 1:length(ID.folder.UH_ONR)) {
+  #ii = 1
+  # Changes the working directory to each pathway
+  setwd(ID.folder.UH_ONR[[ii]])
   
-  ONR2_All_pathways_to_be_read[[ii]] <- unlist(ONR2_All_pathways_in_Folder)
+  # Obtain the CSVs for the folder
+  CSVs.current <- list.files()
+  
+  # Create a vector for the current ID and computer number (Repeat it by the number of CSVs present)
+  current.ID <- rep(intersect.IDs.UH_ONR[ii], length(CSVs.current))
+  current.pathway <- rep(pathway.UH_ONR[ii], length(CSVs.current))
+  current.computer <- rep("Computer 1", length(CSVs.current))
+  
+  # Create a data frame including the ID, the pathway, CSV, and the computer number
+  UH_ONR.df <- data.frame(ID = current.ID,
+                          Pathway = current.pathway,
+                          CSVs = CSVs.current,
+                          Computer = current.computer) 
+  
+  # Extracts all the names of the CSVs located in that pathway + it's pathway
+  CSVs.UH_ONR[[ii]] <- UH_ONR.df
 }
 
-ONR2_All_pathways_to_be_read <- unlist(ONR2_All_pathways_to_be_read)
-ONR2_All_pathways_to_be_read <- unique(ONR2_All_pathways_to_be_read)
+CSVs.UH_ONR <- CSVs.UH_ONR %>%
+  do.call(rbind,.) %>%
+  data.frame()
+
+```
+
+
+This next chunk of code does the same as above except for the files in computer 2.  
+
+```{r obtain pathway csvs and computer data frame for computer 2}
+
+# Create a for loop to go into each pathway of a subject's ID folder and extract the names of CSV's present there
+# Do this for both pathways
+# Computer 2
+CSVs.UH_ONR2 <- list()
+
+for(ii in 1:length(ID.folder.UH_ONR2)) {
+  #ii = 1
+  # Changes the working directory to each pathway
+  setwd(ID.folder.UH_ONR2[[ii]])
+  
+  # Obtain the CSVs for the folder
+  CSVs.current <- list.files()
+  
+  # Create a vector for the current ID and computer number (Repeat it by the number of CSVs present)
+  current.ID <- rep(intersect.IDs.UH_ONR2[ii], length(CSVs.current))
+  current.pathway <- rep(pathway.UH_ONR2[ii], length(CSVs.current))
+  current.computer <- rep("Computer 2", length(CSVs.current))
+  
+  # Create a data frame including the ID, the pathway, CSV, and the computer number
+  UH_ONR.df <- data.frame(ID = current.ID,
+                          Pathway = current.pathway,
+                          CSVs = CSVs.current,
+                          Computer = current.computer) 
+  
+  # Extracts all the names of the CSVs located in that pathway + it's pathway
+  CSVs.UH_ONR2[[ii]] <- UH_ONR.df
+}
+
+CSVs.UH_ONR2 <- CSVs.UH_ONR2 %>%
+  do.call(rbind,.) %>%
+  data.frame()
+
+```
+
+
+
 
 # Merge pathways from UHONR1 and UHONR2
 # Identify which pathways have redundancies from the second computer and remove them
