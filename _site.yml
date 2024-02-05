@@ -6,6 +6,8 @@ navbar:
       href: index.html
     - text: "MegaGrant"
       href: MegaGrant.html
+    - text: "ONR"
+      href: ONR.html
     - text: "Links"
       href: Links.html
 output_dir: "docs"

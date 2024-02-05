@@ -26,9 +26,17 @@ library(gt)
 
 The previous scripts resulted in 465 rsEEG files that were fully preprocessed and ready for fast Fourier transform (FFT). However, we need to verify that all the rsEEG files made it through the processing with no problems. Thus we will be examining the number of files in the directory that survived the FFT portion.
 
+First let's load the 465 rsEEG IDs.
+
 ```{r load the data}
 # Set working directory
+
+
+
+# Set working directory
 setwd("Y:/STUDY 1/All EEG Files Organized/Preprocessed_RAW/RAW_eyes_open_and_eyes_closed_FFT")
+
+# 
 
 
 
