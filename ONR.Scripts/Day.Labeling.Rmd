@@ -1,0 +1,426 @@
+---
+title: "ONR Day Labeling"
+author: "Leandro Ledesma"
+date: "2024-02-05"
+output: html_document
+---
+
+
+
+
+
+
+# Load in packages
+library(tidyverse)
+library(readxl)
+library(gdata) # Use startsWith function
+library(base) #subset strings
+library(scales)
+library(rio)
+
+library(purrr)
+
+# Create an empty character vector to store ID number
+ID_numbers_before100 <- character(99)
+
+# Use sprintf to format the values with leading zeros so it creates a vector starting at 001 and goes up to 099
+for (i in 1:99) {
+  ID_numbers_before100[i] <- sprintf("%03d", i)
+}
+ID_numbers_before100
+
+ID_numbers_after100 <- character(601)
+
+for (i in 1:600) {
+  ID_numbers_after100[i] <- i + 99
+}
+
+ID_numbers = c(ID_numbers_before100,ID_numbers_after100)
+
+
+##############
+############## This next set of code is for OH-ONR Folder ##########
+##############
+
+
+
+# set working directory for ONR computer 1
+setwd("M:/VR_CSVs/UH-ONR")
+
+# let's get the names of all the files in the folder
+ONR_file_names <- list.files()
+complete_IDs <- list()
+
+# ID numbers that are present
+for(ii in 1:length(ONR_file_names)) {
+  if(ONR_file_names[ii] %in% ID_numbers) {
+    wd <- paste("M:/VR_CSVs/UH-ONR","/",ONR_file_names[ii],sep="")
+    setwd(wd)
+    GnG_Nback_files <- list.files()
+    if(length(GnG_Nback_files) == 8) {
+      print(paste(ID_numbers[ii], "is present and has 8 files"))
+      complete_IDs[[ii]] <- ID_numbers[ii]
+    } else {
+      print(paste(ID_numbers[ii], "is present but does not have 8 files"))
+    }
+  }
+}
+
+
+# Changing the code to import everything, doesn't matter if the participant finished all four days
+# Create a for loop that obtains the pathway for every participant we have in the UH-ONR folder
+File_Pathway_ONR1 <- list()
+for(ii in 1:length(ONR_file_names)) {
+  if(ONR_file_names[ii] %in% ID_numbers) {
+    Pathway= "M:/VR_CSVs/UH-ONR/"
+    Current_ID = ONR_file_names[ii]
+    Pathway_ID = paste(Pathway,Current_ID, sep="")
+    File_Pathway_ONR1[ii] <- Pathway_ID
+    
+  }
+}
+
+File_Pathway_ONR1 <- unlist(File_Pathway_ONR1)
+
+# Obtain the pathway and name of all csv in each folder in UH_ONR
+# These pathways will be used later to import all the data
+
+ONR1_CSVs_Per_Folder <- list()
+ONR1_All_pathways_in_Folder <- list()
+ONR1_All_pathways_to_be_read <- list()
+for(ii in 1:length(File_Pathway_ONR1)) {
+  setwd(File_Pathway_ONR1[ii])
+  Current_Pathway = File_Pathway_ONR1[ii]
+  for(iii in 1:length(list.files())) {
+    All_CSVs_in_Folder <- list.files()
+    ONR1_All_pathways_in_Folder[iii] <- paste(Current_Pathway,"/",All_CSVs_in_Folder[iii],sep="")
+    
+  }
+  
+  ONR1_All_pathways_to_be_read[[ii]] <- unlist(ONR1_All_pathways_in_Folder)
+}
+
+ONR1_All_pathways_to_be_read <- unlist(ONR1_All_pathways_to_be_read)
+ONR1_All_pathways_to_be_read <- unique(ONR1_All_pathways_to_be_read)
+
+
+##############
+############## This next set of code is for OH-ONR2 Folder ##########
+##############
+
+# Now we do the same as above except this time its for UH-ONR2
+
+# set working directory for ONR computer 2
+setwd("M:/VR_CSVs/UH-ONR2")
+
+# let's get the names of all the files in the folder
+ONR_file_names <- list.files()
+complete_IDs <- list()
+
+
+File_Pathway_ONR2 <- list()
+for(ii in 1:length(ONR_file_names)) {
+  if(ONR_file_names[ii] %in% ID_numbers) {
+    Pathway= "M:/VR_CSVs/UH-ONR2/"
+    Current_ID = ONR_file_names[ii]
+    Pathway_ID = paste(Pathway,Current_ID, sep="")
+    File_Pathway_ONR2[ii] <- Pathway_ID
+    
+  }
+}
+
+File_Pathway_ONR2 <- unlist(File_Pathway_ONR2)
+
+# Obtain the pathway and name of all csv in each folder in UH_ONR
+# These pathways will be used later to import all the data
+
+ONR2_CSVs_Per_Folder <- list()
+ONR2_All_pathways_in_Folder <- list()
+ONR2_All_pathways_to_be_read <- list()
+for(ii in 1:length(File_Pathway_ONR2)) {
+  setwd(File_Pathway_ONR2[ii])
+  Current_Pathway = File_Pathway_ONR2[ii]
+  for(iii in 1:length(list.files())) {
+    All_CSVs_in_Folder <- list.files()
+    ONR2_All_pathways_in_Folder[iii] <- paste(Current_Pathway,"/",All_CSVs_in_Folder[iii],sep="")
+    
+  }
+  
+  ONR2_All_pathways_to_be_read[[ii]] <- unlist(ONR2_All_pathways_in_Folder)
+}
+
+ONR2_All_pathways_to_be_read <- unlist(ONR2_All_pathways_to_be_read)
+ONR2_All_pathways_to_be_read <- unique(ONR2_All_pathways_to_be_read)
+
+# Merge pathways from UHONR1 and UHONR2
+# Identify which pathways have redundancies from the second computer and remove them
+ONR1_ID_and_CSVs <- sapply(ONR1_All_pathways_to_be_read, function(x) substring(x, 19, nchar(x)))
+names(ONR1_ID_and_CSVs) <- NULL
+ONR1_ID_and_CSVs_df <- data.frame(Pathway = rep("M:/VR_CSVs/UH-ONR/",length(ONR1_ID_and_CSVs)),
+                                  CSVs = ONR1_ID_and_CSVs)
+
+
+ONR2_ID_and_CSVs <- sapply(ONR2_All_pathways_to_be_read, function(x) substring(x, 20, nchar(x)))
+names(ONR2_ID_and_CSVs) <- NULL
+ONR2_ID_and_CSVs_df <- data.frame(Pathway = rep("M:/VR_CSVs/UH-ONR2/",length(ONR2_ID_and_CSVs)),
+                                  CSVs = ONR2_ID_and_CSVs)
+
+# These are the CSVs that are NOT gonna be read from UHONR2 because that's redundant
+Intersection_CSVs <- intersect(ONR1_ID_and_CSVs_df$CSVs,ONR2_ID_and_CSVs_df$CSVs)
+
+# Bring in the cool code
+`%nin%` = Negate(`%in%`)
+
+ONR2_ID_and_CSVs_df <- ONR2_ID_and_CSVs_df %>%
+  filter(CSVs %nin% Intersection_CSVs)
+
+# Stack the two data frames then combine the variables into one
+All_pathways_no_redundancies <- rbind(ONR1_ID_and_CSVs_df,ONR2_ID_and_CSVs_df)
+Load_All_Pathways_no_redundancies <- paste(All_pathways_no_redundancies$Pathway,All_pathways_no_redundancies$CSVs,sep="")
+
+
+# Identify which file came from which computer
+VR_Room <- substr(Load_All_Pathways_no_redundancies,15,18)
+IDs <- substr(Load_All_Pathways_no_redundancies,19,22)
+
+# A little data cleaning
+VR_Room <- gsub("/","", VR_Room)
+IDs <- gsub("/","",IDs)
+
+UserID_VR_Room <- data.frame(UserID = IDs,
+                             VR_Room)
+
+
+# Read in all  files
+All_CSV_Files <- list()
+
+for(ii in 1:length(Load_All_Pathways_no_redundancies)) {
+  
+  All_CSV_Files[[ii]] <- read_csv(Load_All_Pathways_no_redundancies[ii],col_names = TRUE, show_col_types = FALSE)
+  
+}
+
+
+# Use the map function to create a tibble were all data frames are embedded as rows
+All_Data <- data.frame(file_num = 1:length(All_CSV_Files)) %>% as_tibble()
+All_Data$Tibbles <- map(All_CSV_Files, as_tibble)
+
+# Create for loops that go into each one of these data frames and retrieve information of interest only from the first row
+# This will include UserID and StartDate
+
+UserID <- list()
+StartDate <- list()
+Task_Type_list <- list()
+
+for(ii in 1:nrow(All_Data)) {
+
+Current_dataset <- All_Data$Tibbles[[ii]]
+UserID[ii] <- Current_dataset$UserID[1]
+Date_long <- Current_dataset$StartDate[1]
+StartDate[ii] <- substr(Date_long,1,10)
+
+Task_type <- Current_dataset$BlockID[1]
+
+if(substr(Task_type,1,1) == "G") {
+  Task_Type_list[ii] <- "Go/NoGo"
+
+} else if(substr(Task_type,1,1) == "N") {
+  Task_Type_list[ii] <- "N-back"
+  
+}
+
+}
+
+All_Data$UserID <- unlist(UserID)
+All_Data$StartDate <- unlist(StartDate)
+All_Data$Task_Type <- unlist(Task_Type_list)
+All_Data$User_ID_check <-UserID_VR_Room$UserID
+All_Data$VR_Room <- UserID_VR_Room$VR_Room
+
+
+# Minor data cleaning
+ID_13_fix <- function(ID) {
+  if(ID == "13") {
+    return("013")
+  } else {
+    return(ID)
+  }
+}
+
+# Go into each data frame that is mapped into the All_Data and identify UserID that is equal to 13.
+# For those files that are (Go/NoGo and N-back), change all of the rows in UserID to 013
+
+Tibbles <- list()
+
+for(ii in 1:nrow(All_Data)) {
+  Current_UserID <- All_Data$UserID[ii]
+  Current_tibble <- All_Data$Tibbles[[ii]]
+  
+  if(Current_UserID == "13") {
+  
+    Current_tibble$UserID   <- sapply(Current_tibble$UserID,ID_13_fix)
+      
+    Tibbles[[ii]] <- Current_tibble
+    
+  } else {
+    
+    Tibbles[[ii]] <- Current_tibble
+  }
+  
+}
+
+
+
+All_Data$Tibbles <- map(Tibbles,as_tibble)
+
+# Now change it on the actual main data UserID
+All_Data$UserID <- sapply(All_Data$UserID, ID_13_fix)
+
+
+
+############ Introducing Dates #################
+
+# Load in ONR Visitor Log Data
+Visitor_Log_Full <- read_excel("~/ONR/Visitor_log/Visiting_Log_must_manually_update.xlsx")
+
+# Create dataframe with variables that are needed
+Visitor_Log <- data.frame(ID = Visitor_Log_Full$ID,
+                          Day0 = Visitor_Log_Full$`Day 0 Date`,
+                          Day1 = Visitor_Log_Full$`Day 1 Date`,
+                          Day2 = Visitor_Log_Full$`Day 2 Date`,
+                          Day3 = Visitor_Log_Full$`Day 3 Date`) %>% as_tibble()
+
+# Change the variables into characters
+Visitor_Log$Day0 <- as.character(Visitor_Log$Day0)
+Visitor_Log$Day1 <- as.character(Visitor_Log$Day1)
+Visitor_Log$Day2 <- as.character(Visitor_Log$Day2)
+Visitor_Log$Day3 <- as.character(Visitor_Log$Day3)
+
+# Replace all NAs to "0000-00-00" so code below can work
+Visitor_Log[is.na(Visitor_Log)] <- "0000-00-00"
+
+# Use dates from Visitor Log to determine which day we have data for in VR tasks
+unique(All_Data$StartDate)
+
+# CODE WILL BREAK IF WE HAVE DATA FOR AN ID (IN VR) THAT IS NOT PRESENT IN VISITOR LOG
+
+Day <- list()
+row_num <- list()
+
+
+for(ii in 1:nrow(All_Data)) {
+  Current_ID_row <- All_Data$UserID[ii]  
+  Current_date_row <- All_Data$StartDate[ii]
+
+  Visitor_Log_row <- Visitor_Log %>%
+    filter(ID == Current_ID_row)
+  
+  row_num[ii] <- ii
+  
+  if(Current_date_row == Visitor_Log_row$Day0[1]) {
+    Day[ii] <- "Day0"
+    
+  } else if(Current_date_row == Visitor_Log_row$Day1[1]) {
+    Day[ii] <- "Rest"
+    
+  } else if(Current_date_row == Visitor_Log_row$Day2[1]) {
+    Day[ii] <- "Exercise"
+    
+  } else if(Current_date_row == Visitor_Log_row$Day3[1]) {
+    Day[ii] <- "No Sleep"
+    
+  } else {
+    Day[ii] <- "Error"
+    
+  }
+  
+}
+
+
+# Add which day belongs to which dataset
+All_Data$Day <- unlist(Day)
+
+
+# Add the days inside the house
+Tibbles <- list()
+
+for(ii in 1:nrow(All_Data)) {
+  
+  Current_Tibble <- All_Data$Tibbles[[ii]]
+  Current_Tibble$Day <- rep(All_Data$Day[ii],nrow(Current_Tibble))
+  Current_Tibble <- Current_Tibble %>% select(Day, everything())
+  Tibbles[[ii]] <- Current_Tibble
+  
+}
+
+All_Data$Tibbles_withDay <- map(Tibbles,as_tibble)
+
+
+# Substr the StartDate
+Tibbles <- list()
+
+for(ii in 1:nrow(All_Data)) {
+  
+  Current_Tibble <- All_Data$Tibbles_withDay[[ii]]
+  Current_Tibble$StartDate <- substr(rep(All_Data$StartDate[1],nrow(Current_Tibble)),1,10)
+  Current_Tibble$StartDate <- as.character(Current_Tibble$StartDate)
+  Current_Tibble <- Current_Tibble %>% select(Day, everything())
+  Tibbles[[ii]] <- Current_Tibble
+  
+}
+
+All_Data$Tibbles_withDay <- map(Tibbles,as_tibble)
+
+
+
+# Add VR room variable to Tibbles
+Tibbles <- list()
+
+for(ii in 1:nrow(All_Data)) {
+  
+  Current_Tibble <- All_Data$Tibbles_withDay[[ii]]
+  Current_Tibble$VR_Room  <- substr(rep(All_Data$VR_Room[ii],nrow(Current_Tibble)),1,10)
+  Current_Tibble$VR_Room  <- as.character(Current_Tibble$VR_Room )
+  Current_Tibble <- Current_Tibble %>% select(Day, everything())
+  Tibbles[[ii]] <- Current_Tibble
+  
+}
+
+All_Data$Tibbles_withDay_VR_Room <- map(Tibbles,as_tibble)
+
+
+
+# Split the data based on their task
+All_GnG <- All_Data %>%
+  filter(Task_Type %in%  "Go/NoGo")
+
+All_Nback <- All_Data %>%
+  filter(Task_Type %in%  "N-back")
+
+# Combine all the tibbles into one data frame
+All_GnG_Tibbles <- do.call(rbind, as.list(All_GnG$Tibbles_withDay_VR_Room))
+All_Nback_Tibbles <- do.call(rbind, as.list(All_Nback$Tibbles_withDay_VR_Room))
+
+
+
+
+# Quality control
+table(All_GnG_Tibbles$Day)
+table(All_Nback_Tibbles$Day)
+
+table(All_GnG_Tibbles$VR_Room)
+table(All_Nback_Tibbles$VR_Room)
+
+
+# IDs with errors?
+All_GnG_Tibbles %>% filter(Day == "Error") %>% select(UserID) %>% unique()
+All_Nback_Tibbles %>% filter(Day == "Error") %>% select(UserID) %>% unique()
+
+
+# export data
+# set working directory
+setwd("~/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
+
+#export the files
+export(All_GnG_Tibbles, "GnG_Performance.xlsx")
+export(All_Nback_Tibbles, "Nback_Performance.xlsx")
