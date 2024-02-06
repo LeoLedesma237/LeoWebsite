@@ -1,7 +1,6 @@
 ---
 title: "ONR Day Labeling"
 author: "Leandro Ledesma"
-date: "2024-02-05"
 output: html_document
 ---
 
@@ -27,6 +26,14 @@ library(purrr)
 ```
 
 
+### Last day this code was ran
+
+```{r last day the code was ran}
+
+paste("This code was last ran on:", Sys.Date())
+
+```
+
 ### Create ID's with leading zeroes
 
 ```{r first block}
@@ -46,7 +53,9 @@ head(ID.numbers,99)
 
 ### Load in the data
 
-These next few sections are a bit complex. ONR behavioral data is saved locally on two separate computers (UH-ONR and UH-ONR2). This is because we are using two rooms for data collection, each with their own VR systems. Every day around 3:00 AM, data saved locally on these computers are transfered to a secure server where they are saved in separate folders. Inside these directories, there are folders with ID names (ex: 001 or 015) that contain CSVs representing performance during the VR task. Each CSV corresponds to a GnG or an Nback task completed on one of the four testing days. Additionally these CSV files are named weirdly (foreshadowing a problem that will have to be fixed). 
+These next few sections are a bit complex. ONR behavioral data is saved locally on two separate computers (UH-ONR and UH-ONR2). This is because we are using two rooms for data collection, each with their own VR systems. Every day around 3:00 AM, these locally saved data are transfered to a secure server and saved in separate folders. Inside these directories, ID named folders (ex: 001 or 015) contain CSV files representing the performance during the VR tasks. Each CSV corresponds to a GnG or an Nback task completed on one of the four testing days. 
+
+### Obtaining pathways to participant's behavioral data
 
 This first chunk of code is going into both directories on the server and recording the pathways of participants that have behavioral data saved. 
 
@@ -68,10 +77,12 @@ intersect.IDs.UH_ONR <- intersect(file.names.UH_ONR,ID.numbers)
 intersect.IDs.UH_ONR2 <- intersect(file.names.UH_ONR2,ID.numbers)
 
 # Create two pathways using the intersected IDs
-ID.folder.UH_ONR <- paste("M:/VR_CSVs/UH-ONR/",intersect.IDs.UH_ONR,"/", sep="")
-ID.folder.UH_ONR2 <- paste("M:/VR_CSVs/UH-ONR2/",intersect.IDs.UH_ONR2,"/", sep="")
+pathway.UH_ONR <- paste("M:/VR_CSVs/UH-ONR/",intersect.IDs.UH_ONR,"/", sep="")
+pathway.UH_ONR2 <- paste("M:/VR_CSVs/UH-ONR2/",intersect.IDs.UH_ONR2,"/", sep="")
 
 ```
+
+### Obtaining each CSV file name for computer 1
 
 This next chunk of code is using the pathways from above to record the names and pathways of each CSV file in Computer 1 and saving them as a data frame. 
 
@@ -82,10 +93,10 @@ This next chunk of code is using the pathways from above to record the names and
 # Computer 1
 CSVs.UH_ONR <- list()
 
-for(ii in 1:length(ID.folder.UH_ONR)) {
+for(ii in 1:length(pathway.UH_ONR)) {
   #ii = 1
   # Changes the working directory to each pathway
-  setwd(ID.folder.UH_ONR[[ii]])
+  setwd(pathway.UH_ONR[[ii]])
   
   # Obtain the CSVs for the folder
   CSVs.current <- list.files()
@@ -111,6 +122,7 @@ CSVs.UH_ONR <- CSVs.UH_ONR %>%
 
 ```
 
+### Obtaining each CSV file name for computer 2
 
 This next chunk of code does the same as above except for the files in computer 2.  
 
@@ -121,10 +133,10 @@ This next chunk of code does the same as above except for the files in computer 
 # Computer 2
 CSVs.UH_ONR2 <- list()
 
-for(ii in 1:length(ID.folder.UH_ONR2)) {
+for(ii in 1:length(pathway.UH_ONR2)) {
   #ii = 1
   # Changes the working directory to each pathway
-  setwd(ID.folder.UH_ONR2[[ii]])
+  setwd(pathway.UH_ONR2[[ii]])
   
   # Obtain the CSVs for the folder
   CSVs.current <- list.files()
@@ -151,71 +163,108 @@ CSVs.UH_ONR2 <- CSVs.UH_ONR2 %>%
 ```
 
 
+### Removing redundant CSVs from computer 2
 
+Unfortunately, we have some redundant files from early data recording in the project. Some files saved in Computer 2 are identical to files saved in Computer 1. We want to identify these files and associate them with only one pathway before we start to read them in. This will make the computing process more efficient.
 
-# Merge pathways from UHONR1 and UHONR2
-# Identify which pathways have redundancies from the second computer and remove them
-ONR1_ID_and_CSVs <- sapply(ONR1_All_pathways_to_be_read, function(x) substring(x, 19, nchar(x)))
-names(ONR1_ID_and_CSVs) <- NULL
-ONR1_ID_and_CSVs_df <- data.frame(Pathway = rep("M:/VR_CSVs/UH-ONR/",length(ONR1_ID_and_CSVs)),
-                                  CSVs = ONR1_ID_and_CSVs)
+```{r identifying duplicates and removing them}
+# Identify CSVs in Computer 2 that are not in Computer 1 (save non duplicate CSVs)
+nonDuplicate.CSVs <- setdiff(CSVs.UH_ONR2$CSVs, CSVs.UH_ONR$CSVs)
 
+# Overwrite the Computer 2 data frame with one containing only CSVs that are not in Computer 1
+CSVs.UH_ONR2 <- CSVs.UH_ONR2 %>%
+  filter(CSVs %in% nonDuplicate.CSVs)
 
-ONR2_ID_and_CSVs <- sapply(ONR2_All_pathways_to_be_read, function(x) substring(x, 20, nchar(x)))
-names(ONR2_ID_and_CSVs) <- NULL
-ONR2_ID_and_CSVs_df <- data.frame(Pathway = rep("M:/VR_CSVs/UH-ONR2/",length(ONR2_ID_and_CSVs)),
-                                  CSVs = ONR2_ID_and_CSVs)
+```
 
-# These are the CSVs that are NOT gonna be read from UHONR2 because that's redundant
-Intersection_CSVs <- intersect(ONR1_ID_and_CSVs_df$CSVs,ONR2_ID_and_CSVs_df$CSVs)
+### Identifying complete subjects from VR data
 
-# Bring in the cool code
-`%nin%` = Negate(`%in%`)
+The logic is as follows. There are four testing days and each day two CSV files are saved- one for GnG and the other for the Nback. On Day 0 (practice day) a 30 minute practice session CSV is saved for both tasks. On day 1 the baseline CSVs are saved. On day 2 the intense exercise CSVs are saved. And lastly, on day 3 the sleep deprivation CSVs are saved. Thus, a subject that completed all testing days will have 8 CSVs. 
 
-ONR2_ID_and_CSVs_df <- ONR2_ID_and_CSVs_df %>%
-  filter(CSVs %nin% Intersection_CSVs)
+We will be merging the data frames from both computers created in the previous scripts and extracting the ID numbers that have 8 CSVs saved. We will then use this information to create a new variable indicating whether the subject is complete or not. 
 
-# Stack the two data frames then combine the variables into one
-All_pathways_no_redundancies <- rbind(ONR1_ID_and_CSVs_df,ONR2_ID_and_CSVs_df)
-Load_All_Pathways_no_redundancies <- paste(All_pathways_no_redundancies$Pathway,All_pathways_no_redundancies$CSVs,sep="")
+```{r}
+# Merge the datasets from above
+CSVs.merged.UH_ONR <- CSVs.UH_ONR %>%
+  rbind(CSVs.UH_ONR2)
 
+# Total unique ID's from all subjects that have a VR session saved
+paste("There is at least one CSV file saved from", length(unique(CSVs.merged.UH_ONR$ID)), "participants", sep= " ")
 
-# Identify which file came from which computer
-VR_Room <- substr(Load_All_Pathways_no_redundancies,15,18)
-IDs <- substr(Load_All_Pathways_no_redundancies,19,22)
+# IDs that have 8 file names
+completed.IDs <- CSVs.merged.UH_ONR %>%
+  group_by(ID) %>%
+  count() %>%
+  filter(n == 8) %>%
+  select(ID) %>%
+  unlist() %>% unname()
 
-# A little data cleaning
-VR_Room <- gsub("/","", VR_Room)
-IDs <- gsub("/","",IDs)
+# Complete ID's and their pathways 
+CSVs.merged.UH_ONR <- CSVs.merged.UH_ONR %>%
+  mutate(Status = ifelse(ID %in% completed.IDs, "Complete", "Incomplete"))
 
-UserID_VR_Room <- data.frame(UserID = IDs,
-                             VR_Room)
+# Total unique ID's from all subjects that have all VR sessions accounted for
+paste("All VR sessions accounted for", length(completed.IDs), "participants", sep= " ")
 
+```
 
-# Read in all  files
-All_CSV_Files <- list()
+### Read in the files
 
-for(ii in 1:length(Load_All_Pathways_no_redundancies)) {
+We will now read in the files and save them into a list. This takes about 30 seconds. Additionally, as each file is being read, a new variable called computer will be added that indicates if the data was recorded in Computer 1 or in Computer 2. 
+
+```{r reading in the files}
+# Read in the files
+all.CSVs <- list()
+
+for(ii in 1:nrow(CSVs.merged.UH_ONR)) {
   
-  All_CSV_Files[[ii]] <- read_csv(Load_All_Pathways_no_redundancies[ii],col_names = TRUE, show_col_types = FALSE)
+  # Current file name and its pathway 
+  current.csv <- paste(CSVs.merged.UH_ONR$Pathway[ii],  CSVs.merged.UH_ONR$CSVs[ii], sep="")
+    
+  # Read in and save the current CSV in a list
+  read.csv <- read.csv(current.csv)
   
+  # Mutate the csv to include which computer it came from
+  read.csv$Computer <- rep(CSVs.merged.UH_ONR$Computer[ii], times = nrow(read.csv))
+  
+  # Save the mutated CSV
+  all.CSVs[[ii]] <- read.csv
+  
+  # Name the list by the ID and CSV
+  names(all.CSVs)[[ii]] <- paste(CSVs.merged.UH_ONR$ID[ii],CSVs.merged.UH_ONR$CSVs[ii])
 }
 
+# Check to see that the above code worked
+paste("There are", length(all.CSVs),"CSV files that were read in", sep =" ")
 
-# Use the map function to create a tibble were all data frames are embedded as rows
-All_Data <- data.frame(file_num = 1:length(All_CSV_Files)) %>% as_tibble()
-All_Data$Tibbles <- map(All_CSV_Files, as_tibble)
+# Half of the CSVs, the ones for GnG have the following dimensions
+dim(all.CSVs[[8]])
 
-# Create for loops that go into each one of these data frames and retrieve information of interest only from the first row
-# This will include UserID and StartDate
+# The other half of the CSVs, the ones for Nback each have the following dimensions
+dim(all.CSVs[[9]])
+
+```
+### Using the map function
+
+We will now be creating a data frame where the column tibble will have data over the VR CSV files for each person. We will use this new data frame to extract data from the first row of each CSV file- just so we can be sure we know exactly what we are looking at. 
+
+#```{r Using the map function}
+# Create a new data frame that will contain all CSV information
+all.data <- data.frame(file.num = 1:length(all.CSVs))
+
+# Use the map function to make a variable called tibble, where each row contains the full data from the VR CSV
+all.data$tibbles <- map(all.CSVs, as_tibble)
+
+# Create for loops that extract information from the first row of each data frame in the tibbles variable
+# This will include ID, day of testing, task type (GnG/Nback)
 
 UserID <- list()
 StartDate <- list()
 Task_Type_list <- list()
 
-for(ii in 1:nrow(All_Data)) {
+for(ii in 1:nrow(all.data)) {
 
-Current_dataset <- All_Data$Tibbles[[ii]]
+Current_dataset <- all.data$tibbles[[ii]]
 UserID[ii] <- Current_dataset$UserID[1]
 Date_long <- Current_dataset$StartDate[1]
 StartDate[ii] <- substr(Date_long,1,10)
@@ -232,11 +281,22 @@ if(substr(Task_type,1,1) == "G") {
 
 }
 
-All_Data$UserID <- unlist(UserID)
-All_Data$StartDate <- unlist(StartDate)
-All_Data$Task_Type <- unlist(Task_Type_list)
-All_Data$User_ID_check <-UserID_VR_Room$UserID
-All_Data$VR_Room <- UserID_VR_Room$VR_Room
+all.data$UserID <- unlist(UserID)
+all.data$StartDate <- unlist(StartDate)
+all.data$Task_Type <- unlist(Task_Type_list)
+all.data$User_ID_check <- UserID_VR_Room$UserID
+all.data$VR_Room <- UserID_VR_Room$VR_Room
+
+
+# Create for loops that go into each one of these data frames and retrieve information of interest only from the first row
+# This will include UserID and StartDate
+
+head(all.data)
+
+#```
+
+
+
 
 
 # Minor data cleaning
@@ -248,34 +308,34 @@ ID_13_fix <- function(ID) {
   }
 }
 
-# Go into each data frame that is mapped into the All_Data and identify UserID that is equal to 13.
+# Go into each data frame that is mapped into the all.data and identify UserID that is equal to 13.
 # For those files that are (Go/NoGo and N-back), change all of the rows in UserID to 013
 
-Tibbles <- list()
+tibbles <- list()
 
-for(ii in 1:nrow(All_Data)) {
-  Current_UserID <- All_Data$UserID[ii]
-  Current_tibble <- All_Data$Tibbles[[ii]]
+for(ii in 1:nrow(all.data)) {
+  Current_UserID <- all.data$UserID[ii]
+  Current_tibble <- all.data$tibbles[[ii]]
   
   if(Current_UserID == "13") {
   
     Current_tibble$UserID   <- sapply(Current_tibble$UserID,ID_13_fix)
       
-    Tibbles[[ii]] <- Current_tibble
+    tibbles[[ii]] <- Current_tibble
     
   } else {
     
-    Tibbles[[ii]] <- Current_tibble
+    tibbles[[ii]] <- Current_tibble
   }
   
 }
 
 
 
-All_Data$Tibbles <- map(Tibbles,as_tibble)
+all.data$tibbles <- map(tibbles,as_tibble)
 
 # Now change it on the actual main data UserID
-All_Data$UserID <- sapply(All_Data$UserID, ID_13_fix)
+all.data$UserID <- sapply(all.data$UserID, ID_13_fix)
 
 
 
@@ -301,7 +361,7 @@ Visitor_Log$Day3 <- as.character(Visitor_Log$Day3)
 Visitor_Log[is.na(Visitor_Log)] <- "0000-00-00"
 
 # Use dates from Visitor Log to determine which day we have data for in VR tasks
-unique(All_Data$StartDate)
+unique(all.data$StartDate)
 
 # CODE WILL BREAK IF WE HAVE DATA FOR AN ID (IN VR) THAT IS NOT PRESENT IN VISITOR LOG
 
@@ -309,9 +369,9 @@ Day <- list()
 row_num <- list()
 
 
-for(ii in 1:nrow(All_Data)) {
-  Current_ID_row <- All_Data$UserID[ii]  
-  Current_date_row <- All_Data$StartDate[ii]
+for(ii in 1:nrow(all.data)) {
+  Current_ID_row <- all.data$UserID[ii]  
+  Current_date_row <- all.data$StartDate[ii]
 
   Visitor_Log_row <- Visitor_Log %>%
     filter(ID == Current_ID_row)
@@ -339,83 +399,83 @@ for(ii in 1:nrow(All_Data)) {
 
 
 # Add which day belongs to which dataset
-All_Data$Day <- unlist(Day)
+all.data$Day <- unlist(Day)
 
 
 # Add the days inside the house
-Tibbles <- list()
+tibbles <- list()
 
-for(ii in 1:nrow(All_Data)) {
+for(ii in 1:nrow(all.data)) {
   
-  Current_Tibble <- All_Data$Tibbles[[ii]]
-  Current_Tibble$Day <- rep(All_Data$Day[ii],nrow(Current_Tibble))
+  Current_Tibble <- all.data$tibbles[[ii]]
+  Current_Tibble$Day <- rep(all.data$Day[ii],nrow(Current_Tibble))
   Current_Tibble <- Current_Tibble %>% select(Day, everything())
-  Tibbles[[ii]] <- Current_Tibble
+  tibbles[[ii]] <- Current_Tibble
   
 }
 
-All_Data$Tibbles_withDay <- map(Tibbles,as_tibble)
+all.data$tibbles_withDay <- map(tibbles,as_tibble)
 
 
 # Substr the StartDate
-Tibbles <- list()
+tibbles <- list()
 
-for(ii in 1:nrow(All_Data)) {
+for(ii in 1:nrow(all.data)) {
   
-  Current_Tibble <- All_Data$Tibbles_withDay[[ii]]
-  Current_Tibble$StartDate <- substr(rep(All_Data$StartDate[1],nrow(Current_Tibble)),1,10)
+  Current_Tibble <- all.data$tibbles_withDay[[ii]]
+  Current_Tibble$StartDate <- substr(rep(all.data$StartDate[1],nrow(Current_Tibble)),1,10)
   Current_Tibble$StartDate <- as.character(Current_Tibble$StartDate)
   Current_Tibble <- Current_Tibble %>% select(Day, everything())
-  Tibbles[[ii]] <- Current_Tibble
+  tibbles[[ii]] <- Current_Tibble
   
 }
 
-All_Data$Tibbles_withDay <- map(Tibbles,as_tibble)
+all.data$tibbles_withDay <- map(tibbles,as_tibble)
 
 
 
-# Add VR room variable to Tibbles
-Tibbles <- list()
+# Add VR room variable to tibbles
+tibbles <- list()
 
-for(ii in 1:nrow(All_Data)) {
+for(ii in 1:nrow(all.data)) {
   
-  Current_Tibble <- All_Data$Tibbles_withDay[[ii]]
-  Current_Tibble$VR_Room  <- substr(rep(All_Data$VR_Room[ii],nrow(Current_Tibble)),1,10)
+  Current_Tibble <- all.data$tibbles_withDay[[ii]]
+  Current_Tibble$VR_Room  <- substr(rep(all.data$VR_Room[ii],nrow(Current_Tibble)),1,10)
   Current_Tibble$VR_Room  <- as.character(Current_Tibble$VR_Room )
   Current_Tibble <- Current_Tibble %>% select(Day, everything())
-  Tibbles[[ii]] <- Current_Tibble
+  tibbles[[ii]] <- Current_Tibble
   
 }
 
-All_Data$Tibbles_withDay_VR_Room <- map(Tibbles,as_tibble)
+all.data$tibbles_withDay_VR_Room <- map(tibbles,as_tibble)
 
 
 
 # Split the data based on their task
-All_GnG <- All_Data %>%
+All_GnG <- all.data %>%
   filter(Task_Type %in%  "Go/NoGo")
 
-All_Nback <- All_Data %>%
+All_Nback <- all.data %>%
   filter(Task_Type %in%  "N-back")
 
 # Combine all the tibbles into one data frame
-All_GnG_Tibbles <- do.call(rbind, as.list(All_GnG$Tibbles_withDay_VR_Room))
-All_Nback_Tibbles <- do.call(rbind, as.list(All_Nback$Tibbles_withDay_VR_Room))
+All_GnG_tibbles <- do.call(rbind, as.list(All_GnG$tibbles_withDay_VR_Room))
+All_Nback_tibbles <- do.call(rbind, as.list(All_Nback$tibbles_withDay_VR_Room))
 
 
 
 
 # Quality control
-table(All_GnG_Tibbles$Day)
-table(All_Nback_Tibbles$Day)
+table(All_GnG_tibbles$Day)
+table(All_Nback_tibbles$Day)
 
-table(All_GnG_Tibbles$VR_Room)
-table(All_Nback_Tibbles$VR_Room)
+table(All_GnG_tibbles$VR_Room)
+table(All_Nback_tibbles$VR_Room)
 
 
 # IDs with errors?
-All_GnG_Tibbles %>% filter(Day == "Error") %>% select(UserID) %>% unique()
-All_Nback_Tibbles %>% filter(Day == "Error") %>% select(UserID) %>% unique()
+All_GnG_tibbles %>% filter(Day == "Error") %>% select(UserID) %>% unique()
+All_Nback_tibbles %>% filter(Day == "Error") %>% select(UserID) %>% unique()
 
 
 # export data
@@ -423,5 +483,5 @@ All_Nback_Tibbles %>% filter(Day == "Error") %>% select(UserID) %>% unique()
 setwd("~/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
 
 #export the files
-export(All_GnG_Tibbles, "GnG_Performance.xlsx")
-export(All_Nback_Tibbles, "Nback_Performance.xlsx")
+export(All_GnG_tibbles, "GnG_Performance.xlsx")
+export(All_Nback_tibbles, "Nback_Performance.xlsx")

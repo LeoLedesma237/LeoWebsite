@@ -11,7 +11,6 @@
 
 <meta name="author" content="Leandro Ledesma" />
 
-<meta name="date" content="2024-02-05" />
 
 <title>ONR Day Labeling</title>
 
@@ -352,7 +351,6 @@ display: none;
 
 <h1 class="title toc-ignore">ONR Day Labeling</h1>
 <h4 class="author">Leandro Ledesma</h4>
-<h4 class="date">2024-02-05</h4>
 
 </div>
 
@@ -373,6 +371,11 @@ library(base) #subset strings
 library(scales)
 library(rio)
 library(purrr)</code></pre>
+</div>
+<div id="last-day-this-code-was-ran" class="section level3">
+<h3>Last day this code was ran</h3>
+<pre class="r"><code>paste(&quot;This code was last ran on:&quot;, Sys.Date())</code></pre>
+<pre><code>[1] &quot;This code was last ran on: 2024-02-05&quot;</code></pre>
 </div>
 <div id="create-ids-with-leading-zeroes" class="section level3">
 <h3>Create ID’s with leading zeroes</h3>
@@ -395,183 +398,227 @@ head(ID.numbers,99)</code></pre>
 [73] &quot;073&quot; &quot;074&quot; &quot;075&quot; &quot;076&quot; &quot;077&quot; &quot;078&quot; &quot;079&quot; &quot;080&quot; &quot;081&quot; &quot;082&quot; &quot;083&quot; &quot;084&quot;
 [85] &quot;085&quot; &quot;086&quot; &quot;087&quot; &quot;088&quot; &quot;089&quot; &quot;090&quot; &quot;091&quot; &quot;092&quot; &quot;093&quot; &quot;094&quot; &quot;095&quot; &quot;096&quot;
 [97] &quot;097&quot; &quot;098&quot; &quot;099&quot;</code></pre>
-<div id="section" class="section level14">
-<p class="heading"></p>
 </div>
-<div id="this-next-set-of-code-is-for-oh-onr-folder" class="section level14">
-<p class="heading">This next set of code is for OH-ONR Folder</p>
+<div id="load-in-the-data" class="section level3">
+<h3>Load in the data</h3>
+<p>These next few sections are a bit complex. ONR behavioral data is
+saved locally on two separate computers (UH-ONR and UH-ONR2). This is
+because we are using two rooms for data collection, each with their own
+VR systems. Every day around 3:00 AM, these locally saved data are
+transfered to a secure server and saved in separate folders. Inside
+these directories, ID named folders (ex: 001 or 015) contain CSV files
+representing the performance during the VR tasks. Each CSV corresponds
+to a GnG or an Nback task completed on one of the four testing days.</p>
 </div>
-<div id="section-1" class="section level14">
-<p class="heading"></p>
+<div id="obtaining-pathways-to-participants-behavioral-data" class="section level3">
+<h3>Obtaining pathways to participant’s behavioral data</h3>
+<p>This first chunk of code is going into both directories on the server
+and recording the pathways of participants that have behavioral data
+saved.</p>
+<pre class="r"><code># set working directory for ONR computer 1
+setwd(&quot;M:/VR_CSVs/UH-ONR&quot;)
+
+# let&#39;s get the names of all the files in the folder
+file.names.UH_ONR &lt;- list.files()
+
+# set working directory for ONR computer 1
+setwd(&quot;M:/VR_CSVs/UH-ONR2&quot;)
+
+# let&#39;s get the names of all the files in the folder
+file.names.UH_ONR2 &lt;- list.files()
+
+# Obtain the intersected IDs from both computers
+intersect.IDs.UH_ONR &lt;- intersect(file.names.UH_ONR,ID.numbers)
+intersect.IDs.UH_ONR2 &lt;- intersect(file.names.UH_ONR2,ID.numbers)
+
+# Create two pathways using the intersected IDs
+pathway.UH_ONR &lt;- paste(&quot;M:/VR_CSVs/UH-ONR/&quot;,intersect.IDs.UH_ONR,&quot;/&quot;, sep=&quot;&quot;)
+pathway.UH_ONR2 &lt;- paste(&quot;M:/VR_CSVs/UH-ONR2/&quot;,intersect.IDs.UH_ONR2,&quot;/&quot;, sep=&quot;&quot;)</code></pre>
 </div>
+<div id="obtaining-each-csv-file-name-for-computer-1" class="section level3">
+<h3>Obtaining each CSV file name for computer 1</h3>
+<p>This next chunk of code is using the pathways from above to record
+the names and pathways of each CSV file in Computer 1 and saving them as
+a data frame.</p>
+<pre class="r"><code># Create a for loop to go into each pathway of a subject&#39;s ID folder and extract the names of CSV&#39;s present there
+# Do this for both pathways
+# Computer 1
+CSVs.UH_ONR &lt;- list()
+
+for(ii in 1:length(pathway.UH_ONR)) {
+  #ii = 1
+  # Changes the working directory to each pathway
+  setwd(pathway.UH_ONR[[ii]])
+  
+  # Obtain the CSVs for the folder
+  CSVs.current &lt;- list.files()
+  
+  # Create a vector for the current ID and computer number (Repeat it by the number of CSVs present)
+  current.ID &lt;- rep(intersect.IDs.UH_ONR[ii], length(CSVs.current))
+  current.pathway &lt;- rep(pathway.UH_ONR[ii], length(CSVs.current))
+  current.computer &lt;- rep(&quot;Computer 1&quot;, length(CSVs.current))
+  
+  # Create a data frame including the ID, the pathway, CSV, and the computer number
+  UH_ONR.df &lt;- data.frame(ID = current.ID,
+                          Pathway = current.pathway,
+                          CSVs = CSVs.current,
+                          Computer = current.computer) 
+  
+  # Extracts all the names of the CSVs located in that pathway + it&#39;s pathway
+  CSVs.UH_ONR[[ii]] &lt;- UH_ONR.df
+}
+
+CSVs.UH_ONR &lt;- CSVs.UH_ONR %&gt;%
+  do.call(rbind,.) %&gt;%
+  data.frame()</code></pre>
 </div>
-<div id="set-working-directory-for-onr-computer-1" class="section level1">
-<h1>set working directory for ONR computer 1</h1>
-<p>setwd(“M:/VR_CSVs/UH-ONR”)</p>
+<div id="obtaining-each-csv-file-name-for-computer-2" class="section level3">
+<h3>Obtaining each CSV file name for computer 2</h3>
+<p>This next chunk of code does the same as above except for the files
+in computer 2.</p>
+<pre class="r"><code># Create a for loop to go into each pathway of a subject&#39;s ID folder and extract the names of CSV&#39;s present there
+# Do this for both pathways
+# Computer 2
+CSVs.UH_ONR2 &lt;- list()
+
+for(ii in 1:length(pathway.UH_ONR2)) {
+  #ii = 1
+  # Changes the working directory to each pathway
+  setwd(pathway.UH_ONR2[[ii]])
+  
+  # Obtain the CSVs for the folder
+  CSVs.current &lt;- list.files()
+  
+  # Create a vector for the current ID and computer number (Repeat it by the number of CSVs present)
+  current.ID &lt;- rep(intersect.IDs.UH_ONR2[ii], length(CSVs.current))
+  current.pathway &lt;- rep(pathway.UH_ONR2[ii], length(CSVs.current))
+  current.computer &lt;- rep(&quot;Computer 2&quot;, length(CSVs.current))
+  
+  # Create a data frame including the ID, the pathway, CSV, and the computer number
+  UH_ONR.df &lt;- data.frame(ID = current.ID,
+                          Pathway = current.pathway,
+                          CSVs = CSVs.current,
+                          Computer = current.computer) 
+  
+  # Extracts all the names of the CSVs located in that pathway + it&#39;s pathway
+  CSVs.UH_ONR2[[ii]] &lt;- UH_ONR.df
+}
+
+CSVs.UH_ONR2 &lt;- CSVs.UH_ONR2 %&gt;%
+  do.call(rbind,.) %&gt;%
+  data.frame()</code></pre>
 </div>
-<div id="lets-get-the-names-of-all-the-files-in-the-folder" class="section level1">
-<h1>let’s get the names of all the files in the folder</h1>
-<p>ONR_file_names &lt;- list.files() complete_IDs &lt;- list()</p>
+<div id="removing-redundant-csvs-from-computer-2" class="section level3">
+<h3>Removing redundant CSVs from computer 2</h3>
+<p>Unfortunately, we have some redundant files from early data recording
+in the project. Some files saved in Computer 2 are identical to files
+saved in Computer 1. We want to identify these files and associate them
+with only one pathway before we start to read them in. This will make
+the computing process more efficient.</p>
+<pre class="r"><code># Identify CSVs in Computer 2 that are not in Computer 1 (save non duplicate CSVs)
+nonDuplicate.CSVs &lt;- setdiff(CSVs.UH_ONR2$CSVs, CSVs.UH_ONR$CSVs)
+
+# Overwrite the Computer 2 data frame with one containing only CSVs that are not in Computer 1
+CSVs.UH_ONR2 &lt;- CSVs.UH_ONR2 %&gt;%
+  filter(CSVs %in% nonDuplicate.CSVs)</code></pre>
 </div>
-<div id="id-numbers-that-are-present" class="section level1">
-<h1>ID numbers that are present</h1>
-<p>for(ii in 1:length(ONR_file_names)) { if(ONR_file_names[ii] %in%
-ID_numbers) { wd &lt;-
-paste(“M:/VR_CSVs/UH-ONR”,“/”,ONR_file_names[ii],sep=““) setwd(wd)
-GnG_Nback_files &lt;- list.files() if(length(GnG_Nback_files) == 8) {
-print(paste(ID_numbers[ii],”is present and has 8 files”))
-complete_IDs[[ii]] &lt;- ID_numbers[ii] } else {
-print(paste(ID_numbers[ii], “is present but does not have 8 files”)) } }
-}</p>
+<div id="identifying-complete-subjects-from-vr-data" class="section level3">
+<h3>Identifying complete subjects from VR data</h3>
+<p>The logic is as follows. There are four testing days and each day two
+CSV files are saved- one for GnG and the other for the Nback. On Day 0
+(practice day) a 30 minute practice session CSV is saved for both tasks.
+On day 1 the baseline CSVs are saved. On day 2 the intense exercise CSVs
+are saved. And lastly, on day 3 the sleep deprivation CSVs are saved.
+Thus, a subject that completed all testing days will have 8 CSVs.</p>
+<p>We will be merging the data frames from both computers created in the
+previous scripts and extracting the ID numbers that have 8 CSVs saved.
+We will then use this information to create a new variable indicating
+whether the subject is complete or not.</p>
+<pre class="r"><code># Merge the datasets from above
+CSVs.merged.UH_ONR &lt;- CSVs.UH_ONR %&gt;%
+  rbind(CSVs.UH_ONR2)
+
+# Total unique ID&#39;s from all subjects that have a VR session saved
+paste(&quot;There is at least one CSV file saved from&quot;, length(unique(CSVs.merged.UH_ONR$ID)), &quot;participants&quot;, sep= &quot; &quot;)</code></pre>
+<pre><code>[1] &quot;There is at least one CSV file saved from 200 participants&quot;</code></pre>
+<pre class="r"><code># IDs that have 8 file names
+completed.IDs &lt;- CSVs.merged.UH_ONR %&gt;%
+  group_by(ID) %&gt;%
+  count() %&gt;%
+  filter(n == 8) %&gt;%
+  select(ID) %&gt;%
+  unlist() %&gt;% unname()
+
+# Complete ID&#39;s and their pathways 
+CSVs.merged.UH_ONR &lt;- CSVs.merged.UH_ONR %&gt;%
+  mutate(Status = ifelse(ID %in% completed.IDs, &quot;Complete&quot;, &quot;Incomplete&quot;))
+
+# Total unique ID&#39;s from all subjects that have all VR sessions accounted for
+paste(&quot;All VR sessions accounted for&quot;, length(completed.IDs), &quot;participants&quot;, sep= &quot; &quot;)</code></pre>
+<pre><code>[1] &quot;All VR sessions accounted for 119 participants&quot;</code></pre>
 </div>
-<div id="changing-the-code-to-import-everything-doesnt-matter-if-the-participant-finished-all-four-days" class="section level1">
-<h1>Changing the code to import everything, doesn’t matter if the
-participant finished all four days</h1>
+<div id="read-in-the-files" class="section level3">
+<h3>Read in the files</h3>
+<p>We will now read in the files and save them into a list. This takes
+about 30 seconds. Additionally, as each file is being read, a new
+variable called computer will be added that indicates if the data was
+recorded in Computer 1 or in Computer 2.</p>
+<pre class="r"><code># Read in the files
+all.CSVs &lt;- list()
+
+for(ii in 1:nrow(CSVs.merged.UH_ONR)) {
+  
+  # Current file name and its pathway
+  current.csv &lt;- paste(CSVs.merged.UH_ONR$Pathway[ii],  CSVs.merged.UH_ONR$CSVs[ii], sep=&quot;&quot;)
+    
+  # Read in and save the current CSV in a list
+  read.csv &lt;- read.csv(current.csv)
+  
+  # Mutate the csv to include which computer it came from
+  read.csv$Computer &lt;- rep(CSVs.merged.UH_ONR$Computer[ii], times = nrow(read.csv))
+  
+  # Save the mutated CSV
+  all.CSVs[[ii]] &lt;- read.csv
+  
+  # Name the list by the ID and CSV
+  names(all.CSVs)[[ii]] &lt;- paste(CSVs.merged.UH_ONR$ID[ii],CSVs.merged.UH_ONR$CSVs[ii])
+}
+
+# Check to see that the above code worked
+paste(&quot;There are&quot;, length(all.CSVs),&quot;CSV files that were read in&quot;, sep =&quot; &quot;)</code></pre>
+<pre><code>[1] &quot;There are 1290 CSV files that were read in&quot;</code></pre>
+<pre class="r"><code># Half of the CSVs, the ones for GnG have the following dimensions
+dim(all.CSVs[[8]])</code></pre>
+<pre><code>[1] 1150   40</code></pre>
+<pre class="r"><code># The other half of the CSVs, the ones for Nback each have the following dimensions
+dim(all.CSVs[[9]])</code></pre>
+<pre><code>[1] 680  40</code></pre>
 </div>
-<div id="create-a-for-loop-that-obtains-the-pathway-for-every-participant-we-have-in-the-uh-onr-folder" class="section level1">
-<h1>Create a for loop that obtains the pathway for every participant we
-have in the UH-ONR folder</h1>
-<p>File_Pathway_ONR1 &lt;- list() for(ii in 1:length(ONR_file_names)) {
-if(ONR_file_names[ii] %in% ID_numbers) { Pathway= “M:/VR_CSVs/UH-ONR/”
-Current_ID = ONR_file_names[ii] Pathway_ID = paste(Pathway,Current_ID,
-sep=““) File_Pathway_ONR1[ii] &lt;- Pathway_ID</p>
-<p>} }</p>
-<p>File_Pathway_ONR1 &lt;- unlist(File_Pathway_ONR1)</p>
+<div id="using-the-map-function" class="section level3">
+<h3>Using the map function</h3>
+<p>We will now be creating a data frame where the column tibble will
+have data over the VR CSV files for each person. We will use this new
+data frame to extract data from the first row of each CSV file- just so
+we can be sure we know exactly what we are looking at.</p>
+<p>#```{r Using the map function} # Create a new data frame that will
+contain all CSV information all.data &lt;- data.frame(file.num =
+1:length(all.CSVs))</p>
 </div>
-<div id="obtain-the-pathway-and-name-of-all-csv-in-each-folder-in-uh_onr" class="section level1">
-<h1>Obtain the pathway and name of all csv in each folder in UH_ONR</h1>
+<div id="use-the-map-function-to-make-a-variable-called-tibble-where-each-row-contains-the-full-data-from-the-vr-csv" class="section level1">
+<h1>Use the map function to make a variable called tibble, where each
+row contains the full data from the VR CSV</h1>
+<p>all.data$tibbles &lt;- map(all.CSVs, as_tibble)</p>
 </div>
-<div id="these-pathways-will-be-used-later-to-import-all-the-data" class="section level1">
-<h1>These pathways will be used later to import all the data</h1>
-<p>ONR1_CSVs_Per_Folder &lt;- list() ONR1_All_pathways_in_Folder &lt;-
-list() ONR1_All_pathways_to_be_read &lt;- list() for(ii in
-1:length(File_Pathway_ONR1)) { setwd(File_Pathway_ONR1[ii])
-Current_Pathway = File_Pathway_ONR1[ii] for(iii in
-1:length(list.files())) { All_CSVs_in_Folder &lt;- list.files()
-ONR1_All_pathways_in_Folder[iii] &lt;-
-paste(Current_Pathway,“/”,All_CSVs_in_Folder[iii],sep=““)</p>
-<p>}</p>
-<p>ONR1_All_pathways_to_be_read[[ii]] &lt;-
-unlist(ONR1_All_pathways_in_Folder) }</p>
-<p>ONR1_All_pathways_to_be_read &lt;-
-unlist(ONR1_All_pathways_to_be_read) ONR1_All_pathways_to_be_read &lt;-
-unique(ONR1_All_pathways_to_be_read)</p>
-<div id="section-2" class="section level14">
-<p class="heading"></p>
+<div id="create-for-loops-that-extract-information-from-the-first-row-of-each-data-frame-in-the-tibbles-variable" class="section level1">
+<h1>Create for loops that extract information from the first row of each
+data frame in the tibbles variable</h1>
 </div>
-<div id="this-next-set-of-code-is-for-oh-onr2-folder" class="section level14">
-<p class="heading">This next set of code is for OH-ONR2 Folder</p>
-</div>
-<div id="section-3" class="section level14">
-<p class="heading"></p>
-</div>
-</div>
-<div id="now-we-do-the-same-as-above-except-this-time-its-for-uh-onr2" class="section level1">
-<h1>Now we do the same as above except this time its for UH-ONR2</h1>
-</div>
-<div id="set-working-directory-for-onr-computer-2" class="section level1">
-<h1>set working directory for ONR computer 2</h1>
-<p>setwd(“M:/VR_CSVs/UH-ONR2”)</p>
-</div>
-<div id="lets-get-the-names-of-all-the-files-in-the-folder-1" class="section level1">
-<h1>let’s get the names of all the files in the folder</h1>
-<p>ONR_file_names &lt;- list.files() complete_IDs &lt;- list()</p>
-<p>File_Pathway_ONR2 &lt;- list() for(ii in 1:length(ONR_file_names)) {
-if(ONR_file_names[ii] %in% ID_numbers) { Pathway= “M:/VR_CSVs/UH-ONR2/”
-Current_ID = ONR_file_names[ii] Pathway_ID = paste(Pathway,Current_ID,
-sep=““) File_Pathway_ONR2[ii] &lt;- Pathway_ID</p>
-<p>} }</p>
-<p>File_Pathway_ONR2 &lt;- unlist(File_Pathway_ONR2)</p>
-</div>
-<div id="obtain-the-pathway-and-name-of-all-csv-in-each-folder-in-uh_onr-1" class="section level1">
-<h1>Obtain the pathway and name of all csv in each folder in UH_ONR</h1>
-</div>
-<div id="these-pathways-will-be-used-later-to-import-all-the-data-1" class="section level1">
-<h1>These pathways will be used later to import all the data</h1>
-<p>ONR2_CSVs_Per_Folder &lt;- list() ONR2_All_pathways_in_Folder &lt;-
-list() ONR2_All_pathways_to_be_read &lt;- list() for(ii in
-1:length(File_Pathway_ONR2)) { setwd(File_Pathway_ONR2[ii])
-Current_Pathway = File_Pathway_ONR2[ii] for(iii in
-1:length(list.files())) { All_CSVs_in_Folder &lt;- list.files()
-ONR2_All_pathways_in_Folder[iii] &lt;-
-paste(Current_Pathway,“/”,All_CSVs_in_Folder[iii],sep=““)</p>
-<p>}</p>
-<p>ONR2_All_pathways_to_be_read[[ii]] &lt;-
-unlist(ONR2_All_pathways_in_Folder) }</p>
-<p>ONR2_All_pathways_to_be_read &lt;-
-unlist(ONR2_All_pathways_to_be_read) ONR2_All_pathways_to_be_read &lt;-
-unique(ONR2_All_pathways_to_be_read)</p>
-</div>
-<div id="merge-pathways-from-uhonr1-and-uhonr2" class="section level1">
-<h1>Merge pathways from UHONR1 and UHONR2</h1>
-</div>
-<div id="identify-which-pathways-have-redundancies-from-the-second-computer-and-remove-them" class="section level1">
-<h1>Identify which pathways have redundancies from the second computer
-and remove them</h1>
-<p>ONR1_ID_and_CSVs &lt;- sapply(ONR1_All_pathways_to_be_read,
-function(x) substring(x, 19, nchar(x))) names(ONR1_ID_and_CSVs) &lt;-
-NULL ONR1_ID_and_CSVs_df &lt;- data.frame(Pathway =
-rep(“M:/VR_CSVs/UH-ONR/”,length(ONR1_ID_and_CSVs)), CSVs =
-ONR1_ID_and_CSVs)</p>
-<p>ONR2_ID_and_CSVs &lt;- sapply(ONR2_All_pathways_to_be_read,
-function(x) substring(x, 20, nchar(x))) names(ONR2_ID_and_CSVs) &lt;-
-NULL ONR2_ID_and_CSVs_df &lt;- data.frame(Pathway =
-rep(“M:/VR_CSVs/UH-ONR2/”,length(ONR2_ID_and_CSVs)), CSVs =
-ONR2_ID_and_CSVs)</p>
-</div>
-<div id="these-are-the-csvs-that-are-not-gonna-be-read-from-uhonr2-because-thats-redundant" class="section level1">
-<h1>These are the CSVs that are NOT gonna be read from UHONR2 because
-that’s redundant</h1>
-<p>Intersection_CSVs &lt;- intersect(ONR1_ID_and_CSVs_df<span class="math inline">\(CSVs,ONR2_ID_and_CSVs_df\)</span>CSVs)</p>
-</div>
-<div id="bring-in-the-cool-code" class="section level1">
-<h1>Bring in the cool code</h1>
-<p><code>%nin%</code> = Negate(<code>%in%</code>)</p>
-<p>ONR2_ID_and_CSVs_df &lt;- ONR2_ID_and_CSVs_df %&gt;% filter(CSVs
-%nin% Intersection_CSVs)</p>
-</div>
-<div id="stack-the-two-data-frames-then-combine-the-variables-into-one" class="section level1">
-<h1>Stack the two data frames then combine the variables into one</h1>
-<p>All_pathways_no_redundancies &lt;-
-rbind(ONR1_ID_and_CSVs_df,ONR2_ID_and_CSVs_df)
-Load_All_Pathways_no_redundancies &lt;-
-paste(All_pathways_no_redundancies<span class="math inline">\(Pathway,All_pathways_no_redundancies\)</span>CSVs,sep=““)</p>
-</div>
-<div id="identify-which-file-came-from-which-computer" class="section level1">
-<h1>Identify which file came from which computer</h1>
-<p>VR_Room &lt;- substr(Load_All_Pathways_no_redundancies,15,18) IDs
-&lt;- substr(Load_All_Pathways_no_redundancies,19,22)</p>
-</div>
-<div id="a-little-data-cleaning" class="section level1">
-<h1>A little data cleaning</h1>
-<p>VR_Room &lt;- gsub(“/”,““, VR_Room) IDs &lt;- gsub(”/“,”“,IDs)</p>
-<p>UserID_VR_Room &lt;- data.frame(UserID = IDs, VR_Room)</p>
-</div>
-<div id="read-in-all-files" class="section level1">
-<h1>Read in all files</h1>
-<p>All_CSV_Files &lt;- list()</p>
-<p>for(ii in 1:length(Load_All_Pathways_no_redundancies)) {</p>
-<p>All_CSV_Files[[ii]] &lt;-
-read_csv(Load_All_Pathways_no_redundancies[ii],col_names = TRUE,
-show_col_types = FALSE)</p>
-<p>}</p>
-</div>
-<div id="use-the-map-function-to-create-a-tibble-were-all-data-frames-are-embedded-as-rows" class="section level1">
-<h1>Use the map function to create a tibble were all data frames are
-embedded as rows</h1>
-<p>All_Data &lt;- data.frame(file_num = 1:length(All_CSV_Files)) %&gt;%
-as_tibble() All_Data$Tibbles &lt;- map(All_CSV_Files, as_tibble)</p>
-</div>
-<div id="create-for-loops-that-go-into-each-one-of-these-data-frames-and-retrieve-information-of-interest-only-from-the-first-row" class="section level1">
-<h1>Create for loops that go into each one of these data frames and
-retrieve information of interest only from the first row</h1>
-</div>
-<div id="this-will-include-userid-and-startdate" class="section level1">
-<h1>This will include UserID and StartDate</h1>
+<div id="this-will-include-id-day-of-testing-task-type-gngnback" class="section level1">
+<h1>This will include ID, day of testing, task type (GnG/Nback)</h1>
 <p>UserID &lt;- list() StartDate &lt;- list() Task_Type_list &lt;-
 list()</p>
-<p>for(ii in 1:nrow(All_Data)) {</p>
-<p>Current_dataset &lt;- All_Data<span class="math inline">\(Tibbles[[ii]] UserID[ii] &lt;-
+<p>for(ii in 1:nrow(all.data)) {</p>
+<p>Current_dataset &lt;- all.data<span class="math inline">\(tibbles[[ii]] UserID[ii] &lt;-
 Current_dataset\)</span>UserID[1] Date_long &lt;-
 Current_dataset$StartDate[1] StartDate[ii] &lt;-
 substr(Date_long,1,10)</p>
@@ -582,40 +629,49 @@ substr(Date_long,1,10)</p>
 “N-back”</p>
 <p>}</p>
 <p>}</p>
-<p>All_Data<span class="math inline">\(UserID &lt;- unlist(UserID)
-All_Data\)</span>StartDate &lt;- unlist(StartDate) All_Data<span class="math inline">\(Task_Type &lt;- unlist(Task_Type_list)
-All_Data\)</span>User_ID_check &lt;-UserID_VR_Room<span class="math inline">\(UserID All_Data\)</span>VR_Room &lt;-
+<p>all.data<span class="math inline">\(UserID &lt;- unlist(UserID)
+all.data\)</span>StartDate &lt;- unlist(StartDate) all.data<span class="math inline">\(Task_Type &lt;- unlist(Task_Type_list)
+all.data\)</span>User_ID_check &lt;- UserID_VR_Room<span class="math inline">\(UserID all.data\)</span>VR_Room &lt;-
 UserID_VR_Room$VR_Room</p>
+</div>
+<div id="create-for-loops-that-go-into-each-one-of-these-data-frames-and-retrieve-information-of-interest-only-from-the-first-row" class="section level1">
+<h1>Create for loops that go into each one of these data frames and
+retrieve information of interest only from the first row</h1>
+</div>
+<div id="this-will-include-userid-and-startdate" class="section level1">
+<h1>This will include UserID and StartDate</h1>
+<p>head(all.data)</p>
+<p>#```</p>
 </div>
 <div id="minor-data-cleaning" class="section level1">
 <h1>Minor data cleaning</h1>
 <p>ID_13_fix &lt;- function(ID) { if(ID == “13”) { return(“013”) } else
 { return(ID) } }</p>
 </div>
-<div id="go-into-each-data-frame-that-is-mapped-into-the-all_data-and-identify-userid-that-is-equal-to-13." class="section level1">
-<h1>Go into each data frame that is mapped into the All_Data and
+<div id="go-into-each-data-frame-that-is-mapped-into-the-all.data-and-identify-userid-that-is-equal-to-13." class="section level1">
+<h1>Go into each data frame that is mapped into the all.data and
 identify UserID that is equal to 13.</h1>
 </div>
 <div id="for-those-files-that-are-gonogo-and-n-back-change-all-of-the-rows-in-userid-to-013" class="section level1">
 <h1>For those files that are (Go/NoGo and N-back), change all of the
 rows in UserID to 013</h1>
-<p>Tibbles &lt;- list()</p>
-<p>for(ii in 1:nrow(All_Data)) { Current_UserID &lt;- All_Data<span class="math inline">\(UserID[ii]  Current_tibble &lt;-
-All_Data\)</span>Tibbles[[ii]]</p>
+<p>tibbles &lt;- list()</p>
+<p>for(ii in 1:nrow(all.data)) { Current_UserID &lt;- all.data<span class="math inline">\(UserID[ii]  Current_tibble &lt;-
+all.data\)</span>tibbles[[ii]]</p>
 <p>if(Current_UserID == “13”) {</p>
 <pre><code>Current_tibble$UserID   &lt;- sapply(Current_tibble$UserID,ID_13_fix)
   
-Tibbles[[ii]] &lt;- Current_tibble</code></pre>
+tibbles[[ii]] &lt;- Current_tibble</code></pre>
 <p>} else {</p>
-<pre><code>Tibbles[[ii]] &lt;- Current_tibble</code></pre>
+<pre><code>tibbles[[ii]] &lt;- Current_tibble</code></pre>
 <p>}</p>
 <p>}</p>
-<p>All_Data$Tibbles &lt;- map(Tibbles,as_tibble)</p>
+<p>all.data$tibbles &lt;- map(tibbles,as_tibble)</p>
 </div>
 <div id="now-change-it-on-the-actual-main-data-userid" class="section level1">
 <h1>Now change it on the actual main data UserID</h1>
-<p>All_Data<span class="math inline">\(UserID &lt;-
-sapply(All_Data\)</span>UserID, ID_13_fix)</p>
+<p>all.data<span class="math inline">\(UserID &lt;-
+sapply(all.data\)</span>UserID, ID_13_fix)</p>
 <div id="introducing-dates" class="section level12">
 <p class="heading">Introducing Dates</p>
 </div>
@@ -648,14 +704,14 @@ as.character(Visitor_Log\)</span>Day3)</p>
 <div id="use-dates-from-visitor-log-to-determine-which-day-we-have-data-for-in-vr-tasks" class="section level1">
 <h1>Use dates from Visitor Log to determine which day we have data for
 in VR tasks</h1>
-<p>unique(All_Data$StartDate)</p>
+<p>unique(all.data$StartDate)</p>
 </div>
 <div id="code-will-break-if-we-have-data-for-an-id-in-vr-that-is-not-present-in-visitor-log" class="section level1">
 <h1>CODE WILL BREAK IF WE HAVE DATA FOR AN ID (IN VR) THAT IS NOT
 PRESENT IN VISITOR LOG</h1>
 <p>Day &lt;- list() row_num &lt;- list()</p>
-<p>for(ii in 1:nrow(All_Data)) { Current_ID_row &lt;- All_Data<span class="math inline">\(UserID[ii]  Current_date_row &lt;-
-All_Data\)</span>StartDate[ii]</p>
+<p>for(ii in 1:nrow(all.data)) { Current_ID_row &lt;- all.data<span class="math inline">\(UserID[ii]  Current_date_row &lt;-
+all.data\)</span>StartDate[ii]</p>
 <p>Visitor_Log_row &lt;- Visitor_Log %&gt;% filter(ID ==
 Current_ID_row)</p>
 <p>row_num[ii] &lt;- ii</p>
@@ -673,64 +729,64 @@ Current_ID_row)</p>
 </div>
 <div id="add-which-day-belongs-to-which-dataset" class="section level1">
 <h1>Add which day belongs to which dataset</h1>
-<p>All_Data$Day &lt;- unlist(Day)</p>
+<p>all.data$Day &lt;- unlist(Day)</p>
 </div>
 <div id="add-the-days-inside-the-house" class="section level1">
 <h1>Add the days inside the house</h1>
-<p>Tibbles &lt;- list()</p>
-<p>for(ii in 1:nrow(All_Data)) {</p>
-<p>Current_Tibble &lt;- All_Data<span class="math inline">\(Tibbles[[ii]]  Current_Tibble\)</span>Day &lt;-
-rep(All_Data$Day[ii],nrow(Current_Tibble)) Current_Tibble &lt;-
-Current_Tibble %&gt;% select(Day, everything()) Tibbles[[ii]] &lt;-
+<p>tibbles &lt;- list()</p>
+<p>for(ii in 1:nrow(all.data)) {</p>
+<p>Current_Tibble &lt;- all.data<span class="math inline">\(tibbles[[ii]]  Current_Tibble\)</span>Day &lt;-
+rep(all.data$Day[ii],nrow(Current_Tibble)) Current_Tibble &lt;-
+Current_Tibble %&gt;% select(Day, everything()) tibbles[[ii]] &lt;-
 Current_Tibble</p>
 <p>}</p>
-<p>All_Data$Tibbles_withDay &lt;- map(Tibbles,as_tibble)</p>
+<p>all.data$tibbles_withDay &lt;- map(tibbles,as_tibble)</p>
 </div>
 <div id="substr-the-startdate" class="section level1">
 <h1>Substr the StartDate</h1>
-<p>Tibbles &lt;- list()</p>
-<p>for(ii in 1:nrow(All_Data)) {</p>
-<p>Current_Tibble &lt;- All_Data<span class="math inline">\(Tibbles_withDay[[ii]]  Current_Tibble\)</span>StartDate
-&lt;- substr(rep(All_Data<span class="math inline">\(StartDate[1],nrow(Current_Tibble)),1,10)  Current_Tibble\)</span>StartDate
+<p>tibbles &lt;- list()</p>
+<p>for(ii in 1:nrow(all.data)) {</p>
+<p>Current_Tibble &lt;- all.data<span class="math inline">\(tibbles_withDay[[ii]]  Current_Tibble\)</span>StartDate
+&lt;- substr(rep(all.data<span class="math inline">\(StartDate[1],nrow(Current_Tibble)),1,10)  Current_Tibble\)</span>StartDate
 &lt;- as.character(Current_Tibble$StartDate) Current_Tibble &lt;-
-Current_Tibble %&gt;% select(Day, everything()) Tibbles[[ii]] &lt;-
+Current_Tibble %&gt;% select(Day, everything()) tibbles[[ii]] &lt;-
 Current_Tibble</p>
 <p>}</p>
-<p>All_Data$Tibbles_withDay &lt;- map(Tibbles,as_tibble)</p>
+<p>all.data$tibbles_withDay &lt;- map(tibbles,as_tibble)</p>
 </div>
 <div id="add-vr-room-variable-to-tibbles" class="section level1">
-<h1>Add VR room variable to Tibbles</h1>
-<p>Tibbles &lt;- list()</p>
-<p>for(ii in 1:nrow(All_Data)) {</p>
-<p>Current_Tibble &lt;- All_Data<span class="math inline">\(Tibbles_withDay[[ii]]  Current_Tibble\)</span>VR_Room
-&lt;- substr(rep(All_Data<span class="math inline">\(VR_Room[ii],nrow(Current_Tibble)),1,10)  Current_Tibble\)</span>VR_Room
+<h1>Add VR room variable to tibbles</h1>
+<p>tibbles &lt;- list()</p>
+<p>for(ii in 1:nrow(all.data)) {</p>
+<p>Current_Tibble &lt;- all.data<span class="math inline">\(tibbles_withDay[[ii]]  Current_Tibble\)</span>VR_Room
+&lt;- substr(rep(all.data<span class="math inline">\(VR_Room[ii],nrow(Current_Tibble)),1,10)  Current_Tibble\)</span>VR_Room
 &lt;- as.character(Current_Tibble$VR_Room ) Current_Tibble &lt;-
-Current_Tibble %&gt;% select(Day, everything()) Tibbles[[ii]] &lt;-
+Current_Tibble %&gt;% select(Day, everything()) tibbles[[ii]] &lt;-
 Current_Tibble</p>
 <p>}</p>
-<p>All_Data$Tibbles_withDay_VR_Room &lt;- map(Tibbles,as_tibble)</p>
+<p>all.data$tibbles_withDay_VR_Room &lt;- map(tibbles,as_tibble)</p>
 </div>
 <div id="split-the-data-based-on-their-task" class="section level1">
 <h1>Split the data based on their task</h1>
-<p>All_GnG &lt;- All_Data %&gt;% filter(Task_Type %in% “Go/NoGo”)</p>
-<p>All_Nback &lt;- All_Data %&gt;% filter(Task_Type %in% “N-back”)</p>
+<p>All_GnG &lt;- all.data %&gt;% filter(Task_Type %in% “Go/NoGo”)</p>
+<p>All_Nback &lt;- all.data %&gt;% filter(Task_Type %in% “N-back”)</p>
 </div>
 <div id="combine-all-the-tibbles-into-one-data-frame" class="section level1">
 <h1>Combine all the tibbles into one data frame</h1>
-<p>All_GnG_Tibbles &lt;- do.call(rbind, as.list(All_GnG<span class="math inline">\(Tibbles_withDay_VR_Room)) All_Nback_Tibbles &lt;-
-do.call(rbind, as.list(All_Nback\)</span>Tibbles_withDay_VR_Room))</p>
+<p>All_GnG_tibbles &lt;- do.call(rbind, as.list(All_GnG<span class="math inline">\(tibbles_withDay_VR_Room)) All_Nback_tibbles &lt;-
+do.call(rbind, as.list(All_Nback\)</span>tibbles_withDay_VR_Room))</p>
 </div>
 <div id="quality-control" class="section level1">
 <h1>Quality control</h1>
-<p>table(All_GnG_Tibbles<span class="math inline">\(Day)
-table(All_Nback_Tibbles\)</span>Day)</p>
-<p>table(All_GnG_Tibbles<span class="math inline">\(VR_Room)
-table(All_Nback_Tibbles\)</span>VR_Room)</p>
+<p>table(All_GnG_tibbles<span class="math inline">\(Day)
+table(All_Nback_tibbles\)</span>Day)</p>
+<p>table(All_GnG_tibbles<span class="math inline">\(VR_Room)
+table(All_Nback_tibbles\)</span>VR_Room)</p>
 </div>
 <div id="ids-with-errors" class="section level1">
 <h1>IDs with errors?</h1>
-<p>All_GnG_Tibbles %&gt;% filter(Day == “Error”) %&gt;% select(UserID)
-%&gt;% unique() All_Nback_Tibbles %&gt;% filter(Day == “Error”) %&gt;%
+<p>All_GnG_tibbles %&gt;% filter(Day == “Error”) %&gt;% select(UserID)
+%&gt;% unique() All_Nback_tibbles %&gt;% filter(Day == “Error”) %&gt;%
 select(UserID) %&gt;% unique()</p>
 </div>
 <div id="export-data" class="section level1">
@@ -740,8 +796,8 @@ select(UserID) %&gt;% unique()</p>
 <h1>set working directory</h1>
 <p>setwd(“~/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed
 Data”)</p>
-<p>#export the files export(All_GnG_Tibbles, “GnG_Performance.xlsx”)
-export(All_Nback_Tibbles, “Nback_Performance.xlsx”)</p>
+<p>#export the files export(All_GnG_tibbles, “GnG_Performance.xlsx”)
+export(All_Nback_tibbles, “Nback_Performance.xlsx”)</p>
 </div>
 
 
