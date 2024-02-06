@@ -567,8 +567,8 @@ recorded in Computer 1 or in Computer 2.</p>
 all.CSVs &lt;- list()
 
 for(ii in 1:nrow(CSVs.merged.UH_ONR)) {
-  
-  # Current file name and its pathway
+   
+  # Current file name and its pathway 
   current.csv &lt;- paste(CSVs.merged.UH_ONR$Pathway[ii],  CSVs.merged.UH_ONR$CSVs[ii], sep=&quot;&quot;)
     
   # Read in and save the current CSV in a list
@@ -594,177 +594,165 @@ dim(all.CSVs[[8]])</code></pre>
 dim(all.CSVs[[9]])</code></pre>
 <pre><code>[1] 680  40</code></pre>
 </div>
-<div id="using-the-map-function" class="section level3">
-<h3>Using the map function</h3>
-<p>We will now be creating a data frame where the column tibble will
-have data over the VR CSV files for each person. We will use this new
-data frame to extract data from the first row of each CSV file- just so
-we can be sure we know exactly what we are looking at.</p>
-<p>#```{r Using the map function} # Create a new data frame that will
-contain all CSV information all.data &lt;- data.frame(file.num =
-1:length(all.CSVs))</p>
-</div>
-<div id="use-the-map-function-to-make-a-variable-called-tibble-where-each-row-contains-the-full-data-from-the-vr-csv" class="section level1">
-<h1>Use the map function to make a variable called tibble, where each
-row contains the full data from the VR CSV</h1>
-<p>all.data$tibbles &lt;- map(all.CSVs, as_tibble)</p>
-</div>
-<div id="create-for-loops-that-extract-information-from-the-first-row-of-each-data-frame-in-the-tibbles-variable" class="section level1">
-<h1>Create for loops that extract information from the first row of each
-data frame in the tibbles variable</h1>
-</div>
-<div id="this-will-include-id-day-of-testing-task-type-gngnback" class="section level1">
-<h1>This will include ID, day of testing, task type (GnG/Nback)</h1>
-<p>UserID &lt;- list() StartDate &lt;- list() Task_Type_list &lt;-
-list()</p>
-<p>for(ii in 1:nrow(all.data)) {</p>
-<p>Current_dataset &lt;- all.data<span class="math inline">\(tibbles[[ii]] UserID[ii] &lt;-
-Current_dataset\)</span>UserID[1] Date_long &lt;-
-Current_dataset$StartDate[1] StartDate[ii] &lt;-
-substr(Date_long,1,10)</p>
-<p>Task_type &lt;- Current_dataset$BlockID[1]</p>
-<p>if(substr(Task_type,1,1) == “G”) { Task_Type_list[ii] &lt;-
-“Go/NoGo”</p>
-<p>} else if(substr(Task_type,1,1) == “N”) { Task_Type_list[ii] &lt;-
-“N-back”</p>
-<p>}</p>
-<p>}</p>
-<p>all.data<span class="math inline">\(UserID &lt;- unlist(UserID)
-all.data\)</span>StartDate &lt;- unlist(StartDate) all.data<span class="math inline">\(Task_Type &lt;- unlist(Task_Type_list)
-all.data\)</span>User_ID_check &lt;- UserID_VR_Room<span class="math inline">\(UserID all.data\)</span>VR_Room &lt;-
-UserID_VR_Room$VR_Room</p>
-</div>
-<div id="create-for-loops-that-go-into-each-one-of-these-data-frames-and-retrieve-information-of-interest-only-from-the-first-row" class="section level1">
-<h1>Create for loops that go into each one of these data frames and
-retrieve information of interest only from the first row</h1>
-</div>
-<div id="this-will-include-userid-and-startdate" class="section level1">
-<h1>This will include UserID and StartDate</h1>
-<p>head(all.data)</p>
-<p>#```</p>
-</div>
-<div id="minor-data-cleaning" class="section level1">
-<h1>Minor data cleaning</h1>
-<p>ID_13_fix &lt;- function(ID) { if(ID == “13”) { return(“013”) } else
-{ return(ID) } }</p>
-</div>
-<div id="go-into-each-data-frame-that-is-mapped-into-the-all.data-and-identify-userid-that-is-equal-to-13." class="section level1">
-<h1>Go into each data frame that is mapped into the all.data and
-identify UserID that is equal to 13.</h1>
-</div>
-<div id="for-those-files-that-are-gonogo-and-n-back-change-all-of-the-rows-in-userid-to-013" class="section level1">
-<h1>For those files that are (Go/NoGo and N-back), change all of the
-rows in UserID to 013</h1>
-<p>tibbles &lt;- list()</p>
-<p>for(ii in 1:nrow(all.data)) { Current_UserID &lt;- all.data<span class="math inline">\(UserID[ii]  Current_tibble &lt;-
-all.data\)</span>tibbles[[ii]]</p>
-<p>if(Current_UserID == “13”) {</p>
-<pre><code>Current_tibble$UserID   &lt;- sapply(Current_tibble$UserID,ID_13_fix)
+<div id="map-all-of-the-read-csv-files-into-a-new-data-frame" class="section level3">
+<h3>Map all of the read csv files into a new data frame</h3>
+<p>We will now create a data frame that contains all of the CSVs read
+from above in the variable tibble. We will add additional variables to
+this data frame such as the ID from that dataset, the day of testing,
+the task type (Go/No-Go or Nback) and the computer used to record the
+data.</p>
+<pre class="r"><code># Create a new data frame that will contain all CSV information
+all.data &lt;- data.frame(file.num = 1:length(all.CSVs))
+
+# Use the map function to make a variable called tibble, where each row contains the full data from the VR CSV
+all.data$tibbles &lt;- map(all.CSVs, as_tibble)
+
+# Create for loops that extract information from the first row of each data frame in the tibbles variable
+# This will include ID, day of testing, task type (GnG/Nback)
+
+ID.list &lt;- list()
+testing.date &lt;- list()
+task.type &lt;- list()
+Computer.num &lt;- list()
+
+for(ii in 1:nrow(all.data)) {
+
+# Obtain the first tibble and save it into an object
+current.dataset &lt;- all.data$tibbles[[ii]]
+
+# Extract the following information and save it to the all.data data frame
+ID.list[[ii]] &lt;- unique(current.dataset$UserID)
+testing.date[[ii]] &lt;- unique(substr(current.dataset$StartDate,1,10))
+Computer.num[[ii]] &lt;- unique(current.dataset$Computer)
+
+
+if(gsub(&quot;[^a-zA-Z]&quot;, &quot;&quot;, current.dataset$BlockID[1]) == &quot;G&quot;) {
+  task.type[ii] &lt;- &quot;Go/NoGo&quot;
+
+} else if(gsub(&quot;[^a-zA-Z]&quot;, &quot;&quot;, current.dataset$BlockID[1]) == &quot;N&quot;) {
+  task.type[ii] &lt;- &quot;N-back&quot;
   
-tibbles[[ii]] &lt;- Current_tibble</code></pre>
-<p>} else {</p>
-<pre><code>tibbles[[ii]] &lt;- Current_tibble</code></pre>
-<p>}</p>
-<p>}</p>
-<p>all.data$tibbles &lt;- map(tibbles,as_tibble)</p>
+}
+
+}
+
+# Add the lists back into the dataframe
+all.data$ID &lt;- unlist(ID.list)
+all.data$Testing.Date &lt;- unlist(testing.date)
+all.data$Task.type &lt;- unlist(task.type)
+all.data$Computer.num &lt;- unlist(Computer.num)</code></pre>
 </div>
-<div id="now-change-it-on-the-actual-main-data-userid" class="section level1">
-<h1>Now change it on the actual main data UserID</h1>
-<p>all.data<span class="math inline">\(UserID &lt;-
-sapply(all.data\)</span>UserID, ID_13_fix)</p>
-<div id="introducing-dates" class="section level12">
-<p class="heading">Introducing Dates</p>
-</div>
-</div>
-<div id="load-in-onr-visitor-log-data" class="section level1">
-<h1>Load in ONR Visitor Log Data</h1>
-<p>Visitor_Log_Full &lt;-
-read_excel(“~/ONR/Visitor_log/Visiting_Log_must_manually_update.xlsx”)</p>
-</div>
-<div id="create-dataframe-with-variables-that-are-needed" class="section level1">
-<h1>Create dataframe with variables that are needed</h1>
-<p>Visitor_Log &lt;- data.frame(ID = Visitor_Log_Full<span class="math inline">\(ID,  Day0 =
-Visitor_Log_Full\)</span><code>Day 0 Date</code>, Day1 =
-Visitor_Log_Full<span class="math inline">\(`Day 1 Date`,  Day2 =
-Visitor_Log_Full\)</span><code>Day 2 Date</code>, Day3 =
-Visitor_Log_Full$<code>Day 3 Date</code>) %&gt;% as_tibble()</p>
-</div>
-<div id="change-the-variables-into-characters" class="section level1">
-<h1>Change the variables into characters</h1>
-<p>Visitor_Log<span class="math inline">\(Day0 &lt;-
-as.character(Visitor_Log\)</span>Day0) Visitor_Log<span class="math inline">\(Day1 &lt;- as.character(Visitor_Log\)</span>Day1)
-Visitor_Log<span class="math inline">\(Day2 &lt;-
-as.character(Visitor_Log\)</span>Day2) Visitor_Log<span class="math inline">\(Day3 &lt;-
-as.character(Visitor_Log\)</span>Day3)</p>
-</div>
-<div id="replace-all-nas-to-0000-00-00-so-code-below-can-work" class="section level1">
-<h1>Replace all NAs to “0000-00-00” so code below can work</h1>
-<p>Visitor_Log[is.na(Visitor_Log)] &lt;- “0000-00-00”</p>
-</div>
-<div id="use-dates-from-visitor-log-to-determine-which-day-we-have-data-for-in-vr-tasks" class="section level1">
-<h1>Use dates from Visitor Log to determine which day we have data for
-in VR tasks</h1>
-<p>unique(all.data$StartDate)</p>
-</div>
-<div id="code-will-break-if-we-have-data-for-an-id-in-vr-that-is-not-present-in-visitor-log" class="section level1">
-<h1>CODE WILL BREAK IF WE HAVE DATA FOR AN ID (IN VR) THAT IS NOT
-PRESENT IN VISITOR LOG</h1>
-<p>Day &lt;- list() row_num &lt;- list()</p>
-<p>for(ii in 1:nrow(all.data)) { Current_ID_row &lt;- all.data<span class="math inline">\(UserID[ii]  Current_date_row &lt;-
-all.data\)</span>StartDate[ii]</p>
-<p>Visitor_Log_row &lt;- Visitor_Log %&gt;% filter(ID ==
-Current_ID_row)</p>
-<p>row_num[ii] &lt;- ii</p>
-<p>if(Current_date_row == Visitor_Log_row$Day0[1]) { Day[ii] &lt;-
-“Day0”</p>
-<p>} else if(Current_date_row == Visitor_Log_row$Day1[1]) { Day[ii]
-&lt;- “Rest”</p>
-<p>} else if(Current_date_row == Visitor_Log_row$Day2[1]) { Day[ii]
-&lt;- “Exercise”</p>
-<p>} else if(Current_date_row == Visitor_Log_row$Day3[1]) { Day[ii]
-&lt;- “No Sleep”</p>
-<p>} else { Day[ii] &lt;- “Error”</p>
-<p>}</p>
-<p>}</p>
-</div>
-<div id="add-which-day-belongs-to-which-dataset" class="section level1">
-<h1>Add which day belongs to which dataset</h1>
-<p>all.data$Day &lt;- unlist(Day)</p>
-</div>
-<div id="add-the-days-inside-the-house" class="section level1">
-<h1>Add the days inside the house</h1>
-<p>tibbles &lt;- list()</p>
-<p>for(ii in 1:nrow(all.data)) {</p>
-<p>Current_Tibble &lt;- all.data<span class="math inline">\(tibbles[[ii]]  Current_Tibble\)</span>Day &lt;-
-rep(all.data$Day[ii],nrow(Current_Tibble)) Current_Tibble &lt;-
-Current_Tibble %&gt;% select(Day, everything()) tibbles[[ii]] &lt;-
-Current_Tibble</p>
-<p>}</p>
-<p>all.data$tibbles_withDay &lt;- map(tibbles,as_tibble)</p>
-</div>
-<div id="substr-the-startdate" class="section level1">
-<h1>Substr the StartDate</h1>
-<p>tibbles &lt;- list()</p>
-<p>for(ii in 1:nrow(all.data)) {</p>
-<p>Current_Tibble &lt;- all.data<span class="math inline">\(tibbles_withDay[[ii]]  Current_Tibble\)</span>StartDate
-&lt;- substr(rep(all.data<span class="math inline">\(StartDate[1],nrow(Current_Tibble)),1,10)  Current_Tibble\)</span>StartDate
-&lt;- as.character(Current_Tibble$StartDate) Current_Tibble &lt;-
-Current_Tibble %&gt;% select(Day, everything()) tibbles[[ii]] &lt;-
-Current_Tibble</p>
-<p>}</p>
-<p>all.data$tibbles_withDay &lt;- map(tibbles,as_tibble)</p>
-</div>
-<div id="add-vr-room-variable-to-tibbles" class="section level1">
-<h1>Add VR room variable to tibbles</h1>
-<p>tibbles &lt;- list()</p>
-<p>for(ii in 1:nrow(all.data)) {</p>
-<p>Current_Tibble &lt;- all.data<span class="math inline">\(tibbles_withDay[[ii]]  Current_Tibble\)</span>VR_Room
-&lt;- substr(rep(all.data<span class="math inline">\(VR_Room[ii],nrow(Current_Tibble)),1,10)  Current_Tibble\)</span>VR_Room
-&lt;- as.character(Current_Tibble$VR_Room ) Current_Tibble &lt;-
-Current_Tibble %&gt;% select(Day, everything()) tibbles[[ii]] &lt;-
-Current_Tibble</p>
-<p>}</p>
-<p>all.data$tibbles_withDay_VR_Room &lt;- map(tibbles,as_tibble)</p>
+<div id="introducing-the-visitor-log-and-labeling-the-dates" class="section level3">
+<h3>Introducing the Visitor Log and labeling the dates</h3>
+<p>Since the CSV file names do not contain information about the testing
+day and since that information is also not available inside the CSV
+files, we have to manually turn to the Visitor Log. This is an excel
+sheet where ONR data collectors manually input the dates of when
+participants completed their visiting session and also add any
+additional notes about how testing went. We will be using this excel
+sheet to help us name our CSV files by testing day.</p>
+<p>Additionally for this to work, we had to convert any NA’s from the
+dates of the visitor log into zeroes (for more info look at the index
+part of the code) and dropped any NA’s in the ID column.</p>
+<p>The final produce is the all data.frame with the proper day types for
+each CSV file. This was manually inspected and shown to be correct by
+comparing the final data set with the dates from the Visitor Log.</p>
+<p>Lastly, and data set is shown at the bottom that indicate all CSV
+files that should have been logged in the Visitor Log but were not.</p>
+<pre class="r"><code># Set working directory to the visitor log
+setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/Visitor_log&quot;)
+
+# Load in the Visitor Log
+VisitorLog.org &lt;- read_excel(&quot;Visiting_Log_must_manually_update.xlsx&quot;)
+
+# Keep only the variables of interest
+VisitorLog &lt;- VisitorLog.org %&gt;%
+  select(ID, `Day 0 Date`, `Day 1 Date`, `Day 2 Date`, `Day 3 Date`)
+
+# Convert visitor log into long
+VisitorLog.Long &lt;- VisitorLog %&gt;%
+  pivot_longer(-ID) %&gt;%
+  rename(Day.type = name,
+         Date = value) %&gt;%
+  mutate(ID = as.numeric(ID),
+         Day.type = substr(Day.type, 1, 5),
+         Date = substr(Date,1,10))
+
+# Convert all missing dates in the Visitor Log into &quot;0&quot;
+VisitorLog.Long &lt;- VisitorLog.Long %&gt;%
+  mutate(Date = ifelse(is.na(Date),&quot;0&quot;,Date))
+
+# If any other variable have missing data then drop the rows to that variable
+VisitorLog.Long &lt;- drop_na(VisitorLog.Long)
+
+# Check to see if there is any missing data
+missing.data &lt;- VisitorLog.Long %&gt;%
+  filter(!complete.cases(.))
+
+paste(&quot;This is a check for missing data that should be 0. Right now it is:&quot;, nrow(missing.data))</code></pre>
+<pre><code>[1] &quot;This is a check for missing data that should be 0. Right now it is: 0&quot;</code></pre>
+<pre class="r"><code># Create a for loop that adds the day type to the all.data data frame using the information from the Visitor Log
+Day.type &lt;- list()
+
+for(ii in 1:nrow(all.data)) {
+  
+  # Extract the ID from the current row in all data
+  current.ID &lt;- all.data$ID[ii]
+  current.Testing.Date &lt;- all.data$Testing.Date[ii]
+  
+  # Use this ID to filter the rows of the Visitor Log that match with it
+  filtered.VisitorLog &lt;- VisitorLog.Long %&gt;%
+    filter(ID %in% current.ID)
+  
+  # If the Date from one of these rows matches the of the current all data row then copy over the Day type to all.data
+  # If it does not then write that it is missing from the Visitor Log
+  if(current.Testing.Date %in% filtered.VisitorLog$Date) {
+    
+    # Obtain the index (Boolean) to where this condition is true
+    index &lt;- filtered.VisitorLog$Date == current.Testing.Date
+    
+    # Save the correct day type
+    Day.type[[ii]] &lt;- filtered.VisitorLog$Day.type[index]
+    
+  } else {
+    
+    # Save that the date is missing from the Visitor Log 
+    Day.type[[ii]] &lt;- &quot;Date not saved in the Visitor Log&quot;
+    
+  }
+  
+}
+
+# Add the Day.type list information into all.data
+all.data$Day.type &lt;- unlist(Day.type)
+
+# Chance the order of columns for easier manually viewing and sort them by ID and Day.type
+all.data &lt;- all.data %&gt;% select(file.num, ID, Day.type, Testing.Date, everything()) %&gt;%
+  arrange(ID,Day.type) 
+
+
+# Let&#39;s see if there are errors with the Visitor Log
+all.data %&gt;%
+  filter(Day.type == &quot;Date not saved in the Visitor Log&quot;) %&gt;%
+  select(-tibbles)</code></pre>
+<pre><code>  file.num  ID                          Day.type Testing.Date Task.type
+1     1179 142 Date not saved in the Visitor Log   2023-10-31   Go/NoGo
+2     1180 142 Date not saved in the Visitor Log   2023-10-31    N-back
+3      806 171 Date not saved in the Visitor Log   2024-01-04   Go/NoGo
+4      807 171 Date not saved in the Visitor Log   2024-01-04    N-back
+5      836 175 Date not saved in the Visitor Log   2024-01-22   Go/NoGo
+6      837 175 Date not saved in the Visitor Log   2024-01-22    N-back
+7      840 177 Date not saved in the Visitor Log   2024-01-27   Go/NoGo
+8      841 177 Date not saved in the Visitor Log   2024-01-27    N-back
+  Computer.num
+1   Computer 2
+2   Computer 2
+3   Computer 1
+4   Computer 1
+5   Computer 1
+6   Computer 1
+7   Computer 1
+8   Computer 1</code></pre>
 </div>
 <div id="split-the-data-based-on-their-task" class="section level1">
 <h1>Split the data based on their task</h1>

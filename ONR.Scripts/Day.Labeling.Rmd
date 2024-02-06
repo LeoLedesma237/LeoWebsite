@@ -86,7 +86,7 @@ pathway.UH_ONR2 <- paste("M:/VR_CSVs/UH-ONR2/",intersect.IDs.UH_ONR2,"/", sep=""
 
 This next chunk of code is using the pathways from above to record the names and pathways of each CSV file in Computer 1 and saving them as a data frame. 
 
-```{r obtain pathway csvs and computer data frame for computer 1}
+```{r obtain pathway csvs and computer data frame for computer 1, warning = FALSE}
 
 # Create a for loop to go into each pathway of a subject's ID folder and extract the names of CSV's present there
 # Do this for both pathways
@@ -126,7 +126,7 @@ CSVs.UH_ONR <- CSVs.UH_ONR %>%
 
 This next chunk of code does the same as above except for the files in computer 2.  
 
-```{r obtain pathway csvs and computer data frame for computer 2}
+```{r obtain pathway csvs and computer data frame for computer 2, warning = FALSE}
 
 # Create a for loop to go into each pathway of a subject's ID folder and extract the names of CSV's present there
 # Do this for both pathways
@@ -183,7 +183,7 @@ The logic is as follows. There are four testing days and each day two CSV files 
 
 We will be merging the data frames from both computers created in the previous scripts and extracting the ID numbers that have 8 CSVs saved. We will then use this information to create a new variable indicating whether the subject is complete or not. 
 
-```{r}
+```{r identifying complete subjects}
 # Merge the datasets from above
 CSVs.merged.UH_ONR <- CSVs.UH_ONR %>%
   rbind(CSVs.UH_ONR2)
@@ -217,7 +217,7 @@ We will now read in the files and save them into a list. This takes about 30 sec
 all.CSVs <- list()
 
 for(ii in 1:nrow(CSVs.merged.UH_ONR)) {
-  
+   
   # Current file name and its pathway 
   current.csv <- paste(CSVs.merged.UH_ONR$Pathway[ii],  CSVs.merged.UH_ONR$CSVs[ii], sep="")
     
@@ -244,11 +244,12 @@ dim(all.CSVs[[8]])
 dim(all.CSVs[[9]])
 
 ```
-### Using the map function
+### Map all of the read csv files into a new data frame
 
-We will now be creating a data frame where the column tibble will have data over the VR CSV files for each person. We will use this new data frame to extract data from the first row of each CSV file- just so we can be sure we know exactly what we are looking at. 
+We will now create a data frame that contains all of the CSVs read from above in the variable tibble. We will add additional variables to this data frame such as the ID from that dataset, the day of testing, the task type (Go/No-Go or Nback) and the computer used to record the data. 
 
-#```{r Using the map function}
+
+```{r Using the map function}
 # Create a new data frame that will contain all CSV information
 all.data <- data.frame(file.num = 1:length(all.CSVs))
 
@@ -258,196 +259,133 @@ all.data$tibbles <- map(all.CSVs, as_tibble)
 # Create for loops that extract information from the first row of each data frame in the tibbles variable
 # This will include ID, day of testing, task type (GnG/Nback)
 
-UserID <- list()
-StartDate <- list()
-Task_Type_list <- list()
+ID.list <- list()
+testing.date <- list()
+task.type <- list()
+Computer.num <- list()
 
 for(ii in 1:nrow(all.data)) {
 
-Current_dataset <- all.data$tibbles[[ii]]
-UserID[ii] <- Current_dataset$UserID[1]
-Date_long <- Current_dataset$StartDate[1]
-StartDate[ii] <- substr(Date_long,1,10)
+# Obtain the first tibble and save it into an object
+current.dataset <- all.data$tibbles[[ii]]
 
-Task_type <- Current_dataset$BlockID[1]
+# Extract the following information and save it to the all.data data frame
+ID.list[[ii]] <- unique(current.dataset$UserID)
+testing.date[[ii]] <- unique(substr(current.dataset$StartDate,1,10))
+Computer.num[[ii]] <- unique(current.dataset$Computer)
 
-if(substr(Task_type,1,1) == "G") {
-  Task_Type_list[ii] <- "Go/NoGo"
 
-} else if(substr(Task_type,1,1) == "N") {
-  Task_Type_list[ii] <- "N-back"
+if(gsub("[^a-zA-Z]", "", current.dataset$BlockID[1]) == "G") {
+  task.type[ii] <- "Go/NoGo"
+
+} else if(gsub("[^a-zA-Z]", "", current.dataset$BlockID[1]) == "N") {
+  task.type[ii] <- "N-back"
   
 }
 
 }
 
-all.data$UserID <- unlist(UserID)
-all.data$StartDate <- unlist(StartDate)
-all.data$Task_Type <- unlist(Task_Type_list)
-all.data$User_ID_check <- UserID_VR_Room$UserID
-all.data$VR_Room <- UserID_VR_Room$VR_Room
+# Add the lists back into the dataframe
+all.data$ID <- unlist(ID.list)
+all.data$Testing.Date <- unlist(testing.date)
+all.data$Task.type <- unlist(task.type)
+all.data$Computer.num <- unlist(Computer.num)
+
+```
 
 
-# Create for loops that go into each one of these data frames and retrieve information of interest only from the first row
-# This will include UserID and StartDate
+### Introducing the Visitor Log and labeling the dates
 
-head(all.data)
+Since the CSV file names do not contain information about the testing day and since that information is also not available inside the CSV files, we have to manually turn to the Visitor Log. This is an excel sheet where ONR data collectors manually input the dates of when participants completed their visiting session and also add any additional notes about how testing went. We will be using this excel sheet to help us name our CSV files by testing day. 
 
-#```
+Additionally for this to work, we had to convert any NA's from the dates of the visitor log into zeroes (for more info look at the index part of the code) and dropped any NA's in the ID column. 
 
+The final produce is the all data.frame with the proper day types for each CSV file. This was manually inspected and shown to be correct by comparing the final data set with the dates from the Visitor Log. 
 
+Lastly, and data set is shown at the bottom that indicate all CSV files that should have been logged in the Visitor Log but were not. 
 
+```{r introducing the visitor log, warning = FALSE}
+# Set working directory to the visitor log
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/Visitor_log")
 
+# Load in the Visitor Log
+VisitorLog.org <- read_excel("Visiting_Log_must_manually_update.xlsx")
 
-# Minor data cleaning
-ID_13_fix <- function(ID) {
-  if(ID == "13") {
-    return("013")
-  } else {
-    return(ID)
-  }
-}
+# Keep only the variables of interest
+VisitorLog <- VisitorLog.org %>%
+  select(ID, `Day 0 Date`, `Day 1 Date`, `Day 2 Date`, `Day 3 Date`)
 
-# Go into each data frame that is mapped into the all.data and identify UserID that is equal to 13.
-# For those files that are (Go/NoGo and N-back), change all of the rows in UserID to 013
+# Convert visitor log into long
+VisitorLog.Long <- VisitorLog %>%
+  pivot_longer(-ID) %>%
+  rename(Day.type = name,
+         Date = value) %>%
+  mutate(ID = as.numeric(ID),
+         Day.type = substr(Day.type, 1, 5),
+         Date = substr(Date,1,10))
 
-tibbles <- list()
+# Convert all missing dates in the Visitor Log into "0"
+VisitorLog.Long <- VisitorLog.Long %>%
+  mutate(Date = ifelse(is.na(Date),"0",Date))
+
+# If any other variable have missing data then drop the rows to that variable
+VisitorLog.Long <- drop_na(VisitorLog.Long)
+
+# Check to see if there is any missing data
+missing.data <- VisitorLog.Long %>%
+  filter(!complete.cases(.))
+
+paste("This is a check for missing data that should be 0. Right now it is:", nrow(missing.data))
+
+# Create a for loop that adds the day type to the all.data data frame using the information from the Visitor Log
+Day.type <- list()
 
 for(ii in 1:nrow(all.data)) {
-  Current_UserID <- all.data$UserID[ii]
-  Current_tibble <- all.data$tibbles[[ii]]
   
-  if(Current_UserID == "13") {
+  # Extract the ID from the current row in all data
+  current.ID <- all.data$ID[ii]
+  current.Testing.Date <- all.data$Testing.Date[ii]
   
-    Current_tibble$UserID   <- sapply(Current_tibble$UserID,ID_13_fix)
-      
-    tibbles[[ii]] <- Current_tibble
+  # Use this ID to filter the rows of the Visitor Log that match with it
+  filtered.VisitorLog <- VisitorLog.Long %>%
+    filter(ID %in% current.ID)
+  
+  # If the Date from one of these rows matches the of the current all data row then copy over the Day type to all.data
+  # If it does not then write that it is missing from the Visitor Log
+  if(current.Testing.Date %in% filtered.VisitorLog$Date) {
+    
+    # Obtain the index (Boolean) to where this condition is true
+    index <- filtered.VisitorLog$Date == current.Testing.Date
+    
+    # Save the correct day type
+    Day.type[[ii]] <- filtered.VisitorLog$Day.type[index]
     
   } else {
     
-    tibbles[[ii]] <- Current_tibble
-  }
-  
-}
-
-
-
-all.data$tibbles <- map(tibbles,as_tibble)
-
-# Now change it on the actual main data UserID
-all.data$UserID <- sapply(all.data$UserID, ID_13_fix)
-
-
-
-############ Introducing Dates #################
-
-# Load in ONR Visitor Log Data
-Visitor_Log_Full <- read_excel("~/ONR/Visitor_log/Visiting_Log_must_manually_update.xlsx")
-
-# Create dataframe with variables that are needed
-Visitor_Log <- data.frame(ID = Visitor_Log_Full$ID,
-                          Day0 = Visitor_Log_Full$`Day 0 Date`,
-                          Day1 = Visitor_Log_Full$`Day 1 Date`,
-                          Day2 = Visitor_Log_Full$`Day 2 Date`,
-                          Day3 = Visitor_Log_Full$`Day 3 Date`) %>% as_tibble()
-
-# Change the variables into characters
-Visitor_Log$Day0 <- as.character(Visitor_Log$Day0)
-Visitor_Log$Day1 <- as.character(Visitor_Log$Day1)
-Visitor_Log$Day2 <- as.character(Visitor_Log$Day2)
-Visitor_Log$Day3 <- as.character(Visitor_Log$Day3)
-
-# Replace all NAs to "0000-00-00" so code below can work
-Visitor_Log[is.na(Visitor_Log)] <- "0000-00-00"
-
-# Use dates from Visitor Log to determine which day we have data for in VR tasks
-unique(all.data$StartDate)
-
-# CODE WILL BREAK IF WE HAVE DATA FOR AN ID (IN VR) THAT IS NOT PRESENT IN VISITOR LOG
-
-Day <- list()
-row_num <- list()
-
-
-for(ii in 1:nrow(all.data)) {
-  Current_ID_row <- all.data$UserID[ii]  
-  Current_date_row <- all.data$StartDate[ii]
-
-  Visitor_Log_row <- Visitor_Log %>%
-    filter(ID == Current_ID_row)
-  
-  row_num[ii] <- ii
-  
-  if(Current_date_row == Visitor_Log_row$Day0[1]) {
-    Day[ii] <- "Day0"
-    
-  } else if(Current_date_row == Visitor_Log_row$Day1[1]) {
-    Day[ii] <- "Rest"
-    
-  } else if(Current_date_row == Visitor_Log_row$Day2[1]) {
-    Day[ii] <- "Exercise"
-    
-  } else if(Current_date_row == Visitor_Log_row$Day3[1]) {
-    Day[ii] <- "No Sleep"
-    
-  } else {
-    Day[ii] <- "Error"
+    # Save that the date is missing from the Visitor Log 
+    Day.type[[ii]] <- "Date not saved in the Visitor Log"
     
   }
   
 }
 
+# Add the Day.type list information into all.data
+all.data$Day.type <- unlist(Day.type)
 
-# Add which day belongs to which dataset
-all.data$Day <- unlist(Day)
-
-
-# Add the days inside the house
-tibbles <- list()
-
-for(ii in 1:nrow(all.data)) {
-  
-  Current_Tibble <- all.data$tibbles[[ii]]
-  Current_Tibble$Day <- rep(all.data$Day[ii],nrow(Current_Tibble))
-  Current_Tibble <- Current_Tibble %>% select(Day, everything())
-  tibbles[[ii]] <- Current_Tibble
-  
-}
-
-all.data$tibbles_withDay <- map(tibbles,as_tibble)
+# Chance the order of columns for easier manually viewing and sort them by ID and Day.type
+all.data <- all.data %>% select(file.num, ID, Day.type, Testing.Date, everything()) %>%
+  arrange(ID,Day.type) 
 
 
-# Substr the StartDate
-tibbles <- list()
+# Let's see if there are errors with the Visitor Log
+all.data %>%
+  filter(Day.type == "Date not saved in the Visitor Log") %>%
+  select(-tibbles)
 
-for(ii in 1:nrow(all.data)) {
-  
-  Current_Tibble <- all.data$tibbles_withDay[[ii]]
-  Current_Tibble$StartDate <- substr(rep(all.data$StartDate[1],nrow(Current_Tibble)),1,10)
-  Current_Tibble$StartDate <- as.character(Current_Tibble$StartDate)
-  Current_Tibble <- Current_Tibble %>% select(Day, everything())
-  tibbles[[ii]] <- Current_Tibble
-  
-}
-
-all.data$tibbles_withDay <- map(tibbles,as_tibble)
+```
 
 
 
-# Add VR room variable to tibbles
-tibbles <- list()
-
-for(ii in 1:nrow(all.data)) {
-  
-  Current_Tibble <- all.data$tibbles_withDay[[ii]]
-  Current_Tibble$VR_Room  <- substr(rep(all.data$VR_Room[ii],nrow(Current_Tibble)),1,10)
-  Current_Tibble$VR_Room  <- as.character(Current_Tibble$VR_Room )
-  Current_Tibble <- Current_Tibble %>% select(Day, everything())
-  tibbles[[ii]] <- Current_Tibble
-  
-}
-
-all.data$tibbles_withDay_VR_Room <- map(tibbles,as_tibble)
 
 
 
