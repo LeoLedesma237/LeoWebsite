@@ -383,7 +383,6 @@ all.data %>%
   select(-tibbles)
 
 
-head(all.data)
 ```
 
 ### Adding the day type into the original datasets
@@ -427,19 +426,16 @@ all.Nback.tibbles <- do.call(rbind, as.list(all.Nback$tibbles))
 
 ```
 
+### Saving files
 
-
+Now we will save GnG and Nback data with Day Type and Computer Number added as variables into two CSV files. 
 
 ```{r saving the data}
+# Set saving directory
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
 
-
+# Save the data as CSVs
+write.csv(all.GnG.tibbles, "GnG.day.type.added.csv")
+write.csv(all.Nback.tibbles, "Nback.day.type.added.csv")
 
 ```
-
-# export data
-# set working directory
-setwd("~/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
-
-#export the files
-export(All_GnG_tibbles, "GnG_Performance.xlsx")
-export(All_Nback_tibbles, "Nback_Performance.xlsx")
