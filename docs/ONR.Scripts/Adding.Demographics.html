@@ -353,7 +353,77 @@ display: none;
 </div>
 
 
+<div id="universal-block-code-settings" class="section level3">
+<h3>Universal block code settings</h3>
+<pre class="r"><code>knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)</code></pre>
+</div>
+<div id="load-in-the-data-manipulation-packages-first" class="section level3">
+<h3>Load in the data manipulation packages first</h3>
+<pre class="r"><code># Load in the proper packages
+library(tidyverse)
+library(readr)</code></pre>
+</div>
+<div id="last-day-this-code-was-ran" class="section level3">
+<h3>Last day this code was ran</h3>
+<pre class="r"><code>paste(&quot;This code was last ran on:&quot;, Sys.Date())</code></pre>
+<pre><code>[1] &quot;This code was last ran on: 2024-02-05&quot;</code></pre>
+</div>
+<div id="load-in-the-data" class="section level3">
+<h3>Load in the data</h3>
+<p>We will be loading demographic information for the ONR study and then
+merging it with our GnG and Nback CSVs. Demographic information is saved
+in a screener that is used to assess whether participants are eligible
+to participate in the study. Unfortunately this screener does not
+contain ID numbers for the participants. However, we can get around this
+by merging it with the SharePoint ID’s since they contain matching email
+addressed- this is what we will be doing below.</p>
+<p>Message: Had to drop ID’s 14 and 90 because their inclusion led to
+weird merger between the two datasets below. Might be from having
+multiple screening emails.</p>
+<pre class="r"><code># Set working directory
+setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/Demographics&quot;)
 
+# Load in the following data
+PilotIDs &lt;- read.csv(&quot;PilotIDs.csv&quot;)
+Screener &lt;- read.csv(&quot;Anonymous.Screener.csv&quot;)
+
+# Remove the first two rows of Screener
+Screener &lt;- Screener[3:nrow(Screener),]
+
+# Select the variables of interest for screener
+Screener &lt;- Screener %&gt;%
+  select(email = Q94,
+         race = RE1,
+         ethnicity = RE2,
+         Sex,
+         Age = AgeYears) %&gt;%
+  data.frame() %&gt;%
+  unique()
+
+# Select the variables of interest for PilotIDs
+PilotIDs &lt;- PilotIDs %&gt;%
+  select(email = Email,
+         ID = ParticipantID) %&gt;%
+  data.frame()
+
+# Drop ID&#39;s 90 and 14 because they come out weird in the dataset
+PilotIDs &lt;- PilotIDs %&gt;%
+  filter(!(ID %in% c(&quot;14&quot;,&quot;90&quot;)))
+
+
+# Merge these two datasets to obtain the demographics for each ID
+demographics &lt;- Screener %&gt;%
+  merge(PilotIDs, by = &quot;email&quot;)
+
+demographics &lt;- demographics %&gt;%
+  filter(complete.cases(.)) %&gt;%
+  select(ID, everything()) %&gt;%
+  arrange(ID)</code></pre>
+<p>More work to be done, we are missing the demographics of some of our
+ROTC members.</p>
+</div>
 
 
 

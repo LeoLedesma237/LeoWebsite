@@ -3,7 +3,77 @@ title: "Adding Demographic Information"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+### Universal block code settings
+
+```{r universal block code setting}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
 ```
 
+### Load in the data manipulation packages first
+
+```{r load in packages, message= FALSE, warning = FALSE}
+# Load in the proper packages
+library(tidyverse)
+library(readr)
+```
+
+### Last day this code was ran
+
+```{r last day the code was ran}
+
+paste("This code was last ran on:", Sys.Date())
+
+```
+
+### Load in the data
+
+We will be loading demographic information for the ONR study and then merging it with our GnG and Nback CSVs. Demographic information is saved in a screener that is used to assess whether participants are eligible to participate in the study. Unfortunately this screener does not contain ID numbers for the participants. However, we can get around this by merging it with the SharePoint ID's since they contain matching email addressed- this is what we will be doing below.
+
+Message: Had to drop ID's 14 and 90 because their inclusion led to weird merger between the two datasets below. Might be from having multiple screening emails. 
+
+```{r load in demographic information, warning = FALSE}
+# Set working directory
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/Demographics")
+
+# Load in the following data
+PilotIDs <- read.csv("PilotIDs.csv")
+Screener <- read.csv("Anonymous.Screener.csv")
+
+# Remove the first two rows of Screener
+Screener <- Screener[3:nrow(Screener),]
+
+# Select the variables of interest for screener
+Screener <- Screener %>%
+  select(email = Q94,
+         race = RE1,
+         ethnicity = RE2,
+         Sex,
+         Age = AgeYears) %>%
+  data.frame() %>%
+  unique()
+
+# Select the variables of interest for PilotIDs
+PilotIDs <- PilotIDs %>%
+  select(email = Email,
+         ID = ParticipantID) %>%
+  data.frame()
+
+# Drop ID's 90 and 14 because they come out weird in the dataset
+PilotIDs <- PilotIDs %>%
+  filter(!(ID %in% c("14","90")))
+
+
+# Merge these two datasets to obtain the demographics for each ID
+demographics <- Screener %>%
+  merge(PilotIDs, by = "email")
+
+demographics <- demographics %>%
+  filter(complete.cases(.)) %>%
+  select(ID, everything()) %>%
+  arrange(ID)
+
+```
+
+More work to be done, we are missing the demographics of some of our ROTC members. 
