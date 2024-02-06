@@ -383,7 +383,6 @@ all.data %>%
   select(-tibbles)
 
 
-head(all.data)
 ```
 
 ### Adding the day type into the original datasets
@@ -408,7 +407,6 @@ for(ii in 1:nrow(all.data)) {
 ```
 
 
-
 ### Splitting the data based on their tasks
 
 Now that we have our data in an organized manner with the ID, Day Type (Day0-3), Testing Date, Task Type (Go/No-Go or N-back), and Computer number (1 or 2), we can start the process of combining the data into one large dataset by task type.  
@@ -418,44 +416,26 @@ Now that we have our data in an organized manner with the ID, Day Type (Day0-3),
 all.GnG <- all.data %>%
   filter(Task.type == "Go/NoGo")
 
-all.Nback 
+# Save all of the Nback data into a new object
+all.Nback <- all.data %>%
+  filter(Task.type == "N-back")
 
-
-head(all.data)
+# Collapse both new objects into a single dataframe with all the tibbles (CSVs) stacked on top of each other
+all.GnG.tibbles <- do.call(rbind, as.list(all.GnG$tibbles))
+all.Nback.tibbles <- do.call(rbind, as.list(all.Nback$tibbles))
 
 ```
 
-# Split the data based on their task
-All_GnG <- all.data %>%
-  filter(Task_Type %in%  "Go/NoGo")
+### Saving files
 
-All_Nback <- all.data %>%
-  filter(Task_Type %in%  "N-back")
+Now we will save GnG and Nback data with Day Type and Computer Number added as variables into two CSV files. 
 
-# Combine all the tibbles into one data frame
-All_GnG_tibbles <- do.call(rbind, as.list(All_GnG$tibbles_withDay_VR_Room))
-All_Nback_tibbles <- do.call(rbind, as.list(All_Nback$tibbles_withDay_VR_Room))
+```{r saving the data}
+# Set saving directory
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
 
+# Save the data as CSVs
+write.csv(all.GnG.tibbles, "GnG.day.type.added.csv")
+write.csv(all.Nback.tibbles, "Nback.day.type.added.csv")
 
-
-
-# Quality control
-table(All_GnG_tibbles$Day)
-table(All_Nback_tibbles$Day)
-
-table(All_GnG_tibbles$VR_Room)
-table(All_Nback_tibbles$VR_Room)
-
-
-# IDs with errors?
-All_GnG_tibbles %>% filter(Day == "Error") %>% select(UserID) %>% unique()
-All_Nback_tibbles %>% filter(Day == "Error") %>% select(UserID) %>% unique()
-
-
-# export data
-# set working directory
-setwd("~/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
-
-#export the files
-export(All_GnG_tibbles, "GnG_Performance.xlsx")
-export(All_Nback_tibbles, "Nback_Performance.xlsx")
+```

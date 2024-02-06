@@ -754,38 +754,53 @@ all.data %&gt;%
 7   Computer 1
 8   Computer 1</code></pre>
 </div>
-<div id="split-the-data-based-on-their-task" class="section level1">
-<h1>Split the data based on their task</h1>
-<p>All_GnG &lt;- all.data %&gt;% filter(Task_Type %in% “Go/NoGo”)</p>
-<p>All_Nback &lt;- all.data %&gt;% filter(Task_Type %in% “N-back”)</p>
+<div id="adding-the-day-type-into-the-original-datasets" class="section level3">
+<h3>Adding the day type into the original datasets</h3>
+<p>We know the Day Type now in the all.data set, however, we also want
+to introduce this information into the original tibbles. This way when
+we saved this transformed data for later processing and then analysis,
+the day types would be included.</p>
+<pre class="r"><code># Create a loop to add the Day type as a column into each tibble
+for(ii in 1:nrow(all.data)) {
+
+  # Obtain the tibble of the current row
+  current.dataset &lt;- all.data$tibbles[[ii]]
+  
+  # Add the Day type to this tibble, aka the original CSV file
+  current.dataset$Day.Type &lt;- rep(all.data$Day.type[ii], nrow(current.dataset))
+  
+  # Override the tibble in the all data data frame with the tibble that has a day type added
+  all.data$tibbles[[ii]] &lt;- current.dataset
+}</code></pre>
 </div>
-<div id="combine-all-the-tibbles-into-one-data-frame" class="section level1">
-<h1>Combine all the tibbles into one data frame</h1>
-<p>All_GnG_tibbles &lt;- do.call(rbind, as.list(All_GnG<span class="math inline">\(tibbles_withDay_VR_Room)) All_Nback_tibbles &lt;-
-do.call(rbind, as.list(All_Nback\)</span>tibbles_withDay_VR_Room))</p>
+<div id="splitting-the-data-based-on-their-tasks" class="section level3">
+<h3>Splitting the data based on their tasks</h3>
+<p>Now that we have our data in an organized manner with the ID, Day
+Type (Day0-3), Testing Date, Task Type (Go/No-Go or N-back), and
+Computer number (1 or 2), we can start the process of combining the data
+into one large dataset by task type.</p>
+<pre class="r"><code># Save all the GnG data into a new object
+all.GnG &lt;- all.data %&gt;%
+  filter(Task.type == &quot;Go/NoGo&quot;)
+
+# Save all of the Nback data into a new object
+all.Nback &lt;- all.data %&gt;%
+  filter(Task.type == &quot;N-back&quot;)
+
+# Collapse both new objects into a single dataframe with all the tibbles (CSVs) stacked on top of each other
+all.GnG.tibbles &lt;- do.call(rbind, as.list(all.GnG$tibbles))
+all.Nback.tibbles &lt;- do.call(rbind, as.list(all.Nback$tibbles))</code></pre>
 </div>
-<div id="quality-control" class="section level1">
-<h1>Quality control</h1>
-<p>table(All_GnG_tibbles<span class="math inline">\(Day)
-table(All_Nback_tibbles\)</span>Day)</p>
-<p>table(All_GnG_tibbles<span class="math inline">\(VR_Room)
-table(All_Nback_tibbles\)</span>VR_Room)</p>
-</div>
-<div id="ids-with-errors" class="section level1">
-<h1>IDs with errors?</h1>
-<p>All_GnG_tibbles %&gt;% filter(Day == “Error”) %&gt;% select(UserID)
-%&gt;% unique() All_Nback_tibbles %&gt;% filter(Day == “Error”) %&gt;%
-select(UserID) %&gt;% unique()</p>
-</div>
-<div id="export-data" class="section level1">
-<h1>export data</h1>
-</div>
-<div id="set-working-directory" class="section level1">
-<h1>set working directory</h1>
-<p>setwd(“~/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed
-Data”)</p>
-<p>#export the files export(All_GnG_tibbles, “GnG_Performance.xlsx”)
-export(All_Nback_tibbles, “Nback_Performance.xlsx”)</p>
+<div id="saving-files" class="section level3">
+<h3>Saving files</h3>
+<p>Now we will save GnG and Nback data with Day Type and Computer Number
+added as variables into two CSV files.</p>
+<pre class="r"><code># Set saving directory
+setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data&quot;)
+
+# Save the data as CSVs
+write.csv(all.GnG.tibbles, &quot;GnG.day.type.added.csv&quot;)
+write.csv(all.Nback.tibbles, &quot;Nback.day.type.added.csv&quot;)</code></pre>
 </div>
 
 
