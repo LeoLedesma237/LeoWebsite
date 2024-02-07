@@ -7,3 +7,84 @@ output:
     theme: flatly
 ---
 
+### A simple explanation
+
+First a recap, a correlation is a statistical analysis that showcases the strength of the relationship between two numeric variables. This is represented by the correlation coefficient which will be between -1 and 1. A regression builds on this principle by adding predictive properties (regression line) and by introducing more variables into the model to have a better understanding of which variables contribute to the variability of the outcome variable. We will be covering this one step at a time. 
+
+
+### A simple regression line (Mathematics)
+
+A regression line is literally a straight line that is added to a scatterplot. The function of this line is make a prediction of what the numeric value of the outcome variable (y-axis) will be from a value of the predictor variable (x-axis). However, this created line is special because it is designed to best fit the spread of the data- meaning that this line will have the least amount of error compared to other lines that we could potentially throw on the scatterplot. Thus, this gives the regression the name of the line of best fit and is calculated from the method of least squares. As an equation, a regression will look similar to this:
+
+\begin{align*}
+
+\hat{Y} = bX + a
+
+\end{align*}
+
+
+Where
+
+$\hat{Y}$: The predicted values of the outcome variable
+
+$b$: The beta coefficient (slope)
+
+$X$: The value of the predictor variable
+
+$a$: The intercept of the model (What the predicted value is when X = 0)
+
+From this equation, we need to calculate $b$ and $a$. We will already have $X$ from our data and $\hat{Y}$ will be calculated from the other three variables. The equations for calculating $b$ and $a$ are as follows:
+
+\begin{align*}
+
+a = \overline{Y} - b\overline{X}
+
+\end{align*}
+
+\begin{align*}
+
+b = \frac {cov_{XY}} {s_{x}^2}
+
+\end{align*}
+
+Where 
+
+$\overline{Y}$: the mean of the values from the outcome variable
+
+$\overline{X}$: the mean of the values from the predictor variable
+
+$cov_{XY}$: The covariance of X and Y
+
+$s_{X}^2$: The variance of x
+
+
+### Visualizing the data:
+
+We will be using the same data from the 'Correlation Overview' page. We will simply plot a scatterplot and then add the regression line over it. We can use this line to inform us in two ways. The first is see how the predictor and outcome variable are related. By looking at the line, we can see that as we move across the x-axis the values of the y-axis are decreasing- thus these variables are negatively correlated with each other. Additionally, we can also use the line to predict values of y (Sepal Length) from values of x (Sepal Width). 
+
+
+```{r, echo = FALSE, message = FALSE, warning= FALSE, out.width= "70%", fig.align='center'}
+library(tidyverse)
+library(ggplot2)
+
+iris %>%
+  ggplot(aes(x=Sepal.Width, y = Sepal.Length)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_bw() +
+  labs(title = "A scatterplot of Sepal Width and Sepal Length\nfrom the iris dataset with a regression line",
+       x = "Sepal Width",
+       y = "Sepal Length") +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12))
+
+
+```
+
+
+
+
+
+

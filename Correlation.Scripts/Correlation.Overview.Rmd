@@ -43,7 +43,6 @@ library(ggplot2)
 iris %>%
   ggplot(aes(x=Sepal.Width, y = Sepal.Length)) +
   geom_point() +
-  geom_smooth(method = "lm") +
   theme_bw() +
   labs(title = "A scatterplot of Sepal Width and Sepal Length\nfrom the iris dataset",
        x = "Sepal Width",
