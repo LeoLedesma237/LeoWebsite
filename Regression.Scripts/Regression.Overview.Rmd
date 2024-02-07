@@ -58,9 +58,23 @@ $cov_{XY}$: The covariance of X and Y
 $s_{X}^2$: The variance of x
 
 
+### Residual Sum of Squares
+
+It is good to become familiar with some jargon early on since it makes more complicated statistical approaches easier to understand. As mentioned above, we are specifically calculating a line that explains most of the variance of our outcome variable while at the same time reducing the error, which unexplained variance. How is this calculated or proven? Look at the scatterplot down below, the line that goes through it is the regression line, which represents the predicted values of the outcome variable $\hat{Y}$ from the values of our predictor variable $X$. The dots surrounding this line are the observed values and not all of them (actually most of them) are outside of this line. The distance then that is observed from one of our observed data points to our predicted values (from the line) is the error, which we call **residuals**. The residuals can be positive or negative, depending on whether the observed data was above or below the regression line. Next, we can take the square of all of our residuals (we will have one for each observed data) and then add them all together, this will give us our **residual sum of squares**. Lastly, we can repeat the process an infinite number of times by placing lines with difference slopes and y-intercepts on the scatterplot and then calculating their residual sum of squares. The line of best fit will always be the line that best predicts the outcome variable by explaining most of the variance, which also means reduces the error- aka the residual sum of squares. Thus, the best line will have the smallest sum of squares and that line will always be the regression line. 
+
+A quick recap: The sum of squares of the outcome variable calculated from the residuals in a regression is called the residual sum of squares and is notated as the following equation:
+
+\begin{align*}
+
+SS_{residual} = \Sigma(Y - \hat{Y})^2
+
+\end{align*}
+
+
+
 ### Visualizing the data:
 
-We will be using the same data from the 'Correlation Overview' page. We will simply plot a scatterplot and then add the regression line over it. We can use this line to inform us in two ways. The first is see how the predictor and outcome variable are related. By looking at the line, we can see that as we move across the x-axis the values of the y-axis are decreasing- thus these variables are negatively correlated with each other. Additionally, we can also use the line to predict values of y (Sepal Length) from values of x (Sepal Width). 
+We will be using the same data from the 'Correlation Overview' page. We will simply plot a scatterplot and then add the regression line over it. We can use this line to inform us in two ways. The first is see how the predictor and outcome variable are related. By looking at the line, we can see that as we move across the x-axis the values of the y-axis are decreasing- thus these variables are negatively correlated with each other. Additionally, we can also use the line to predict values of y (Sepal Length) from values of x (Sepal Width). Now, how accurate our model ends up being is its own separate discussion. 
 
 
 ```{r, echo = FALSE, message = FALSE, warning= FALSE, out.width= "70%", fig.align='center'}
@@ -84,7 +98,23 @@ iris %>%
 ```
 
 
+### A multiple regression line 
 
+Multiple regression builds on the logic of a simple regression by continuing to have one outcome variable or criterion ($Y$)and introducing more than one predictor variable ($X_{1},X_{2}...,X_{p}$). As recommended by David C. Howell's Statistical Methods for Psychology textbook, we will not focus on the calculations involved in the model but what the outcomes from it mean. The equation for a multiple regression is basically identical to that of the simple regression except we have made room for more predictor variables. 
+
+\begin{align*}
+
+\hat{Y} = b_{0} + b_{1}X_{1} + b_{2}X_{2}  + . . . +  b_{p}X_{p} 
+
+\end{align*}
+
+Where
+
+$b_{0}$: Is the y-intercept
+
+$b_{1}, b_{2}, ..., b_{3},$: are the regression coefficients
+
+$X_{1}, X_{2}, ..., X_{3},$: are the values of the predictor variables respectively
 
 
 
