@@ -1,0 +1,41 @@
+---
+title: "Calculating a simple regression by hand"
+author: "Leandro Ledesma"
+date: "2024-02-07"
+output: html_document
+---
+
+### Our data
+
+We will be using the following data from the Data Sets of the 'Statistical Methods for Psychology by David C. Howell' website. This data set contains the variables Height, Weight and Sex. We will be calculating by hand the regression equation between Height and Weight while ignoring Sex.
+
+### Universal block code settings
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(comment = NULL)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+### Load in the data manipulation packages
+
+```{r load in packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(kableExtra)
+
+```
+
+### Load in the data
+
+```{r load the data}
+# Load in the data
+data <- read.delim("https://www.uvm.edu/~statdhtx/methods8/DataFiles/Ex9-31.dat")
+
+# Explore the data
+dim(data)
+str(data)
+
+```
+
+
