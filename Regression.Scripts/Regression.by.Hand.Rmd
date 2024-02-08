@@ -39,3 +39,170 @@ str(data)
 ```
 
 
+### Plot the data
+
+From plotting the data below and including the regression line, we can see whether Height and Weight are positively or negatively related to each other. Additionally, we can use the regression line to predict the Weight of someone based on the values of their height. 
+
+```{r plot the data}
+# Create a scatterplot
+data %>%
+  ggplot(aes(x = Height, y = Weight)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_bw() +
+  labs(title = "Scatterplot of Height and Weight",
+       x = "Height",
+       y = "Weight") +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12))
+
+```
+
+
+### Calculating a regression line
+
+The regression line equation is pretty straightforward. We take the values of our predictor variable ($X$) and then have to transform it with some weight ($b$) then add a constant to it ($a$) then that will give you a predicted value of the outcome variable. The equation is as follows:
+
+\begin{align*}
+
+\hat{Y} = bX + a
+
+\end{align*}
+
+
+However before we can use the equation from above to calculate our predicted values, we need to first calculate or regression coefficient ($b$)and y-intercept ($a$). The equations to calculate them are below and the code will focus on this aspect first.
+
+
+\begin{align*}
+
+a = \overline{Y} - b\overline{X}
+
+\end{align*}
+
+\begin{align*}
+
+b = \frac {cov_{XY}} {s_{x}^2}
+
+\end{align*}
+
+
+### Calculating the regression coefficient (b)
+
+We first need to calculate the regression coefficient since our y-intercept depends on this value. To calculate the regression coefficient, we need to take the covariance of X and Y then divide that by the variance of X. Let's do that below. However, keep in mind this is sample data, so we will be using the sample covariance, which has N-1 for the degrees of freedom. 
+
+\begin{align*}
+
+cov_{XY} = \frac {\Sigma(X - \overline{X})(Y - \overline{Y})} {N - 1}
+
+\end{align*}
+
+Additionally the variance also needs to be calculate and will function as the denominator for the output of the covariance. The variance we care for is the predictor variable ($X$).
+
+\begin{align*}
+
+s_{X}^2 = \frac{ \Sigma(X - \overline{X})^2} {N - 1}
+
+\end{align*}
+
+When we are dividing the covariance of both X and Y by the variance of X, what we are really getting is an output that represents the amount of variance in Y that is explained by X (I think). Let's use these two fomulas (covariance of X and Y and the variance of X) to calculate our regression coefficient. 
+
+
+```{r calculating regression coefficient}
+# Calculating the covariance
+data.cov <- data %>%
+  rename(x = Height,
+         y = Weight) %>%
+  mutate(mean.x = mean(x),
+         mean.y = mean(y),
+         deviations.x = x - mean.x,
+         deviations.y = y - mean.y,
+         multp.xy = deviations.x * deviations.y,
+         sum = sum(multp.xy),
+         df = nrow(data) -1,
+         cov.xy = sum/df) %>%
+  round(3)
+
+# Print the covariance
+data.cov %>%
+  head() %>%
+  kbl() %>%
+  kable_styling()
+
+# Calculate the variance of x
+x.var <- data %>%
+  rename(x = Height,
+         y = Weight) %>%
+  mutate(mean.x = mean(x),
+         deviations.x = x - mean.x,
+         `deviations.x^2` = deviations.x^2,
+         SS = sum(`deviations.x^2`),
+         df = nrow(data)-1,
+         variance.x = SS/df) %>%
+  round(3)
+  
+
+# Print the variance of x
+x.var %>%
+  head() %>%
+  kbl() %>%
+  kable_styling()
+
+
+# Calculate the regression coefficient
+b = unique(data.cov$cov.xy)/unique(x.var$variance.x)
+
+# Print the regression coefficient
+round(b,2)
+```
+
+
+### Calculating the y-intercept (a)
+
+This calculation is much easier than the former. We will use the regression coefficient ($b$) and the means of our predictor and outcome variable to calculate $a$.
+
+```{r calculating the y intercept}
+# Calculating the y-intercept
+data.means <- data %>%
+  rename(x = Height,
+         y = Weight) %>%
+  mutate(mean.x = mean(x),
+         mean.y = mean(y)) %>%
+  round(3)
+
+
+# Calculate the y-intercept
+a = unique(data.means$mean.y - (b * data.means$mean.x))
+
+# Print the y-intercept
+round(a,2)
+
+```
+
+
+### Using the regression to predict Y values
+
+Now that we have $b$ and $a$ calculated, we can use them for every value of x to predict the respective $\hat{Y}$. 
+
+```{r using regression line to predict}
+# Calculating our fitted/predicted values
+data.fitted <- data %>%
+  rename(x = Height,
+         y = Weight) %>%
+  mutate(y.hat = b*x + a) %>%
+  round(3)
+
+
+# Print the predicted values data frame (Show the first 10)
+data.fitted %>%
+  head(.,10) %>%
+  kbl() %>%
+  kable_styling()
+
+
+```
+
+
+### How good is our model?
+
