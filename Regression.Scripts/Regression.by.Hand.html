@@ -1393,6 +1393,29 @@ y.hat
 </tbody>
 </table>
 </div>
+<div id="how-good-is-our-model" class="section level3">
+<h3>How good is our model?</h3>
+<p>Now the next question we may have is understanding if our model, aka
+the values that we predicted are accurate or not. We can see in some
+cases they seem pretty accurate but in others they are not. However,
+determining this by visual inspection is difficult and kind of tedious.
+A better way is to use a mathematical approach that informs us how much
+of the variance of our outcome variable was explained by our predictor
+variable. To do this we will need to introduce the concept of different
+types of sum of squares.</p>
+</div>
+<div id="residual-sum-of-squares" class="section level3">
+<h3>Residual Sum of Squares</h3>
+<p>This is a value that tells us how much of the data we were not able
+to explain by our model. To calculate this, we will subtract our Y
+values from our predicted Y values and then take the sum of squares. The
+equation is as follows.</p>
+<p><span class="math display">\[\begin{align*}
+
+SS_{residual} = \Sigma(Y - \hat{X})
+
+\end{align*}\]</span></p>
+</div>
 
 
 
