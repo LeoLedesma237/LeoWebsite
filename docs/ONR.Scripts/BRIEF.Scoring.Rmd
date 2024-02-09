@@ -1,0 +1,238 @@
+---
+title: "BRIEF Self-Report Scoring"
+author: "Leandro Ledesma"
+date: "2024-02-09"
+output: html_document
+---
+
+### Universal block code settings
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+
+```
+
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(kableExtra)
+library(fuzzyjoin)
+
+```
+
+### Load in the data
+
+```{r load in the data}
+# Set working directory
+setwd("~/ONR/Qualtrics")
+
+# Load in the data
+Qualtrics <- read.csv("ONR Questionnaires_February 9, 2024_10.47.csv")
+
+```
+
+
+### Investigate the data
+
+```{r investigate the data}
+# The data dimensions
+dim(Qualtrics)
+
+```
+
+
+### Extract BRIEF Questions
+
+Q1-Q16 are items from the BRIEF self-report. 
+
+
+We are now going to do some data cleaning to extract the items for inhibition and working memory. Most of the data is missing because this measure was introduced much later into the study. Thus NA's will be removed from the plots below that show the frequency of responses for each item for both Inhibition and Working Memory. 
+
+```{r extract BRIEF questions from the Qualtrics data set}
+# Extract all BRIEF Inhibition Questions and save it into an object
+Inhibition <- Qualtrics[,c(paste("Q",1:8,sep=""))]
+
+# Extract all BRIEF Working Memory Questions and save it into an object
+Working.Memory <- Qualtrics[,c(paste("Q",9:16,sep=""))]
+
+# Data cleaning, remove the first two rows- they do not provide meaningful information
+Inhibition <- Inhibition[3:nrow(Inhibition),]
+Working.Memory <- Working.Memory[3:nrow(Working.Memory),]
+```
+
+
+### Calculate the percentage of NA's in the data
+
+```{r calculate the number of NAs, warning = FALSE}
+# Convert any NA's in the dataframes into NA character
+Inhibition <- Inhibition %>%
+  lapply(function(x) ifelse(x == "", "NA", x)) %>%
+  do.call(cbind, .) %>%
+  data.frame()
+
+Working.Memory <- Working.Memory %>%
+  lapply(function(x) ifelse(x == "", "NA", x)) %>%
+  do.call(cbind, .) %>%
+  data.frame()
+
+# Obtain the frequency of response for each item in both data frames
+Inhibition.counts <- Inhibition %>%
+  lapply(.,function(x) table(x)) %>%
+  do.call(cbind,.) %>%
+  data.frame()
+
+Working.Memory.counts <- Working.Memory %>%
+  lapply(.,function(x) table(x)) %>%
+  do.call(cbind,.) %>%
+  data.frame()
+
+# Add the row names as a variable
+Inhibition.counts$Responses <- row.names(Inhibition.counts)
+Working.Memory.counts$Responses <- row.names(Working.Memory.counts)
+
+# Print the percentage of NA's present for both datasets
+Inhibition.counts %>%
+  t() %>%
+  data.frame() %>%
+  mutate(X1 = as.numeric(X1),
+         X2 = as.numeric(X2),
+         X3 = as.numeric(X3),
+         NA. = as.numeric(NA.),
+         `NA %` = NA./(X1 + X2 + X3 + NA.)*100) %>%
+  round(3) %>%
+  mutate(`NA %` = paste(`NA %`,"%")) %>%
+  filter(complete.cases(.)) %>%
+  select(`NA %`) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+
+Working.Memory.counts %>%
+  t() %>%
+  data.frame() %>%
+  mutate(X1 = as.numeric(X1),
+         X2 = as.numeric(X2),
+         X3 = as.numeric(X3),
+         NA. = as.numeric(NA.),
+         `NA %` = NA./(X1 + X2 + X3 + NA.)*100) %>%
+  round(3) %>%
+  mutate(`NA %` = paste(`NA %`,"%")) %>%
+  filter(complete.cases(.)) %>%
+  select(`NA %`) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+```
+
+### Plot the proprotion of responses for each item
+
+
+```{r plotting the responses for inhibtion}
+# Convert data frames into long format 
+Inhibition.prop <- Inhibition.counts %>%
+  filter(Responses != "NA") %>%
+  pivot_longer(-Responses) %>%
+  group_by(name) %>%
+  mutate(Prop = round(value/sum(value),2),
+         name = factor(name, levels =c(paste("Q",8:1,sep=""))),
+         Responses = factor(Responses, 
+                          levels = c(1,2,3),
+                          labels = c("Never","Sometimes","Often"))) 
+
+# Graph 
+Inhibition.prop %>%
+  ggplot(aes(x = name, y = Prop, fill = Responses)) +
+  geom_bar(stat = "identity", position = "dodge", color = "black") +
+  scale_y_continuous(expand = c(0,0), limits = c(0,.9)) +
+  coord_flip() +
+  theme_classic() +
+  scale_fill_brewer(palette = "Greens") +
+  labs(title = "Proportion of responses by items for Inhibiton",
+       x = "Inhibition Items",
+       y = "Proportion") +
+  theme(plot.title = element_text(size = 16,
+                                 hjust = 0.5),
+        axis.title = element_text(size = 11, face = "bold"),
+        axis.text = element_text(size = 11))
+
+```
+
+Q1: I tap my fingers or bounce my legs (Question 5)
+
+Q2: I have trouble sitting still (Question 16)
+
+Q3: I have problems waiting my turn (Question 29)
+
+Q4: I make inappropriate sexual comments (Question 36)
+
+Q5: I make decisions that get me into trouble (legally, financially, socially) (Question 43)
+
+Q6: People say I am easily distracted (Question 55)
+
+Q7: I rush through things (Question 58)
+
+Q8: I am impulsive (Question 73)
+
+
+From the graph above, we can see that with the exception of Q1 & Q2, responses tend to be mostly 'sometimes' or 'never' to the impulsive related items. 
+
+```{r lotting the responses for working memory}
+# Convert data frames into long format 
+Working.Memory.prop <- Working.Memory.counts %>%
+  filter(Responses != "NA") %>%
+  pivot_longer(-Responses) %>%
+  group_by(name) %>%
+  mutate(Prop = round(value/sum(value),2),
+         name = factor(name, levels =c(paste("Q",16:9,sep=""))),
+         Responses = factor(Responses, 
+                          levels = c(1,2,3),
+                          labels = c("Never","Sometimes","Often"))) 
+
+# Graph 
+Working.Memory.prop %>%
+  ggplot(aes(x = name, y = Prop, fill = Responses)) +
+  geom_bar(stat = "identity", position = "dodge", color = "black") +
+  scale_y_continuous(expand = c(0,0), limits = c(0,.65)) +
+  coord_flip() +
+  theme_classic() +
+  scale_fill_brewer(palette = "Purples") +
+  labs(title = "Proportion of responses by items for Working Memory",
+       x = "Working Memory Items",
+       y = "Proportion") +
+  theme(plot.title = element_text(size = 16,
+                                 hjust = 0.5),
+        axis.title = element_text(size = 11, face = "bold"),
+        axis.text = element_text(size = 11))
+
+```
+
+Q9: I have trouble concentrating on tasks (such as chores, reading, or work) (Question 4)
+
+Q10: I have troubles with jobs or tasks that have more than one step (Question 11)
+
+Q11: I forget what I am doing in the middle of things (Question 17)
+
+Q12: I have trouble staying on the same topic when talking (Question 26)
+
+Q13: I have a short attention span (Question 35)
+
+Q14: I forget instructions easily (Question 46)
+
+Q15: I have trouble remembering things (Question 56)
+
+Q16: I have trouble doing more than one thing at a time (Question 68)
+
+The responses to the working memory questions for the most part tend to be uniform, with most responses for most items being half and half between 'sometimes' and 'never' and about 10% of responses for most items being 'often.'
+
+
+### Scoring Inhibition and Working Memory Items
+
+
+```{r scoring the BRIEF questions}
+# Scoring the BRIEF Questions
+
+```

@@ -18,13 +18,15 @@ knitr::opts_chunk$set(comment = NULL)
 
 Several scripts of code were used to organize data on the MegaGrant server. This code looked for specific names of files to count how many of those files were present and to which ID's they belonged to. The types of data are extensive, including demographic variables such as age and gender, behavioral data such as BRIEF, WHOQL, ARFA, etc, and neuroimaging data like several types of EEG studies and an MRI study. 
 
-### Load in the data manipulation pacakges first
+### Load in the data manipulation packages first
 
 ```{r loading in the packages, warning = FALSE}
 library(tidyverse)
 library(ggplot2)
 library(readxl)
 library(rio)
+library(kableExtra)
+library(fuzzyjoin)
 
 ```
 
@@ -40,7 +42,7 @@ setwd("Y:/STUDY 1")
 masterData <- read_excel("MegaGrant_TBL_Database (LATEST).xlsx")
 
 # Remove missing number variable
-# This variable turned out to be inaccurate!
+# This variable turned out to be inaccurate!!
 masterData <- masterData %>%
   select(-(Missing_num))
 ```
@@ -80,11 +82,15 @@ masterData <- masterData %>%
 # Count the number of NA's per row
 masterData$missing.num <- rowSums(is.na(masterData))
 
+# Arrange by the missing.num variable
+masterData <- masterData %>%
+  arrange(missing.num)
+
 ```
 
 ### Plot the percentage of missing data number
 
-```{r out.width="120%"}
+```{r plotting our missing data, out.width="120%"}
 # Develop a table showing the frequency of missing data
 missing.data.plot <- masterData %>%
   mutate(missing.num = factor(missing.num,
@@ -108,7 +114,7 @@ missing.data.plot %>%
   theme_classic() +
   labs(title = "Percentage of missing data number per\nunique ID in the Master Excel Sheet",
        x = "Number of Missing Data",
-       y = "Proportion") +
+       y = "Percentage") +
   theme(plot.title = element_text(size = 20,
                                     hjust = 0.5),
         axis.title = element_text(size = 14, face = "bold"),
@@ -121,6 +127,206 @@ missing.data.plot %>%
 We can see a large spike in the percentage of missing data per unique ID's around 18. This makes sense since this would indicate a unique ID that was attributed to only one file, which likely means it is a typo. Thus, we could set our threshold for real unique ID's at 17, meaning that any unique ID with more than 17 files missing will be categorized as a fake id.
 
 Confusingly, you might notice that there is one instance (0.3%) of missing 19 files. I am not sure how this is possible but regardless at least we know that they are 100% a fake ID and should be removed.
+
+
+### What data is missing?
+
+Now that we know the  percentage of the number of missing data for our IDs, let's look further at what variables are most likely to be missing or if it is at random.
+
+Most of the missing data is from 'Study3' and 'MRI.' This is not surprising since Study3 indicates whether one of our current ID's also participated in a different study called Study3, and since MRI seems to have only been done to a few participants, probably due to expenses. 
+
+The next is resting-state EEG data (RAW) at 19%. This is alarming, especially since compared to the other EEG data that was taken it is missing quite more data. 
+
+
+```{r investigating what data is missing}
+# Obtain the number of missing data for each variable then save it into a data frame
+missing.data.df <- colSums(is.na(masterData)) %>%
+  data.frame(Count  = .)
+  
+# Use the data frame row names to create a new variable
+missing.data.df$Variable <- row.names(missing.data.df)
+
+# Remove row names
+row.names(missing.data.df) <- NULL
+  
+# Print all missing data
+missing.data.df %>%
+  select(Variable, Missing.Count = Count) %>%
+  mutate(Missing.Percentage = paste(round(Missing.Count/nrow(masterData),2)*100,"%")) %>%
+  arrange(desc(Missing.Count)) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+# Investigating the percentage of missing data only for EEG data
+missing.data.df %>%
+  select(Variable,  Missing.Count = Count) %>%
+  filter(Variable %in% c("RAW","N170","P300","N400","ANT")) %>%
+  mutate(Missing.Percentage = paste(round(Missing.Count/nrow(masterData),2)*100,"%")) %>%
+  arrange(desc(Missing.Count)) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+```
+
+### Recalculating missing data number
+
+Since the variables 'Study3' and 'MRI' are not meaningful to us- we will drop them from our dataframe and recalculate the number of missing data for each person. This will become important for the next sections.
+
+```{r recalculating missing number}
+# Drop the variables Study3 and MRI
+masterData <- masterData %>%
+  select(-c(Study3, MRI))
+
+# Recalculate the missing data number variable
+# Convert all '-' into NA's
+masterData <- masterData %>%
+  lapply(., function(x) ifelse(x == "-",NA, x)) %>%
+  do.call(cbind,.) %>%
+  data.frame()
+
+# Count the number of NA's per row
+masterData$missing.num <- rowSums(is.na(masterData))
+
+```
+
+
+### Re-plotting our more accurate number of missing data 
+
+
+```{r replotting missing numbers, out.width="120%"}
+# Develop a table showing the frequency of missing data
+missing.data.plot <- masterData %>%
+  mutate(missing.num = factor(missing.num,
+                              levels = c(17:0))) %>%
+  group_by(missing.num) %>%
+  count() %>%
+  ungroup() %>%
+  mutate(percentage = round(n/sum(n)*100,1))
+
+missing.data.plot %>%
+  ggplot(aes(x = missing.num, y = percentage)) +
+  geom_bar(stat = "identity",
+           fill = "white",
+           color = "black") +
+  scale_y_continuous(expand = c(0,0), limits = c(0,85)) +
+  geom_text(aes(label = paste(format(round(percentage,1),
+                                     nsmall = 1),
+                              "%", sep = "")),
+                nudge_y = 2.9, size = 4) +
+  coord_flip() + 
+  theme_classic() +
+  labs(title = "Percentage of missing data number per\nunique ID in the Master Excel Sheet",
+       x = "Number of Missing Data",
+       y = "Percentage") +
+  theme(plot.title = element_text(size = 20,
+                                    hjust = 0.5),
+        axis.title = element_text(size = 14, face = "bold"),
+        axis.text = element_text(size = 14),
+        plot.caption = element_text(size = 12,
+                                    hjust = 0))
+
+
+
+```
+
+
+This plot is great because it shows that in reality, most people do have full data (nearly 73%). ID's that have 17 missing data are missing everything and will be dropped in the code below since they are meaningless.
+
+
+```{r dropping IDs that have 17 missing data points}
+# Drop ID's/rows that have all missing data
+masterData <- masterData %>%
+  filter(missing.num != 17)
+
+# Dimensions of our new dataset
+dim(masterData)
+```
+
+### Data Salvaging (Fuzzy Matching) - Part 1
+
+We really care about data from two variables, our predictor and outcome variable. In our case, this would be the spelling scores in the ARFA and the resting-state EEG data (RAW). Since we are missing a good chunk of rsEEG data (19%), it is worth investigating if some of that data is not actually missing, but saved as an incorrect ID file name. If that is the case, then we could have some ID's that have rsEEG data but are missing a lot of other types of data to be similar (maybe contain the same numbers but are in a different order or contain the same numbers with the exception of one) to IDs that have a lot of data present with the exception of rsEEG. This would mean that we could recover and correct for mistyped ID's for rsEEG and potentially include them back into our Master Excel sheet, which will increase our N by some. 
+
+Our next step then is to take only the rows that have at least one data missing and split them into two data frames. One data frame will contain ID's that have rsEEG data and another the other will contain ID's that do not have rsEEG data. We can then use 'fuzzy matching' through the stringdist_join() function, which will match ID's between data frames that look similar to each other. It does this by taking our second data frame (the one with rsEEG data) and comparing the variable we choose from it (ID) to all of the IDs in our first data frame (the ones with missing rsEEG) and calculating a distance number that indicates how similar the ID from the second data frame is to that of the first. If this distance value is close to zero then there is a high likelyhood the ID's actually do match and that will be displayed as an output.
+
+
+```{r fuzzy matching part 1}
+# Has at least one missing data type dataframe
+missing.some.data <- masterData %>% filter(missing.num != 0)
+
+# The dimensions of the data frame that has an ID with at least one data type missing
+dim(missing.some.data)
+
+#  Split the dataframe into two parts
+has.EEG <- missing.some.data %>% filter(RAW == "+")
+missing.EEG <- missing.some.data[is.na(missing.some.data$RAW),]
+
+# Check the unique values for rsEEG between data frames (quality control)
+unique(missing.some.data$RAW)
+unique(missing.some.data$RAW)
+unique(missing.some.data$RAW)
+
+# What are the dimensions of both new data frames
+nrow(has.EEG)
+nrow(missing.EEG)
+
+# Data cleaning
+has.EEG <- has.EEG %>% select(ID, RAW, missing.data.num = missing.num) %>% mutate(RAW = factor(RAW, labels = ("Has EEG recording")))
+missing.EEG <- missing.EEG %>% 
+  select(ID, missing.data.num = missing.num) %>%
+  arrange(missing.data.num)
+
+# Use the regular merge function
+# This should bring an empty data frame back
+missing.EEG %>%
+  merge(has.EEG, by ="ID")
+
+# Now if we use the stringdist_join() function
+fuzzy.matching <- stringdist_join(missing.EEG, has.EEG, 
+                by='ID', #match based on ID
+                mode='left', #use left join
+                method = "osa", #use jw distance metric
+                max_dist=99, 
+                distance_col='dist') %>%
+  group_by(ID.x) %>%
+  slice_min(order_by=dist, n=1) %>%
+  data.frame() %>%
+  arrange(dist)
+
+# The dimensions of fuzzy matching
+dim(fuzzy.matching)
+
+# Show the first 10 rows
+head(fuzzy.matching, 10) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+```
+
+### Data Salvaging (Fuzzy Matching) - Part 2
+
+The code from above worked a little too well. So much so that it returned a data frame of 494 observations. Ideally we wanted no more than 148, because that is how many ID's are missing rsEEG data. The reason for more than 3x the number of rows that we needed is due to the code giving us several options for which ID's between these two data frames could potentially be matched together. 
+
+Right now there are too many options and there are ways that we can decrease the number of options by removing incorrect suggestions. The first tool we can use is the number of missing data types from both data frames (the one with rsEEG vs the one missing it). For these IDs to be matched accurately, we need to take into account that if one file is missing only rsEEG then they would have a missing.data.num of 1 and if they were being matched with two IDs, one that had 16 missing.data.num and another that had 12- then we would know the former would be the correct match since 16 missing data types indicates it is missing all the other data but rsEEG. The same logic applies to other cases such that ID's missing 2 data types should be matched with ID's that have 15 missing data types and so on. 
+
+```{r fuzzy matching part 2}
+# Write a function that only matches ID's to IDs that would have a complimentary number of missing data
+# A shortcut would be to add the number of missing data from one variable to the other- it should equal 17
+# Those that do not equal 17 will be removed as matching ID options
+fuzzy.matching2 <- fuzzy.matching %>%
+  mutate(combined.missing.data.num = missing.data.num.x + missing.data.num.y) %>%
+  filter(combined.missing.data.num == 17)
+
+# The dimensions of our new matches.
+dim(fuzzy.matching2)
+
+# View the first 10 rows 
+head(fuzzy.matching2,10) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+```
+
+This helped quite a bit. Now instead of having 494 observations, it was reduced to 150. Another thing to notice is the variable 'dist.' This is a numerical value indicating the similarity between the paired IDs. Visually inspecting the data- it seems that matches with a 'dist' of 1 seem very likely to be correct matches, while a 'dist' of 2 seem to be a lot less unlikely to be matches. Thus we will chose potential fuzzy matches to have a 'dist' number equal to 1. Meaning that the first 6 matches are the only matches that seem likely and we can discard the rest.  
+
 
 ### Remove ID's that cross the 17 missing data number threshold
 
@@ -173,8 +379,8 @@ The cleaned master excel sheet will should be saved to obtain accurate demograph
 setwd("C:/Users/lledesma.TIMES/Documents/Masters Project")
 
 # Save the data
-export(masterData.kept, "MegaGrant_TBL_.xlsx")
-export(masterData.removed, "MegaGrant_TBL_removed.xlsx")
+#export(masterData.kept, "MegaGrant_TBL_.xlsx")
+#export(masterData.removed, "MegaGrant_TBL_removed.xlsx")
 
 ```
 
