@@ -22,6 +22,10 @@ This study is investigating how different stressors (intense exercise and sleep 
 **Step 2**: Including demographic information [[Click here to view script]](https://leoledesma237.github.io/LeoWebsite/ONR.Scripts/Adding.Demographics.html)
 
 
+### Data Scoring
+
+**BRIEF** <add description here>(https://leoledesma237.github.io/LeoWebsite/ONR.Scripts/BRIEF.Scoring.html)
+
 ### Data Analysis
 
 
