@@ -231,8 +231,13 @@ The responses to the working memory questions for the most part tend to be unifo
 
 ### Scoring Inhibition and Working Memory Items
 
+Inhibit: "Control impulses; appropriately stop own behavior at the proper time."
+
+Working Memory: "Hold information in the mind for the purposes of completing a task; stay with, or stick to, an activity."
 
 ```{r scoring the BRIEF questions}
-# Scoring the BRIEF Questions
+# Scoring the BRIEF Questions (Inhibtion)
+
+
 
 ```
