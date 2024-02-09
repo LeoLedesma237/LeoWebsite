@@ -19,6 +19,7 @@ knitr::opts_chunk$set(comment = NULL)
 ```{r loading in the packages, warning = FALSE}
 library(tidyverse)
 library(ggplot2)
+library(ggpubr)
 library(kableExtra)
 library(fuzzyjoin)
 
@@ -54,14 +55,15 @@ We are now going to do some data cleaning to extract the items for inhibition an
 
 ```{r extract BRIEF questions from the Qualtrics data set}
 # Extract all BRIEF Inhibition Questions and save it into an object
-Inhibition <- Qualtrics[,c(paste("Q",1:8,sep=""))]
+Inhibition <- Qualtrics[,c("ID", paste("Q",1:8,sep=""))]
 
 # Extract all BRIEF Working Memory Questions and save it into an object
-Working.Memory <- Qualtrics[,c(paste("Q",9:16,sep=""))]
+Working.Memory <- Qualtrics[,c("ID", paste("Q",9:16,sep=""))]
 
-# Data cleaning, remove the first two rows- they do not provide meaningful information
-Inhibition <- Inhibition[3:nrow(Inhibition),]
-Working.Memory <- Working.Memory[3:nrow(Working.Memory),]
+# Data cleaning, remove the first 17 rows- they do not provide meaningful information
+# Data row 18 is the row of subject 001
+Inhibition <- Inhibition[18:nrow(Inhibition),]
+Working.Memory <- Working.Memory[18:nrow(Working.Memory),]
 ```
 
 
@@ -69,23 +71,25 @@ Working.Memory <- Working.Memory[3:nrow(Working.Memory),]
 
 ```{r calculate the number of NAs, warning = FALSE}
 # Convert any NA's in the dataframes into NA character
-Inhibition <- Inhibition %>%
+Inhibition.NA <- Inhibition %>%
+  select(-ID) %>%
   lapply(function(x) ifelse(x == "", "NA", x)) %>%
   do.call(cbind, .) %>%
   data.frame()
 
-Working.Memory <- Working.Memory %>%
+Working.Memory.NA <- Working.Memory %>%
+  select(-ID) %>%
   lapply(function(x) ifelse(x == "", "NA", x)) %>%
   do.call(cbind, .) %>%
   data.frame()
 
 # Obtain the frequency of response for each item in both data frames
-Inhibition.counts <- Inhibition %>%
+Inhibition.counts <- Inhibition.NA %>%
   lapply(.,function(x) table(x)) %>%
   do.call(cbind,.) %>%
   data.frame()
 
-Working.Memory.counts <- Working.Memory %>%
+Working.Memory.counts <- Working.Memory.NA %>%
   lapply(.,function(x) table(x)) %>%
   do.call(cbind,.) %>%
   data.frame()
@@ -180,7 +184,7 @@ Q8: I am impulsive (Question 73)
 
 From the graph above, we can see that with the exception of Q1 & Q2, responses tend to be mostly 'sometimes' or 'never' to the impulsive related items. 
 
-```{r lotting the responses for working memory}
+```{r plotting the responses for working memory}
 # Convert data frames into long format 
 Working.Memory.prop <- Working.Memory.counts %>%
   filter(Responses != "NA") %>%
@@ -229,15 +233,102 @@ Q16: I have trouble doing more than one thing at a time (Question 68)
 The responses to the working memory questions for the most part tend to be uniform, with most responses for most items being half and half between 'sometimes' and 'never' and about 10% of responses for most items being 'often.'
 
 
-### Scoring Inhibition and Working Memory Items
+### Scoring Inhibition and Working Memory Items [Raw Score]
 
 Inhibit: "Control impulses; appropriately stop own behavior at the proper time."
 
 Working Memory: "Hold information in the mind for the purposes of completing a task; stay with, or stick to, an activity."
 
-```{r scoring the BRIEF questions}
-# Scoring the BRIEF Questions (Inhibtion)
+To score, take the sum of the responses for each item within their respective domain (Inhibition and Working Memory). This will return the raw score for each person. 
+
+1 = Never
+
+2 = Sometimes
+
+3 = Often
 
 
+```{r scoring the BRIEF questions, warning = FALSE, out.width= "80%"}
+# Data cleaning: removes "" cells
+Inhibition.cleaned <- Inhibition %>%
+  lapply(., function(x) as.numeric(x)) %>%
+  data.frame() %>%
+  filter(complete.cases(.))
+
+Working.Memory.cleaned <- Working.Memory %>%
+  lapply(., function(x) as.numeric(x)) %>%
+  data.frame() %>%
+  filter(complete.cases(.))
+
+# Obtain dimensions of completed cases
+dim(Inhibition.cleaned)
+dim(Working.Memory.cleaned)
+
+
+# Calculating the raw score
+Inhibition.cleaned <- Inhibition.cleaned %>%
+  mutate(Raw.Score = Q1 + Q2 + Q3 + Q4 + Q5 + Q6 + Q7 + Q8)
+
+Working.Memory.cleaned <- Working.Memory.cleaned %>%
+  mutate(Raw.Score = Q9 + Q10 + Q11 + Q12 + Q13 + Q14 + Q15 + Q16)
+
+# View the distribution of raw scores
+plot1 <- Inhibition.cleaned %>%
+  ggplot(aes(x = Raw.Score)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 8) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,40)) +
+  theme_classic() +
+  labs(title = "Distribution of Raw Scores for\nInhibition",
+       x = "Raw Score",
+       y = "Frequency")
+
+
+plot2 <- Working.Memory.cleaned %>%
+  ggplot(aes(x = Raw.Score)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 8) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,40)) +
+  theme_classic() +
+  labs(title = "Distribution of Raw Scores for\nWorking Memory",
+       x = "Raw Score",
+       y = "Frequency")  
+  
+
+# Print the graphs
+ggarrange(plot1, plot2)
+  
+```
+
+
+### Scoring Inhibition and Working Memory Items [T Score]
+
+T-scores are a transformation of the raw score that control for the subject's age. We will need to import each subject's age and then use that measure to accurately calculate their T-score from their raw score. 
+
+Additionally, we will need to create a conversion table. This will be done outside of this script manually onto an excel sheet that will be imported. 
+
+```{r calculating t scores, warning = FALSE}
+# Import demographic information
+setwd("~/ONR/Demographics")
+
+# load in demographics
+demographics <- read.csv("complete.demographics.csv")
+
+# Extract the age
+demo <- demographics %>%
+  select(ID, Age)
+
+# data cleaning (rename 125 to 126)
+Inhibition.cleaned$ID[3] <- 126
+Working.Memory.cleaned$ID[3] <- 126
+
+# Merge to include age
+Inhibition.cleaned.age <- Inhibition.cleaned %>%
+  merge(demo, by = "ID")
+
+Working.Memory.cleaned.age <- Working.Memory.cleaned%>%
+  merge(demo, by = "ID")
 
 ```

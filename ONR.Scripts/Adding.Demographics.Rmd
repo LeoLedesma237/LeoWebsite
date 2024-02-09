@@ -77,3 +77,14 @@ demographics <- demographics %>%
 ```
 
 More work to be done, we are missing the demographics of some of our ROTC members. 
+
+### Save demographic information
+
+```{r save demographic information, warning = FALSE}
+# Set save working directory
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/Demographics")
+
+# Save the data as a CSV
+write.csv(x = demographics, file = "complete.demographics.csv")
+
+```

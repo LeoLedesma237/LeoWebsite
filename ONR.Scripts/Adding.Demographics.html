@@ -368,7 +368,7 @@ library(readr)</code></pre>
 <div id="last-day-this-code-was-ran" class="section level3">
 <h3>Last day this code was ran</h3>
 <pre class="r"><code>paste(&quot;This code was last ran on:&quot;, Sys.Date())</code></pre>
-<pre><code>[1] &quot;This code was last ran on: 2024-02-05&quot;</code></pre>
+<pre><code>[1] &quot;This code was last ran on: 2024-02-09&quot;</code></pre>
 </div>
 <div id="load-in-the-data" class="section level3">
 <h3>Load in the data</h3>
@@ -423,6 +423,14 @@ demographics &lt;- demographics %&gt;%
   arrange(ID)</code></pre>
 <p>More work to be done, we are missing the demographics of some of our
 ROTC members.</p>
+</div>
+<div id="save-demographic-information" class="section level3">
+<h3>Save demographic information</h3>
+<pre class="r"><code># Set save working directory
+setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/Demographics&quot;)
+
+# Save the data as a CSV
+write.csv(x = demographics, file = &quot;complete.demographics.csv&quot;)</code></pre>
 </div>
 
 

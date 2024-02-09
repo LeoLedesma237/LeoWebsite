@@ -301,3 +301,34 @@ plot2 <- Working.Memory.cleaned %>%
 ggarrange(plot1, plot2)
   
 ```
+
+
+### Scoring Inhibition and Working Memory Items [T Score]
+
+T-scores are a transformation of the raw score that control for the subject's age. We will need to import each subject's age and then use that measure to accurately calculate their T-score from their raw score. 
+
+Additionally, we will need to create a conversion table. This will be done outside of this script manually onto an excel sheet that will be imported. 
+
+```{r calculating t scores, warning = FALSE}
+# Import demographic information
+setwd("~/ONR/Demographics")
+
+# load in demographics
+demographics <- read.csv("complete.demographics.csv")
+
+# Extract the age
+demo <- demographics %>%
+  select(ID, Age)
+
+# data cleaning (rename 125 to 126)
+Inhibition.cleaned$ID[3] <- 126
+Working.Memory.cleaned$ID[3] <- 126
+
+# Merge to include age
+Inhibition.cleaned.age <- Inhibition.cleaned %>%
+  merge(demo, by = "ID")
+
+Working.Memory.cleaned.age <- Working.Memory.cleaned%>%
+  merge(demo, by = "ID")
+
+```
