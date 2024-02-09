@@ -18,7 +18,7 @@ knitr::opts_chunk$set(comment = NULL)
 
 Several scripts of code were used to organize data on the MegaGrant server. This code looked for specific names of files to count how many of those files were present and to which ID's they belonged to. The types of data are extensive, including demographic variables such as age and gender, behavioral data such as BRIEF, WHOQL, ARFA, etc, and neuroimaging data like several types of EEG studies and an MRI study. 
 
-### Load in the data manipulation pacakges first
+### Load in the data manipulation packages first
 
 ```{r loading in the packages, warning = FALSE}
 library(tidyverse)
