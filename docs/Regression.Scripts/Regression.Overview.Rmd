@@ -117,4 +117,7 @@ $b_{1}, b_{2}, ..., b_{3},$: are the regression coefficients
 $X_{1}, X_{2}, ..., X_{3},$: are the values of the predictor variables respectively
 
 
+### Calculating a simple regression by hand
+
+[[Click here to view script]](https://leoledesma237.github.io/LeoWebsite/Regression.Scripts/Regression.by.Hand.html)
 
