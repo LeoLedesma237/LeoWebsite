@@ -50,7 +50,7 @@ The data dimensions above are gigantic and unnecessary. This is because each per
 We will be reducing the data by obtaining the scores of each person on variables of interest. This can be changed later to include more rows. For the Go/No-Go there are Day 0's (practice days) and practice sessions that need to be removed. Then we can label the trials by Go or No-Go and finally use the group_by function to reduce the data to give us the mean scores for trial type for each ID on their respective testing day. 
 
 ```{r GnG data reduction}
-# Remove Day 0 from out dataset or problematic day types (not noted in the visitor log)
+# Remove Day 0 from our dataset or problematic day types (not noted in the visitor log)
 GnG.removed.days <-  GnG.original %>%
   filter(!(Day.Type %in% c("Day 0", "Date not saved in the Visitor Log")))
 
@@ -88,10 +88,51 @@ GnG.grouped.Reaction.Time <- GnG.trial.type %>%
 Same procedure as above. We will be removing practice days and practice sessions then labeling the trials by either target or distractor. Afterwards we will obtain the mean scores of performance for each trial type for all participants on their respective testing day.
 
 ```{r Nback data reduction}
+# Remove Day 0 from our dataset or problematic day types (not noted in the visitor log)
+Nback.removed.days <- Nback.original %>%
+    filter(!(Day.Type %in% c("Day 0", "Date not saved in the Visitor Log")))
 
+# The dimensions of our new dataset
+dim(Nback.removed.days)
 
+# Keep all non practice blocks (there are not practice trials but blocks)
+non.practice.blocks <- c("N1","N2","N3","N4")
+Nback.kept.non.practice.blocks <- Nback.removed.days %>%
+  filter(BlockID %in% non.practice.blocks)
+
+# The dimensions of our new dataset
+dim(Nback.kept.non.practice.blocks)
+
+# Add target and distractor labels
+# This is tricky but follow along
+# We are gonna copy the ItemID variable and add two blanks in the beginning and remove the last two items
+# We are then gonna match the items from this new variable to ItemID
+# The rows were the IDs for both variables match are target trials
+Nback.kept.non.practice.blocks$ItemID2 <- c("blank", 
+                                            "blank", 
+                                            Nback.kept.non.practice.blocks$ItemID[1:(length(Nback.kept.non.practice.blocks$ItemID)-2)])
+
+Nback.kept.non.practice.blocks %>%
+  mutate(Trial.Type = ifelse(ItemID == ItemID2, "Targer", "Distractor")) %>%
+  select(Trial.Type) %>%
+  table()
+
+## NEED TO EMAIL THE GUY THAT CREATED THIS GAME CAUSE THESE NUMBERS DON'T ADD UP
 
 ```
 
+### Save the data
 
+```{r save the data}
+# Set the save directory
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
+
+# Save the data
+write.csv(x = GnG.grouped.Trial.Type,
+          file = "GnG.trial.type.csv")
+
+write.csv(x = GnG.grouped.Reaction.Time,
+          file = "GnG.reaction.time.csv")
+
+```
 
