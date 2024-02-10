@@ -357,7 +357,89 @@ display: none;
 </div>
 
 
+<div id="universal-block-code-settings" class="section level3">
+<h3>Universal block code settings</h3>
+<pre class="r"><code>knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)</code></pre>
+</div>
+<div id="load-in-the-data-manipulation-packages-first" class="section level3">
+<h3>Load in the data manipulation packages first</h3>
+<pre class="r"><code>library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(kableExtra)</code></pre>
+</div>
+<div id="load-in-the-data" class="section level3">
+<h3>Load in the data</h3>
+<p>The Day.Labeling script (Step 1) cleaned the VR behavioral data and
+now it is ready for processing to be used for later analysis.</p>
+<pre class="r"><code># Set working directory
+setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data&quot;)
 
+# Load in the data
+GnG.original &lt;- read.csv(&quot;GnG.day.type.added.csv&quot;)
+Nback.original &lt;- read.csv(&quot;Nback.day.type.added.csv&quot;)
+
+# What is the dimensions
+dim(GnG.original)</code></pre>
+<pre><code>[1] 575960     42</code></pre>
+<pre class="r"><code>dim(Nback.original)</code></pre>
+<pre><code>[1] 341020     42</code></pre>
+<p>The data dimensions above are gigantic and unnecessary. This is
+because each person had roughly 1,500 trials for each GnG session and
+around 600 trials for the Nback. Our goal is to reduce these dimensions
+for each person.</p>
+</div>
+<div id="data-reduction-gono-go" class="section level3">
+<h3>Data reduction Go/No-Go</h3>
+<p>We will be reducing the data by obtaining the scores of each person
+on variables of interest. This can be changed later to include more
+rows. For the Go/No-Go there are Day 0’s (practice days) and practice
+sessions that need to be removed. Then we can label the trials by Go or
+No-Go and finally use the group_by function to reduce the data to give
+us the mean scores for trial type for each ID on their respective
+testing day.</p>
+<pre class="r"><code># Remove Day 0 from out dataset or problematic day types (not noted in the visitor log)
+GnG.removed.days &lt;-  GnG.original %&gt;%
+  filter(!(Day.Type %in% c(&quot;Day 0&quot;, &quot;Date not saved in the Visitor Log&quot;)))
+
+# The dimensions of the new dataset
+dim(GnG.removed.days)</code></pre>
+<pre><code>[1] 514300     42</code></pre>
+<pre class="r"><code># Remove practice trials
+GnG.practice.blocks &lt;- c(paste(&quot;G&quot;,1:5,&quot;0&quot;,sep=&quot;&quot;))
+GnG.removed.practice.blocks &lt;- GnG.removed.days %&gt;%
+  filter(!(BlockID %in% GnG.practice.blocks))
+
+# The dimensions of the new dataset
+dim(GnG.removed.practice.blocks)</code></pre>
+<pre><code>[1] 469520     42</code></pre>
+<pre class="r"><code># Add Go and No-Go Labels (This was tested and it came out correct 20/80)
+go.trials &lt;- c(&quot;G1&quot;, &quot;G5&quot;, &quot;G8&quot;, &quot;G12&quot;)
+GnG.trial.type &lt;- GnG.removed.practice.blocks %&gt;%
+  mutate(Trial.Type = ifelse(ItemID %in% go.trials, &quot;Go&quot;, &quot;No-Go&quot;))
+
+# Reduce the dimensions even more by grouping and obtaining performance score
+GnG.grouped.Trial.Type &lt;- GnG.trial.type %&gt;%
+  group_by(UserID, Trial.Type, Day.Type) %&gt;%
+  summarize(trial.mean.correct = round(mean(Correct),2))
+
+# Create another data frame that reduced dimensions but ony for correct reaction times of Go-Trials
+GnG.grouped.Reaction.Time &lt;- GnG.trial.type %&gt;%
+  filter(Trial.Type == &quot;Go&quot; &amp; Correct ==  1) %&gt;%
+  group_by(UserID, Day.Type) %&gt;%
+  summarize(mean.RT = mean(TimeToImpact))</code></pre>
+</div>
+<div id="data-reduction-nback" class="section level3">
+<h3>Data reduction Nback</h3>
+<p>Same procedure as above. We will be removing practice days and
+practice sessions then labeling the trials by either target or
+distractor. Afterwards we will obtain the mean scores of performance for
+each trial type for all participants on their respective testing
+day.</p>
+</div>
 
 
 

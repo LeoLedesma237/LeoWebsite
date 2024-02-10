@@ -4,3 +4,94 @@ author: "Leandro Ledesma"
 date: "2024-02-10"
 output: html_document
 ---
+
+### Universal block code settings
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+
+```
+
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(kableExtra)
+
+```
+
+### Load in the data
+
+The Day.Labeling script (Step 1) cleaned the VR behavioral data and now it is ready for processing to be used for later analysis. 
+
+```{r load in the data, warning = FALSE}
+# Set working directory
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
+
+# Load in the data
+GnG.original <- read.csv("GnG.day.type.added.csv")
+Nback.original <- read.csv("Nback.day.type.added.csv")
+
+# What is the dimensions
+dim(GnG.original)
+dim(Nback.original)
+
+```
+
+The data dimensions above are gigantic and unnecessary. This is because each person had roughly 1,500 trials for each GnG session and around 600 trials for the Nback. Our goal is to reduce these dimensions for each person.
+
+### Data reduction Go/No-Go
+
+We will be reducing the data by obtaining the scores of each person on variables of interest. This can be changed later to include more rows. For the Go/No-Go there are Day 0's (practice days) and practice sessions that need to be removed. Then we can label the trials by Go or No-Go and finally use the group_by function to reduce the data to give us the mean scores for trial type for each ID on their respective testing day. 
+
+```{r GnG data reduction}
+# Remove Day 0 from out dataset or problematic day types (not noted in the visitor log)
+GnG.removed.days <-  GnG.original %>%
+  filter(!(Day.Type %in% c("Day 0", "Date not saved in the Visitor Log")))
+
+# The dimensions of the new dataset
+dim(GnG.removed.days)
+
+# Remove practice trials
+GnG.practice.blocks <- c(paste("G",1:5,"0",sep=""))
+GnG.removed.practice.blocks <- GnG.removed.days %>%
+  filter(!(BlockID %in% GnG.practice.blocks))
+
+# The dimensions of the new dataset
+dim(GnG.removed.practice.blocks)
+
+# Add Go and No-Go Labels (This was tested and it came out correct 20/80)
+go.trials <- c("G1", "G5", "G8", "G12")
+GnG.trial.type <- GnG.removed.practice.blocks %>%
+  mutate(Trial.Type = ifelse(ItemID %in% go.trials, "Go", "No-Go"))
+
+# Reduce the dimensions even more by grouping and obtaining performance score
+GnG.grouped.Trial.Type <- GnG.trial.type %>%
+  group_by(UserID, Trial.Type, Day.Type) %>%
+  summarize(trial.mean.correct = round(mean(Correct),2))
+
+# Create another data frame that reduced dimensions but ony for correct reaction times of Go-Trials
+GnG.grouped.Reaction.Time <- GnG.trial.type %>%
+  filter(Trial.Type == "Go" & Correct ==  1) %>%
+  group_by(UserID, Day.Type) %>%
+  summarize(mean.RT = mean(TimeToImpact))
+
+```
+
+### Data reduction Nback
+
+Same procedure as above. We will be removing practice days and practice sessions then labeling the trials by either target or distractor. Afterwards we will obtain the mean scores of performance for each trial type for all participants on their respective testing day.
+
+```{r Nback data reduction}
+
+
+
+```
+
+
+
