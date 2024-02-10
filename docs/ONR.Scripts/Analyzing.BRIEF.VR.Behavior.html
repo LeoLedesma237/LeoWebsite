@@ -13,7 +13,7 @@
 
 <meta name="date" content="2024-02-10" />
 
-<title>VR Behavioral Scoring</title>
+<title>Data Analyzing BRIEF and VR Behavioral Data</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -350,139 +350,23 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">VR Behavioral Scoring</h1>
+<h1 class="title toc-ignore">Data Analyzing BRIEF and VR Behavioral
+Data</h1>
 <h4 class="author">Leandro Ledesma</h4>
 <h4 class="date">2024-02-10</h4>
 
 </div>
 
 
-<div id="universal-block-code-settings" class="section level3">
-<h3>Universal block code settings</h3>
-<pre class="r"><code>knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(message = FALSE)
-knitr::opts_chunk$set(comment = NULL)</code></pre>
-</div>
-<div id="load-in-the-data-manipulation-packages-first" class="section level3">
-<h3>Load in the data manipulation packages first</h3>
-<pre class="r"><code>library(tidyverse)
-library(ggplot2)
-library(ggpubr)
-library(readxl)
-library(kableExtra)</code></pre>
-</div>
-<div id="load-in-the-data" class="section level3">
-<h3>Load in the data</h3>
-<p>The Day.Labeling script (Step 1) cleaned the VR behavioral data and
-now it is ready for processing to be used for later analysis.</p>
-<pre class="r"><code># Set working directory
-setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data&quot;)
-
-# Load in the data
-GnG.original &lt;- read.csv(&quot;GnG.day.type.added.csv&quot;)
-Nback.original &lt;- read.csv(&quot;Nback.day.type.added.csv&quot;)
-
-# What is the dimensions
-dim(GnG.original)</code></pre>
-<pre><code>[1] 575960     42</code></pre>
-<pre class="r"><code>dim(Nback.original)</code></pre>
-<pre><code>[1] 341020     42</code></pre>
-<p>The data dimensions above are gigantic and unnecessary. This is
-because each person had roughly 1,500 trials for each GnG session and
-around 600 trials for the Nback. Our goal is to reduce these dimensions
-for each person.</p>
-</div>
-<div id="data-reduction-gono-go" class="section level3">
-<h3>Data reduction Go/No-Go</h3>
-<p>We will be reducing the data by obtaining the scores of each person
-on variables of interest. This can be changed later to include more
-rows. For the Go/No-Go there are Day 0’s (practice days) and practice
-sessions that need to be removed. Then we can label the trials by Go or
-No-Go and finally use the group_by function to reduce the data to give
-us the mean scores for trial type for each ID on their respective
-testing day.</p>
-<pre class="r"><code># Remove Day 0 from our dataset or problematic day types (not noted in the visitor log)
-GnG.removed.days &lt;-  GnG.original %&gt;%
-  filter(!(Day.Type %in% c(&quot;Day 0&quot;, &quot;Date not saved in the Visitor Log&quot;)))
-
-# The dimensions of the new dataset
-dim(GnG.removed.days)</code></pre>
-<pre><code>[1] 514300     42</code></pre>
-<pre class="r"><code># Remove practice trials
-GnG.practice.blocks &lt;- c(paste(&quot;G&quot;,1:5,&quot;0&quot;,sep=&quot;&quot;))
-GnG.removed.practice.blocks &lt;- GnG.removed.days %&gt;%
-  filter(!(BlockID %in% GnG.practice.blocks))
-
-# The dimensions of the new dataset
-dim(GnG.removed.practice.blocks)</code></pre>
-<pre><code>[1] 469520     42</code></pre>
-<pre class="r"><code># Add Go and No-Go Labels (This was tested and it came out correct 20/80)
-go.trials &lt;- c(&quot;G1&quot;, &quot;G5&quot;, &quot;G8&quot;, &quot;G12&quot;)
-GnG.trial.type &lt;- GnG.removed.practice.blocks %&gt;%
-  mutate(Trial.Type = ifelse(ItemID %in% go.trials, &quot;Go&quot;, &quot;No-Go&quot;))
-
-# Reduce the dimensions even more by grouping and obtaining performance score
-GnG.grouped.Trial.Type &lt;- GnG.trial.type %&gt;%
-  group_by(UserID, Trial.Type, Day.Type) %&gt;%
-  summarize(trial.mean.correct = round(mean(Correct),2))
-
-# Create another data frame that reduced dimensions but ony for correct reaction times of Go-Trials
-GnG.grouped.Reaction.Time &lt;- GnG.trial.type %&gt;%
-  filter(Trial.Type == &quot;Go&quot; &amp; Correct ==  1) %&gt;%
-  group_by(UserID, Day.Type) %&gt;%
-  summarize(mean.RT = mean(TimeToImpact))</code></pre>
-</div>
-<div id="data-reduction-nback" class="section level3">
-<h3>Data reduction Nback</h3>
-<p>Same procedure as above. We will be removing practice days and
-practice sessions then labeling the trials by either target or
-distractor. Afterwards we will obtain the mean scores of performance for
-each trial type for all participants on their respective testing
-day.</p>
-<pre class="r"><code># Remove Day 0 from our dataset or problematic day types (not noted in the visitor log)
-Nback.removed.days &lt;- Nback.original %&gt;%
-    filter(!(Day.Type %in% c(&quot;Day 0&quot;, &quot;Date not saved in the Visitor Log&quot;)))
-
-# The dimensions of our new dataset
-dim(Nback.removed.days)</code></pre>
-<pre><code>[1] 300060     42</code></pre>
-<pre class="r"><code># Keep all non practice blocks (there are not practice trials but blocks)
-non.practice.blocks &lt;- c(&quot;N1&quot;,&quot;N2&quot;,&quot;N3&quot;,&quot;N4&quot;)
-Nback.kept.non.practice.blocks &lt;- Nback.removed.days %&gt;%
-  filter(BlockID %in% non.practice.blocks)
-
-# The dimensions of our new dataset
-dim(Nback.kept.non.practice.blocks)</code></pre>
-<pre><code>[1] 282380     42</code></pre>
-<pre class="r"><code># Add target and distractor labels
-# This is tricky but follow along
-# We are gonna copy the ItemID variable and add two blanks in the beginning and remove the last two items
-# We are then gonna match the items from this new variable to ItemID
-# The rows were the IDs for both variables match are target trials
-Nback.kept.non.practice.blocks$ItemID2 &lt;- c(&quot;blank&quot;, 
-                                            &quot;blank&quot;, 
-                                            Nback.kept.non.practice.blocks$ItemID[1:(length(Nback.kept.non.practice.blocks$ItemID)-2)])
-
-Nback.kept.non.practice.blocks %&gt;%
-  mutate(Trial.Type = ifelse(ItemID == ItemID2, &quot;Targer&quot;, &quot;Distractor&quot;)) %&gt;%
-  select(Trial.Type) %&gt;%
-  table()</code></pre>
-<pre><code>Trial.Type
-Distractor     Targer 
-    219450      62930 </code></pre>
-<pre class="r"><code>## NEED TO EMAIL THE GUY THAT CREATED THIS GAME CAUSE THESE NUMBERS DON&#39;T ADD UP</code></pre>
-</div>
-<div id="save-the-data" class="section level3">
-<h3>Save the data</h3>
-<pre class="r"><code># Set the save directory
-setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data&quot;)
-
-# Save the data
-write.csv(x = GnG.grouped.Trial.Type,
-          file = &quot;GnG.trial.type.csv&quot;)
-
-write.csv(x = GnG.grouped.Reaction.Time,
-          file = &quot;GnG.reaction.time.csv&quot;)</code></pre>
+<div id="r-markdown" class="section level2">
+<h2>R Markdown</h2>
+<p>This is an R Markdown document. Markdown is a simple formatting
+syntax for authoring HTML, PDF, and MS Word documents. For more details
+on using R Markdown see <a href="http://rmarkdown.rstudio.com" class="uri">http://rmarkdown.rstudio.com</a>.</p>
+<p>When you click the <strong>Knit</strong> button a document will be
+generated that includes both content as well as the output of any
+embedded R code chunks within the document. You can embed an R code
+chunk like this:</p>
 </div>
 
 
