@@ -5,12 +5,71 @@ date: "2024-02-10"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+### Universal block code settings
+
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+
 ```
 
-## R Markdown
+### Load in the data manipulation packages first
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(kableExtra)
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```
+
+### Load in the data
+
+```{r load in the data, warning = FALSE}
+# Set working directory
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
+
+# Load in the GnG data
+GnG.performance <- read.csv("GnG.trial.type.csv")
+GnG.Reaction.Time <- read.csv("GnG.reaction.time.csv")
+
+# Data cleaning- we are only interested in Day 1
+GnG.performance <- GnG.performance %>% filter(Day.Type == "Day 1")
+GnG.Reaction.Time <- GnG.Reaction.Time %>% filter(Day.Type == "Day 1")
+
+# Set working directory
+setwd("~/ONR/BRIEF")
+
+# Load in the BRIEF data
+Inhibtion.T.scores <- read.csv("Inhibition.T.scores.csv")
+
+```
+
+### Merge the datasets together
+
+```{r merge the datasets}
+GnG.performance.merged <- GnG.performance %>%
+  rename(ID = UserID) %>%
+  merge(Inhibtion.T.scores, by = "ID")
+
+```
+
+
+### View the data
+
+```{r view the data}
+# plot GnG performance and Inhibition T scores as a scatterplot
+GnG.performance.merged %>%
+  ggplot(aes(x= T.score, y = trial.mean.correct, color = Trial.Type)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_bw() +
+  labs(x = "BRIEF Inhibit T-scores",
+       y = "VR Go/No-Go Performance")
+  
+
+
+
+```
