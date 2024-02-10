@@ -9,9 +9,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
+<meta name="author" content="Leandro Ledesma" />
 
+<meta name="date" content="2024-02-10" />
 
-<title>Adding Demographic Information</title>
+<title>VR Behavioral Scoring</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -348,171 +350,14 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">Adding Demographic Information</h1>
+<h1 class="title toc-ignore">VR Behavioral Scoring</h1>
+<h4 class="author">Leandro Ledesma</h4>
+<h4 class="date">2024-02-10</h4>
 
 </div>
 
 
-<div id="universal-block-code-settings" class="section level3">
-<h3>Universal block code settings</h3>
-<pre class="r"><code>knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(message = FALSE)
-knitr::opts_chunk$set(comment = NULL)</code></pre>
-</div>
-<div id="load-in-the-data-manipulation-packages-first" class="section level3">
-<h3>Load in the data manipulation packages first</h3>
-<pre class="r"><code># Load in the proper packages
-library(tidyverse)
-library(readr)
-library(readxl)</code></pre>
-</div>
-<div id="last-day-this-code-was-ran" class="section level3">
-<h3>Last day this code was ran</h3>
-<pre class="r"><code>paste(&quot;This code was last ran on:&quot;, Sys.Date())</code></pre>
-<pre><code>[1] &quot;This code was last ran on: 2024-02-09&quot;</code></pre>
-</div>
-<div id="load-in-the-data" class="section level3">
-<h3>Load in the data</h3>
-<p>We will be loading demographic information for the ONR study and then
-merging it with our GnG and Nback CSVs. Demographic information is saved
-in a screener that is used to assess whether participants are eligible
-to participate in the study. Unfortunately this screener does not
-contain ID numbers for the participants. However, we can get around this
-by merging it with the SharePoint ID’s since they contain matching email
-addressed- this is what we will be doing below.</p>
-<p>Message: Had to drop ID’s 14 and 90 because their inclusion led to
-weird merger between the two datasets below. Might be from having
-multiple screening emails.</p>
-<pre class="r"><code># Set working directory
-setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/Demographics&quot;)
 
-# Load in the following data
-PilotIDs &lt;- read.csv(&quot;PilotIDs.csv&quot;)
-Screener.Ano &lt;- read.csv(&quot;Anonymous.Screener.csv&quot;)
-Screener.SONA &lt;- read.csv(&quot;SONA.Screener.csv&quot;)
-Screener.ROTC &lt;- read.csv(&quot;ROTC.Screener.csv&quot;)
-
-# Check the dimensions of the screeners
-dim(Screener.Ano)</code></pre>
-<pre><code>[1] 2091  140</code></pre>
-<pre class="r"><code>dim(Screener.SONA)</code></pre>
-<pre><code>[1]  87 141</code></pre>
-<pre class="r"><code>dim(Screener.ROTC)</code></pre>
-<pre><code>[1]  27 140</code></pre>
-<pre class="r"><code># Remove the first two rows of the Screeners (They are meaningless)
-Screener.Ano &lt;- Screener.Ano[3:nrow(Screener.Ano),]
-Screener.SONA &lt;- Screener.SONA[3:nrow(Screener.SONA),]
-Screener.ROTC &lt;- Screener.ROTC[3:nrow(Screener.ROTC),]
-
-
-# Select the variables of interest from the screeners
-Screener.Ano &lt;- Screener.Ano %&gt;%
-  select(email = Q94,
-         race = RE1,
-         ethnicity = RE2,
-         Sex,
-         Age = AgeYears) %&gt;%
-  data.frame() %&gt;%
-  unique()
-
-Screener.SONA &lt;- Screener.SONA %&gt;%
-  select(email = Q94,
-         race = RE1,
-         ethnicity = RE2,
-         Sex,
-         Age = AgeYears) %&gt;%
-  data.frame() %&gt;%
-  unique()
-
-Screener.ROTC &lt;- Screener.ROTC %&gt;%
-  select(email = RecipientEmail,
-         race = RE1,
-         ethnicity = RE2,
-         Sex,
-         Age = AgeYears) %&gt;%
-  data.frame() %&gt;%
-  unique()
-  
-
-# Bind all of the Screeners into one dataset
-Screener &lt;- Screener.Ano %&gt;%
-  rbind(Screener.SONA) %&gt;%
-  rbind(Screener.ROTC)
-
-
-# Select the variables of interest for PilotIDs
-PilotIDs &lt;- PilotIDs %&gt;%
-  select(email = Email,
-         ID = ParticipantID) %&gt;%
-  data.frame()
-
-# Drop ID&#39;s 90 and 14 because they come out weird in the dataset
-PilotIDs &lt;- PilotIDs %&gt;%
-  filter(!(ID %in% c(&quot;14&quot;,&quot;90&quot;)))
-
-
-# Merge these two datasets to obtain the demographics for each ID
-demographics &lt;- Screener %&gt;%
-  merge(PilotIDs, by = &quot;email&quot;)
-
-# Drop the row if the ID column contains an NA
-demographics &lt;- demographics %&gt;%
-  drop_na(ID)
-
-# Some extra data cleaning
-demographics &lt;- demographics %&gt;%
-  select(ID, everything()) %&gt;%
-  arrange(ID)</code></pre>
-</div>
-<div id="adding-demographics-manually" class="section level3">
-<h3>Adding demographics manually</h3>
-<p>Unfortunately for some reason, Age and Sex was unable to be recovered
-from some ID’s with the code from above- thus these have been added
-manually in a separate excel sheet. If this excel sheet does not contain
-that information then that means it was not recorded during our Day 2
-and to the best of my knowledge unattainable unless the participant is
-contacted for it. No information on race or ethnicity could be recovered
-regardless.</p>
-<pre class="r"><code># Set working directory
-setwd(&quot;~/ONR/Demographics&quot;)
-
-# Load in the manual demographic sheet
-manual.demographics &lt;- read_excel(&quot;demographics.manual.xlsx&quot;)
-
-# no demographic information avaiable
-paste(&quot;Warning, no demographic information could be found for the following ID:&quot;, manual.demographics$ID[is.na(manual.demographics$Age)],sep=&quot; &quot;)</code></pre>
-<pre><code>[1] &quot;Warning, no demographic information could be found for the following ID: 134&quot;
-[2] &quot;Warning, no demographic information could be found for the following ID: 181&quot;
-[3] &quot;Warning, no demographic information could be found for the following ID: 182&quot;
-[4] &quot;Warning, no demographic information could be found for the following ID: 185&quot;
-[5] &quot;Warning, no demographic information could be found for the following ID: 191&quot;</code></pre>
-<pre class="r"><code># Drop the ID&#39;s from above
-manual.demographics &lt;- manual.demographics %&gt;%
-  filter(!(ID %in% c(&quot;134&quot;,&quot;181&quot;,&quot;182&quot;,&quot;185&quot;,&quot;191&quot;)))
-
-# Add manual demographics to the rest of our demographics dataset
-manual.demographics$email &lt;- NA
-manual.demographics$race &lt;- NA
-manual.demographics$ethnicity &lt;- NA
-
-manual.demographics &lt;- manual.demographics %&gt;% select(ID, email, race, ethnicity, Sex, Age)
-
-demographics &lt;- demographics %&gt;%
-  rbind(manual.demographics)</code></pre>
-</div>
-<div id="current-demographic-information-numbers" class="section level3">
-<h3>Current demographic information numbers</h3>
-<pre class="r"><code>paste(&quot;We have demographic information for:&quot;, length(unique(demographics$ID)),&quot;participants out of&quot;, length(unique(PilotIDs$ID)), sep=&quot; &quot;)</code></pre>
-<pre><code>[1] &quot;We have demographic information for: 196 participants out of 206&quot;</code></pre>
-</div>
-<div id="save-demographic-information" class="section level3">
-<h3>Save demographic information</h3>
-<pre class="r"><code># Set save working directory
-setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/Demographics&quot;)
-
-# Save the data as a CSV
-write.csv(x = demographics, file = &quot;complete.demographics.csv&quot;)</code></pre>
-</div>
 
 
 

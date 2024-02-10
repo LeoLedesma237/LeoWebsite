@@ -17,6 +17,7 @@ knitr::opts_chunk$set(comment = NULL)
 # Load in the proper packages
 library(tidyverse)
 library(readr)
+library(readxl)
 ```
 
 ### Last day this code was ran
@@ -39,13 +40,23 @@ setwd("C:/Users/lledesma.TIMES/Documents/ONR/Demographics")
 
 # Load in the following data
 PilotIDs <- read.csv("PilotIDs.csv")
-Screener <- read.csv("Anonymous.Screener.csv")
+Screener.Ano <- read.csv("Anonymous.Screener.csv")
+Screener.SONA <- read.csv("SONA.Screener.csv")
+Screener.ROTC <- read.csv("ROTC.Screener.csv")
 
-# Remove the first two rows of Screener
-Screener <- Screener[3:nrow(Screener),]
+# Check the dimensions of the screeners
+dim(Screener.Ano)
+dim(Screener.SONA)
+dim(Screener.ROTC)
 
-# Select the variables of interest for screener
-Screener <- Screener %>%
+# Remove the first two rows of the Screeners (They are meaningless)
+Screener.Ano <- Screener.Ano[3:nrow(Screener.Ano),]
+Screener.SONA <- Screener.SONA[3:nrow(Screener.SONA),]
+Screener.ROTC <- Screener.ROTC[3:nrow(Screener.ROTC),]
+
+
+# Select the variables of interest from the screeners
+Screener.Ano <- Screener.Ano %>%
   select(email = Q94,
          race = RE1,
          ethnicity = RE2,
@@ -53,6 +64,31 @@ Screener <- Screener %>%
          Age = AgeYears) %>%
   data.frame() %>%
   unique()
+
+Screener.SONA <- Screener.SONA %>%
+  select(email = Q94,
+         race = RE1,
+         ethnicity = RE2,
+         Sex,
+         Age = AgeYears) %>%
+  data.frame() %>%
+  unique()
+
+Screener.ROTC <- Screener.ROTC %>%
+  select(email = RecipientEmail,
+         race = RE1,
+         ethnicity = RE2,
+         Sex,
+         Age = AgeYears) %>%
+  data.frame() %>%
+  unique()
+  
+
+# Bind all of the Screeners into one dataset
+Screener <- Screener.Ano %>%
+  rbind(Screener.SONA) %>%
+  rbind(Screener.ROTC)
+
 
 # Select the variables of interest for PilotIDs
 PilotIDs <- PilotIDs %>%
@@ -69,14 +105,52 @@ PilotIDs <- PilotIDs %>%
 demographics <- Screener %>%
   merge(PilotIDs, by = "email")
 
+# Drop the row if the ID column contains an NA
 demographics <- demographics %>%
-  filter(complete.cases(.)) %>%
+  drop_na(ID)
+
+# Some extra data cleaning
+demographics <- demographics %>%
   select(ID, everything()) %>%
   arrange(ID)
 
 ```
 
-More work to be done, we are missing the demographics of some of our ROTC members. 
+
+### Adding demographics manually
+
+Unfortunately for some reason, Age and Sex was unable to be recovered from some ID's with the code from above- thus these have been added manually in a separate excel sheet. If this excel sheet does not contain that information then that means it was not recorded during our Day 2 and to the best of my knowledge unattainable unless the participant is contacted for it. No information on race or ethnicity could be recovered regardless.
+
+```{r manual demographics, warning= FALSE}
+# Set working directory
+setwd("~/ONR/Demographics")
+
+# Load in the manual demographic sheet
+manual.demographics <- read_excel("demographics.manual.xlsx")
+
+# no demographic information avaiable
+paste("Warning, no demographic information could be found for the following ID:", manual.demographics$ID[is.na(manual.demographics$Age)],sep=" ")
+
+# Drop the ID's from above
+manual.demographics <- manual.demographics %>%
+  filter(!(ID %in% c("134","181","182","185","191")))
+
+# Add manual demographics to the rest of our demographics dataset
+manual.demographics$email <- NA
+manual.demographics$race <- NA
+manual.demographics$ethnicity <- NA
+
+manual.demographics <- manual.demographics %>% select(ID, email, race, ethnicity, Sex, Age)
+
+demographics <- demographics %>%
+  rbind(manual.demographics)
+```
+### Current demographic information numbers
+
+```{r count demographic info numbers}
+paste("We have demographic information for:", length(unique(demographics$ID)),"participants out of", length(unique(PilotIDs$ID)), sep=" ")
+
+```
 
 ### Save demographic information
 

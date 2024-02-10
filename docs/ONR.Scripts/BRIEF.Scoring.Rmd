@@ -20,6 +20,7 @@ knitr::opts_chunk$set(comment = NULL)
 library(tidyverse)
 library(ggplot2)
 library(ggpubr)
+library(readxl)
 library(kableExtra)
 library(fuzzyjoin)
 
@@ -27,7 +28,7 @@ library(fuzzyjoin)
 
 ### Load in the data
 
-```{r load in the data}
+```{r load in the data, warning = FALSE}
 # Set working directory
 setwd("~/ONR/Qualtrics")
 
@@ -233,6 +234,55 @@ Q16: I have trouble doing more than one thing at a time (Question 68)
 The responses to the working memory questions for the most part tend to be uniform, with most responses for most items being half and half between 'sometimes' and 'never' and about 10% of responses for most items being 'often.'
 
 
+### Missing data handling
+
+Any subjects that had more than 2 missing items for either inhibition or working memory were discarded and any subjects that had 2 or 1 items missing had those values replaced with a 1. 
+
+After following this procedure we are left with 80 participants for both Inhibition and Working Memory. In addition, we dropped ID's 125 and n126 since there were two copies of 125 and ID 127 was not present. Thus this needs to be resolved in the original Qualtrics CSV before they can be further included. 
+
+```{r controlling for missing data count}
+# Remove the following 'IDs' since we cannot tell who they actually belong to
+Inhibition <- Inhibition %>%
+  filter(!(ID %in% c("125","n126")))
+
+Working.Memory <- Working.Memory %>%
+  filter(!(ID %in% c("125","n126")))
+
+# Data cleaning: removes "" cells
+Inhibition.NA.count <- Inhibition %>%
+  lapply(., function(x) as.numeric(x)) %>%
+  data.frame()
+
+Working.Memory.NA.count <- Working.Memory %>%
+  lapply(., function(x) as.numeric(x)) %>%
+  data.frame()
+
+# Count the NAs of each ID and place it into the data frame
+Inhibition.NA.count$missing.num <- rowSums(is.na(Inhibition.NA.count))
+Working.Memory.NA.count$missing.num <- rowSums(is.na(Working.Memory.NA.count))
+
+# Remove any rows that have more than two missing values 
+Inhibition.NA.count <- Inhibition.NA.count %>%
+  filter(missing.num < 2)
+
+Working.Memory.NA.count <- Working.Memory.NA.count %>%
+  filter(missing.num < 2)
+
+# Replace any NA's that are remaining into 1, which indicates the average
+Inhibition.cleaned <- Inhibition.NA.count %>%
+  lapply(., function(x) ifelse(is.na(x), 1, x)) %>%
+  data.frame() %>%
+  select(-missing.num)
+
+Working.Memory.cleaned <- Working.Memory.NA.count %>%
+  lapply(., function(x) ifelse(is.na(x), 1, x)) %>%
+  data.frame() %>%
+  select(-missing.num)
+
+# Obtain dimensions of completed cases
+dim(Inhibition.cleaned)
+dim(Working.Memory.cleaned)
+```
 ### Scoring Inhibition and Working Memory Items [Raw Score]
 
 Inhibit: "Control impulses; appropriately stop own behavior at the proper time."
@@ -248,22 +298,8 @@ To score, take the sum of the responses for each item within their respective do
 3 = Often
 
 
+
 ```{r scoring the BRIEF questions, warning = FALSE, out.width= "80%"}
-# Data cleaning: removes "" cells
-Inhibition.cleaned <- Inhibition %>%
-  lapply(., function(x) as.numeric(x)) %>%
-  data.frame() %>%
-  filter(complete.cases(.))
-
-Working.Memory.cleaned <- Working.Memory %>%
-  lapply(., function(x) as.numeric(x)) %>%
-  data.frame() %>%
-  filter(complete.cases(.))
-
-# Obtain dimensions of completed cases
-dim(Inhibition.cleaned)
-dim(Working.Memory.cleaned)
-
 
 # Calculating the raw score
 Inhibition.cleaned <- Inhibition.cleaned %>%
@@ -302,14 +338,11 @@ ggarrange(plot1, plot2)
   
 ```
 
-
-### Scoring Inhibition and Working Memory Items [T Score]
+### Including Age into our IDs
 
 T-scores are a transformation of the raw score that control for the subject's age. We will need to import each subject's age and then use that measure to accurately calculate their T-score from their raw score. 
 
-Additionally, we will need to create a conversion table. This will be done outside of this script manually onto an excel sheet that will be imported. 
-
-```{r calculating t scores, warning = FALSE}
+```{r including age, warning = FALSE}
 # Import demographic information
 setwd("~/ONR/Demographics")
 
@@ -320,15 +353,159 @@ demographics <- read.csv("complete.demographics.csv")
 demo <- demographics %>%
   select(ID, Age)
 
-# data cleaning (rename 125 to 126)
-Inhibition.cleaned$ID[3] <- 126
-Working.Memory.cleaned$ID[3] <- 126
+# Participants with demographic information
+msg1 <- paste(length(intersect(Inhibition.cleaned$ID, demo$ID)), "out of our", length(unique(Inhibition.cleaned$ID)), "participants with inhibition data have demographic data", sep =" ")
+
+msg2 <- paste("We need to find the demographic data for the remaining",length(setdiff(Inhibition.cleaned$ID, demo$ID)) ,"participants", sep =" ")
+
+msg3 <- paste(length(intersect(Working.Memory.cleaned$ID, demo$ID)), "out of our", length(unique(Working.Memory.cleaned$ID)), "participants with working memory data have demographic data", sep =" ")
+
+msg4 <- paste("We need to find the demographic data for the remaining",length(setdiff(Working.Memory.cleaned$ID, demo$ID)) ,"participants", sep =" ")
+
+# Print out all of the messages
+msg1
+msg2
+msg3
+msg4
 
 # Merge to include age
 Inhibition.cleaned.age <- Inhibition.cleaned %>%
-  merge(demo, by = "ID")
+  merge(demo, by = "ID") %>%
+  select(ID, Age, Raw.Score, everything())
 
 Working.Memory.cleaned.age <- Working.Memory.cleaned%>%
-  merge(demo, by = "ID")
+  merge(demo, by = "ID") %>%
+  select(ID, Age, Raw.Score, everything())
+
+# Drop ID's that are missing Age data
+Inhibition.cleaned.age <- Inhibition.cleaned.age %>%
+  drop_na(Age)
+
+Working.Memory.cleaned.age <- Working.Memory.cleaned.age %>%
+  drop_na(Age)
+```
+
+
+### Scoring Inhibition and Working Memory Items [T-Score]
+
+
+```{r calculating t scores, warning = FALSE}
+
+# Calculating T-scores
+# Set working directory
+setwd("~/ONR/Qualtrics")
+
+# Load in the T-score conversion
+T.score.table.18_29 <- read_excel("BRIEF T score conversion table.xlsx", sheet = "18-29")
+T.score.table.30_39 <- read_excel("BRIEF T score conversion table.xlsx", sheet = "30-39")
+
+# Data cleaning- drop all rows with NA's
+T.score.table.18_29 <- drop_na(T.score.table.18_29)
+T.score.table.30_39 <- drop_na(T.score.table.30_39)
+
+# Calculate T scores for inhibition 
+Inhibition.T.scores <- list()
+
+for(ii in 1:nrow(Inhibition.cleaned.age)) {
+
+  # Set an if statement with the age to determine how to transform the raw score
+  if (Inhibition.cleaned.age$Age[ii] < 30) {
+    
+    # Extract the current age of the loop
+    current.age <- Inhibition.cleaned.age$Age[ii]
+    
+    # Extract the current Raw Score
+    current.Raw.score <- Inhibition.cleaned.age$Raw.Score[ii]
+    
+    # Obtain the T score from the age
+    Inhibition.T.scores[[ii]] <- T.score.table.18_29 %>%
+      filter(raw.score == current.Raw.score) %>%
+      select(inhibit.T) %>%
+      unlist()
+    
+  } else {
+    
+    # Extract the current age of the loop
+    current.age <- Inhibition.cleaned.age$Age[ii]
+    
+    # Extract the current Raw Score
+    current.Raw.score <- Inhibition.cleaned.age$Raw.Score[ii]
+    
+    # Obtain the T score from the age
+    Inhibition.T.scores[[ii]] <- T.score.table.18_29 %>%
+      filter(raw.score == current.Raw.score) %>%
+      select(inhibit.T) %>%
+      unlist()
+    
+  }
+  
+}
+
+# Introduce the Inhibit T scores back into the dataframe
+Inhibition.cleaned.age$T.score <- unlist(Inhibition.T.scores)
+
+# Calculate T scores for working memory
+Working.Memory.T.scores  <- list()
+
+for(ii in 1:nrow(Working.Memory.cleaned.age)) {
+
+  # Set an if statement with the age to determine how to transform the raw score
+  if (Working.Memory.cleaned.age$Age[ii] < 30) {
+    
+    # Extract the current age of the loop
+    current.age <- Working.Memory.cleaned.age$Age[ii]
+    
+    # Extract the current Raw Score
+    current.Raw.score <- Working.Memory.cleaned.age$Raw.Score[ii]
+    
+    # Obtain the T score from the age
+    Working.Memory.T.scores[[ii]] <- T.score.table.18_29 %>%
+      filter(raw.score == current.Raw.score) %>%
+      select(working.T) %>%
+      unlist()
+    
+  } else {
+    
+    # Extract the current age of the loop
+    current.age <- Working.Memory.cleaned.age$Age[ii]
+    
+    # Extract the current Raw Score
+    current.Raw.score <- Working.Memory.cleaned.age$Raw.Score[ii]
+    
+    # Obtain the T score from the age
+    Working.Memory.T.scores[[ii]] <- T.score.table.18_29 %>%
+      filter(raw.score == current.Raw.score) %>%
+      select(working.T) %>%
+      unlist()
+    
+  }
+  
+}
+
+# Introduce the Working Memory T scores back into the dataframe
+Working.Memory.cleaned.age$T.score <- unlist(Working.Memory.T.scores)
 
 ```
+
+
+### Total data remaining
+
+```{r data remaining}
+# Report the total data that we have
+paste("We have",length(unique(Inhibition.cleaned.age$ID)), "participants with T-scores for their BRIEF inhibit items")
+paste("We have",length(unique(Working.Memory.cleaned.age$ID)), "participants with T-scores for their BRIEF Working Memory items")
+
+```
+
+### Save the data
+
+```{r save the data}
+# Set the save directory
+setwd("~/ONR/BRIEF")
+
+# Save the data
+write.csv(x = Inhibition.cleaned.age,
+          file = "Inhibition.T.scores.csv")
+
+write.csv(x = Working.Memory.cleaned.age,
+          file = "Working.Memory.T.scores.csv")

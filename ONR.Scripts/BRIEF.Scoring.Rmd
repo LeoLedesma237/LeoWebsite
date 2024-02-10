@@ -236,7 +236,7 @@ The responses to the working memory questions for the most part tend to be unifo
 
 ### Missing data handling
 
-Any subjects that had more than 2 missing items for either inhibition and working memory were discarded and any subjects that had 2 or 1 items missing had those values replaced with a 1. 
+Any subjects that had more than 2 missing items for either inhibition or working memory were discarded and any subjects that had 2 or 1 items missing had those values replaced with a 1. 
 
 After following this procedure we are left with 80 participants for both Inhibition and Working Memory. In addition, we dropped ID's 125 and n126 since there were two copies of 125 and ID 127 was not present. Thus this needs to be resolved in the original Qualtrics CSV before they can be further included. 
 
