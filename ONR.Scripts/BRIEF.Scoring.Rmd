@@ -342,7 +342,7 @@ ggarrange(plot1, plot2)
 
 T-scores are a transformation of the raw score that control for the subject's age. We will need to import each subject's age and then use that measure to accurately calculate their T-score from their raw score. 
 
-```{r including age}
+```{r including age, warning = FALSE}
 # Import demographic information
 setwd("~/ONR/Demographics")
 
@@ -370,11 +370,19 @@ msg4
 
 # Merge to include age
 Inhibition.cleaned.age <- Inhibition.cleaned %>%
-  merge(demo, by = "ID")
+  merge(demo, by = "ID") %>%
+  select(ID, Age, Raw.Score, everything())
 
 Working.Memory.cleaned.age <- Working.Memory.cleaned%>%
-  merge(demo, by = "ID")
+  merge(demo, by = "ID") %>%
+  select(ID, Age, Raw.Score, everything())
 
+# Drop ID's that are missing Age data
+Inhibition.cleaned.age <- Inhibition.cleaned.age %>%
+  drop_na(Age)
+
+Working.Memory.cleaned.age <- Working.Memory.cleaned.age %>%
+  drop_na(Age)
 ```
 
 
@@ -395,8 +403,109 @@ T.score.table.30_39 <- read_excel("BRIEF T score conversion table.xlsx", sheet =
 T.score.table.18_29 <- drop_na(T.score.table.18_29)
 T.score.table.30_39 <- drop_na(T.score.table.30_39)
 
-# Calculate T scores
+# Calculate T scores for inhibition 
+Inhibition.T.scores <- list()
 
+for(ii in 1:nrow(Inhibition.cleaned.age)) {
 
+  # Set an if statement with the age to determine how to transform the raw score
+  if (Inhibition.cleaned.age$Age[ii] < 30) {
+    
+    # Extract the current age of the loop
+    current.age <- Inhibition.cleaned.age$Age[ii]
+    
+    # Extract the current Raw Score
+    current.Raw.score <- Inhibition.cleaned.age$Raw.Score[ii]
+    
+    # Obtain the T score from the age
+    Inhibition.T.scores[[ii]] <- T.score.table.18_29 %>%
+      filter(raw.score == current.Raw.score) %>%
+      select(inhibit.T) %>%
+      unlist()
+    
+  } else {
+    
+    # Extract the current age of the loop
+    current.age <- Inhibition.cleaned.age$Age[ii]
+    
+    # Extract the current Raw Score
+    current.Raw.score <- Inhibition.cleaned.age$Raw.Score[ii]
+    
+    # Obtain the T score from the age
+    Inhibition.T.scores[[ii]] <- T.score.table.18_29 %>%
+      filter(raw.score == current.Raw.score) %>%
+      select(inhibit.T) %>%
+      unlist()
+    
+  }
+  
+}
+
+# Introduce the Inhibit T scores back into the dataframe
+Inhibition.cleaned.age$T.score <- unlist(Inhibition.T.scores)
+
+# Calculate T scores for working memory
+Working.Memory.T.scores  <- list()
+
+for(ii in 1:nrow(Working.Memory.cleaned.age)) {
+
+  # Set an if statement with the age to determine how to transform the raw score
+  if (Working.Memory.cleaned.age$Age[ii] < 30) {
+    
+    # Extract the current age of the loop
+    current.age <- Working.Memory.cleaned.age$Age[ii]
+    
+    # Extract the current Raw Score
+    current.Raw.score <- Working.Memory.cleaned.age$Raw.Score[ii]
+    
+    # Obtain the T score from the age
+    Working.Memory.T.scores[[ii]] <- T.score.table.18_29 %>%
+      filter(raw.score == current.Raw.score) %>%
+      select(working.T) %>%
+      unlist()
+    
+  } else {
+    
+    # Extract the current age of the loop
+    current.age <- Working.Memory.cleaned.age$Age[ii]
+    
+    # Extract the current Raw Score
+    current.Raw.score <- Working.Memory.cleaned.age$Raw.Score[ii]
+    
+    # Obtain the T score from the age
+    Working.Memory.T.scores[[ii]] <- T.score.table.18_29 %>%
+      filter(raw.score == current.Raw.score) %>%
+      select(working.T) %>%
+      unlist()
+    
+  }
+  
+}
+
+# Introduce the Working Memory T scores back into the dataframe
+Working.Memory.cleaned.age$T.score <- unlist(Working.Memory.T.scores)
 
 ```
+
+
+### Total data remaining
+
+```{r data remaining}
+# Report the total data that we have
+paste("We have",length(unique(Inhibition.cleaned.age$ID)), "participants with T-scores for their BRIEF inhibit items")
+paste("We have",length(unique(Working.Memory.cleaned.age$ID)), "participants with T-scores for their BRIEF Working Memory items")
+
+```
+
+### Save the data
+
+```{r save the data}
+# Set the save directory
+setwd("~/ONR/BRIEF")
+
+# Save the data
+write.csv(x = Inhibition.cleaned.age,
+          file = "Inhibition.T.scores.csv")
+
+write.csv(x = Working.Memory.cleaned.age,
+          file = "Working.Memory.T.scores.csv")

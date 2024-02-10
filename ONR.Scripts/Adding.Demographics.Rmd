@@ -131,6 +131,10 @@ manual.demographics <- read_excel("demographics.manual.xlsx")
 # no demographic information avaiable
 paste("Warning, no demographic information could be found for the following ID:", manual.demographics$ID[is.na(manual.demographics$Age)],sep=" ")
 
+# Drop the ID's from above
+manual.demographics <- manual.demographics %>%
+  filter(!(ID %in% c("134","181","182","185","191")))
+
 # Add manual demographics to the rest of our demographics dataset
 manual.demographics$email <- NA
 manual.demographics$race <- NA

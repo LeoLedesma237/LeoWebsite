@@ -486,7 +486,11 @@ paste(&quot;Warning, no demographic information could be found for the following
 [3] &quot;Warning, no demographic information could be found for the following ID: 182&quot;
 [4] &quot;Warning, no demographic information could be found for the following ID: 185&quot;
 [5] &quot;Warning, no demographic information could be found for the following ID: 191&quot;</code></pre>
-<pre class="r"><code># Add manual demographics to the rest of our demographics dataset
+<pre class="r"><code># Drop the ID&#39;s from above
+manual.demographics &lt;- manual.demographics %&gt;%
+  filter(!(ID %in% c(&quot;134&quot;,&quot;181&quot;,&quot;182&quot;,&quot;185&quot;,&quot;191&quot;)))
+
+# Add manual demographics to the rest of our demographics dataset
 manual.demographics$email &lt;- NA
 manual.demographics$race &lt;- NA
 manual.demographics$ethnicity &lt;- NA
@@ -499,7 +503,7 @@ demographics &lt;- demographics %&gt;%
 <div id="current-demographic-information-numbers" class="section level3">
 <h3>Current demographic information numbers</h3>
 <pre class="r"><code>paste(&quot;We have demographic information for:&quot;, length(unique(demographics$ID)),&quot;participants out of&quot;, length(unique(PilotIDs$ID)), sep=&quot; &quot;)</code></pre>
-<pre><code>[1] &quot;We have demographic information for: 201 participants out of 206&quot;</code></pre>
+<pre><code>[1] &quot;We have demographic information for: 196 participants out of 206&quot;</code></pre>
 </div>
 <div id="save-demographic-information" class="section level3">
 <h3>Save demographic information</h3>
