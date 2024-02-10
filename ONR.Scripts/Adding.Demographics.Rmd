@@ -17,6 +17,7 @@ knitr::opts_chunk$set(comment = NULL)
 # Load in the proper packages
 library(tidyverse)
 library(readr)
+library(readxl)
 ```
 
 ### Last day this code was ran
@@ -43,6 +44,10 @@ Screener.Ano <- read.csv("Anonymous.Screener.csv")
 Screener.SONA <- read.csv("SONA.Screener.csv")
 Screener.ROTC <- read.csv("ROTC.Screener.csv")
 
+# Check the dimensions of the screeners
+dim(Screener.Ano)
+dim(Screener.SONA)
+dim(Screener.ROTC)
 
 # Remove the first two rows of the Screeners (They are meaningless)
 Screener.Ano <- Screener.Ano[3:nrow(Screener.Ano),]
@@ -114,9 +119,28 @@ demographics <- demographics %>%
 
 ### Adding demographics manually
 
-Unfortunately for some reason, 
+Unfortunately for some reason, Age and Sex was unable to be recovered from some ID's with the code from above- thus these have been added manually in a separate excel sheet. If this excel sheet does not contain that information then that means it was not recorded during our Day 2 and to the best of my knowledge unattainable unless the participant is contacted for it. No information on race or ethnicity could be recovered regardless.
 
+```{r manual demographics, warning= FALSE}
+# Set working directory
+setwd("~/ONR/Demographics")
 
+# Load in the manual demographic sheet
+manual.demographics <- read_excel("demographics.manual.xlsx")
+
+# no demographic information avaiable
+paste("Warning, no demographic information could be found for the following ID:", manual.demographics$ID[is.na(manual.demographics$Age)],sep=" ")
+
+# Add manual demographics to the rest of our demographics dataset
+manual.demographics$email <- NA
+manual.demographics$race <- NA
+manual.demographics$ethnicity <- NA
+
+manual.demographics <- manual.demographics %>% select(ID, email, race, ethnicity, Sex, Age)
+
+demographics <- demographics %>%
+  rbind(manual.demographics)
+```
 ### Current demographic information numbers
 
 ```{r count demographic info numbers}

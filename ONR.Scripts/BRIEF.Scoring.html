@@ -1061,13 +1061,13 @@ msg4 &lt;- paste(&quot;We need to find the demographic data for the remaining&qu
 
 # Print out all of the messages
 msg1</code></pre>
-<pre><code>[1] &quot;63 out of our 79 participants with inhibition data have demographic data&quot;</code></pre>
+<pre><code>[1] &quot;78 out of our 79 participants with inhibition data have demographic data&quot;</code></pre>
 <pre class="r"><code>msg2</code></pre>
-<pre><code>[1] &quot;We need to find the demographic data for the remaining 16 participants&quot;</code></pre>
+<pre><code>[1] &quot;We need to find the demographic data for the remaining 1 participants&quot;</code></pre>
 <pre class="r"><code>msg3</code></pre>
-<pre><code>[1] &quot;63 out of our 79 participants with working memory data have demographic data&quot;</code></pre>
+<pre><code>[1] &quot;78 out of our 79 participants with working memory data have demographic data&quot;</code></pre>
 <pre class="r"><code>msg4</code></pre>
-<pre><code>[1] &quot;We need to find the demographic data for the remaining 16 participants&quot;</code></pre>
+<pre><code>[1] &quot;We need to find the demographic data for the remaining 1 participants&quot;</code></pre>
 <pre class="r"><code># Merge to include age
 Inhibition.cleaned.age &lt;- Inhibition.cleaned %&gt;%
   merge(demo, by = &quot;ID&quot;)

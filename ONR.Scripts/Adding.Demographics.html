@@ -363,7 +363,8 @@ knitr::opts_chunk$set(comment = NULL)</code></pre>
 <h3>Load in the data manipulation packages first</h3>
 <pre class="r"><code># Load in the proper packages
 library(tidyverse)
-library(readr)</code></pre>
+library(readr)
+library(readxl)</code></pre>
 </div>
 <div id="last-day-this-code-was-ran" class="section level3">
 <h3>Last day this code was ran</h3>
@@ -391,8 +392,14 @@ Screener.Ano &lt;- read.csv(&quot;Anonymous.Screener.csv&quot;)
 Screener.SONA &lt;- read.csv(&quot;SONA.Screener.csv&quot;)
 Screener.ROTC &lt;- read.csv(&quot;ROTC.Screener.csv&quot;)
 
-
-# Remove the first two rows of the Screeners (They are meaningless)
+# Check the dimensions of the screeners
+dim(Screener.Ano)</code></pre>
+<pre><code>[1] 2091  140</code></pre>
+<pre class="r"><code>dim(Screener.SONA)</code></pre>
+<pre><code>[1]  87 141</code></pre>
+<pre class="r"><code>dim(Screener.ROTC)</code></pre>
+<pre><code>[1]  27 140</code></pre>
+<pre class="r"><code># Remove the first two rows of the Screeners (They are meaningless)
 Screener.Ano &lt;- Screener.Ano[3:nrow(Screener.Ano),]
 Screener.SONA &lt;- Screener.SONA[3:nrow(Screener.SONA),]
 Screener.ROTC &lt;- Screener.ROTC[3:nrow(Screener.ROTC),]
@@ -418,7 +425,7 @@ Screener.SONA &lt;- Screener.SONA %&gt;%
   unique()
 
 Screener.ROTC &lt;- Screener.ROTC %&gt;%
-  select(email = Q94,
+  select(email = RecipientEmail,
          race = RE1,
          ethnicity = RE2,
          Sex,
@@ -456,13 +463,43 @@ demographics &lt;- demographics %&gt;%
 demographics &lt;- demographics %&gt;%
   select(ID, everything()) %&gt;%
   arrange(ID)</code></pre>
-<p>More work to be done, we are missing the demographics of some of our
-ROTC members.</p>
+</div>
+<div id="adding-demographics-manually" class="section level3">
+<h3>Adding demographics manually</h3>
+<p>Unfortunately for some reason, Age and Sex was unable to be recovered
+from some ID’s with the code from above- thus these have been added
+manually in a separate excel sheet. If this excel sheet does not contain
+that information then that means it was not recorded during our Day 2
+and to the best of my knowledge unattainable unless the participant is
+contacted for it. No information on race or ethnicity could be recovered
+regardless.</p>
+<pre class="r"><code># Set working directory
+setwd(&quot;~/ONR/Demographics&quot;)
+
+# Load in the manual demographic sheet
+manual.demographics &lt;- read_excel(&quot;demographics.manual.xlsx&quot;)
+
+# no demographic information avaiable
+paste(&quot;Warning, no demographic information could be found for the following ID:&quot;, manual.demographics$ID[is.na(manual.demographics$Age)],sep=&quot; &quot;)</code></pre>
+<pre><code>[1] &quot;Warning, no demographic information could be found for the following ID: 134&quot;
+[2] &quot;Warning, no demographic information could be found for the following ID: 181&quot;
+[3] &quot;Warning, no demographic information could be found for the following ID: 182&quot;
+[4] &quot;Warning, no demographic information could be found for the following ID: 185&quot;
+[5] &quot;Warning, no demographic information could be found for the following ID: 191&quot;</code></pre>
+<pre class="r"><code># Add manual demographics to the rest of our demographics dataset
+manual.demographics$email &lt;- NA
+manual.demographics$race &lt;- NA
+manual.demographics$ethnicity &lt;- NA
+
+manual.demographics &lt;- manual.demographics %&gt;% select(ID, email, race, ethnicity, Sex, Age)
+
+demographics &lt;- demographics %&gt;%
+  rbind(manual.demographics)</code></pre>
 </div>
 <div id="current-demographic-information-numbers" class="section level3">
 <h3>Current demographic information numbers</h3>
 <pre class="r"><code>paste(&quot;We have demographic information for:&quot;, length(unique(demographics$ID)),&quot;participants out of&quot;, length(unique(PilotIDs$ID)), sep=&quot; &quot;)</code></pre>
-<pre><code>[1] &quot;We have demographic information for: 180 participants out of 206&quot;</code></pre>
+<pre><code>[1] &quot;We have demographic information for: 201 participants out of 206&quot;</code></pre>
 </div>
 <div id="save-demographic-information" class="section level3">
 <h3>Save demographic information</h3>

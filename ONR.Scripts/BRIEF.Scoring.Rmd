@@ -338,14 +338,11 @@ ggarrange(plot1, plot2)
   
 ```
 
-
-### Scoring Inhibition and Working Memory Items [T-Score]
+### Including Age into our IDs
 
 T-scores are a transformation of the raw score that control for the subject's age. We will need to import each subject's age and then use that measure to accurately calculate their T-score from their raw score. 
 
-Additionally, we will need to create a conversion table. This will be done outside of this script manually onto an excel sheet that will be imported. 
-
-```{r calculating t scores, warning = FALSE}
+```{r including age}
 # Import demographic information
 setwd("~/ONR/Demographics")
 
@@ -378,6 +375,13 @@ Inhibition.cleaned.age <- Inhibition.cleaned %>%
 Working.Memory.cleaned.age <- Working.Memory.cleaned%>%
   merge(demo, by = "ID")
 
+```
+
+
+### Scoring Inhibition and Working Memory Items [T-Score]
+
+
+```{r calculating t scores, warning = FALSE}
 
 # Calculating T-scores
 # Set working directory
@@ -391,7 +395,8 @@ T.score.table.30_39 <- read_excel("BRIEF T score conversion table.xlsx", sheet =
 T.score.table.18_29 <- drop_na(T.score.table.18_29)
 T.score.table.30_39 <- drop_na(T.score.table.30_39)
 
-# Calculate 
+# Calculate T scores
+
 
 
 ```
