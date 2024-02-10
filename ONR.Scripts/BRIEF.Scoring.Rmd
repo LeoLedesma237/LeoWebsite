@@ -339,7 +339,7 @@ ggarrange(plot1, plot2)
 ```
 
 
-### Scoring Inhibition and Working Memory Items [T Score]
+### Scoring Inhibition and Working Memory Items [T-Score]
 
 T-scores are a transformation of the raw score that control for the subject's age. We will need to import each subject's age and then use that measure to accurately calculate their T-score from their raw score. 
 
@@ -356,6 +356,20 @@ demographics <- read.csv("complete.demographics.csv")
 demo <- demographics %>%
   select(ID, Age)
 
+# Participants with demographic information
+msg1 <- paste(length(intersect(Inhibition.cleaned$ID, demo$ID)), "out of our", length(unique(Inhibition.cleaned$ID)), "participants with inhibition data have demographic data", sep =" ")
+
+msg2 <- paste("We need to find the demographic data for the remaining",length(setdiff(Inhibition.cleaned$ID, demo$ID)) ,"participants", sep =" ")
+
+msg3 <- paste(length(intersect(Working.Memory.cleaned$ID, demo$ID)), "out of our", length(unique(Working.Memory.cleaned$ID)), "participants with working memory data have demographic data", sep =" ")
+
+msg4 <- paste("We need to find the demographic data for the remaining",length(setdiff(Working.Memory.cleaned$ID, demo$ID)) ,"participants", sep =" ")
+
+# Print out all of the messages
+msg1
+msg2
+msg3
+msg4
 
 # Merge to include age
 Inhibition.cleaned.age <- Inhibition.cleaned %>%
@@ -363,10 +377,6 @@ Inhibition.cleaned.age <- Inhibition.cleaned %>%
 
 Working.Memory.cleaned.age <- Working.Memory.cleaned%>%
   merge(demo, by = "ID")
-
-# Remaining participants
-paste("Number of participants with full inhibition data:", length(unique(Inhibition.cleaned.age$ID)))
-paste("Number of participants with full inhibition data:", length(unique(Working.Memory.cleaned.age$ID)))
 
 
 # Calculating T-scores
