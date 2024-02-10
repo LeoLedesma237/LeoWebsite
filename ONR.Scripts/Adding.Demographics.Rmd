@@ -39,13 +39,19 @@ setwd("C:/Users/lledesma.TIMES/Documents/ONR/Demographics")
 
 # Load in the following data
 PilotIDs <- read.csv("PilotIDs.csv")
-Screener <- read.csv("Anonymous.Screener.csv")
+Screener.Ano <- read.csv("Anonymous.Screener.csv")
+Screener.SONA <- read.csv("SONA.Screener.csv")
+Screener.ROTC <- read.csv("ROTC.Screener.csv")
 
-# Remove the first two rows of Screener
-Screener <- Screener[3:nrow(Screener),]
 
-# Select the variables of interest for screener
-Screener <- Screener %>%
+# Remove the first two rows of the Screeners (They are meaningless)
+Screener.Ano <- Screener.Ano[3:nrow(Screener.Ano),]
+Screener.SONA <- Screener.SONA[3:nrow(Screener.SONA),]
+Screener.ROTC <- Screener.ROTC[3:nrow(Screener.ROTC),]
+
+
+# Select the variables of interest from the screeners
+Screener.Ano <- Screener.Ano %>%
   select(email = Q94,
          race = RE1,
          ethnicity = RE2,
@@ -53,6 +59,31 @@ Screener <- Screener %>%
          Age = AgeYears) %>%
   data.frame() %>%
   unique()
+
+Screener.SONA <- Screener.SONA %>%
+  select(email = Q94,
+         race = RE1,
+         ethnicity = RE2,
+         Sex,
+         Age = AgeYears) %>%
+  data.frame() %>%
+  unique()
+
+Screener.ROTC <- Screener.ROTC %>%
+  select(email = RecipientEmail,
+         race = RE1,
+         ethnicity = RE2,
+         Sex,
+         Age = AgeYears) %>%
+  data.frame() %>%
+  unique()
+  
+
+# Bind all of the Screeners into one dataset
+Screener <- Screener.Ano %>%
+  rbind(Screener.SONA) %>%
+  rbind(Screener.ROTC)
+
 
 # Select the variables of interest for PilotIDs
 PilotIDs <- PilotIDs %>%
@@ -69,14 +100,21 @@ PilotIDs <- PilotIDs %>%
 demographics <- Screener %>%
   merge(PilotIDs, by = "email")
 
+# Drop the row if the ID column contains an NA
 demographics <- demographics %>%
-  filter(complete.cases(.)) %>%
+  drop_na(ID)
+
+# Some extra data cleaning
+demographics <- demographics %>%
   select(ID, everything()) %>%
   arrange(ID)
 
 ```
 
-More work to be done, we are missing the demographics of some of our ROTC members. 
+
+### Adding demographics manually
+
+Unfortunately for some reason, 
 
 
 ### Current demographic information numbers

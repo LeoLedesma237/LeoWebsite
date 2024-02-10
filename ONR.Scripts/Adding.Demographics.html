@@ -387,13 +387,19 @@ setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/Demographics&quot;)
 
 # Load in the following data
 PilotIDs &lt;- read.csv(&quot;PilotIDs.csv&quot;)
-Screener &lt;- read.csv(&quot;Anonymous.Screener.csv&quot;)
+Screener.Ano &lt;- read.csv(&quot;Anonymous.Screener.csv&quot;)
+Screener.SONA &lt;- read.csv(&quot;SONA.Screener.csv&quot;)
+Screener.ROTC &lt;- read.csv(&quot;ROTC.Screener.csv&quot;)
 
-# Remove the first two rows of Screener
-Screener &lt;- Screener[3:nrow(Screener),]
 
-# Select the variables of interest for screener
-Screener &lt;- Screener %&gt;%
+# Remove the first two rows of the Screeners (They are meaningless)
+Screener.Ano &lt;- Screener.Ano[3:nrow(Screener.Ano),]
+Screener.SONA &lt;- Screener.SONA[3:nrow(Screener.SONA),]
+Screener.ROTC &lt;- Screener.ROTC[3:nrow(Screener.ROTC),]
+
+
+# Select the variables of interest from the screeners
+Screener.Ano &lt;- Screener.Ano %&gt;%
   select(email = Q94,
          race = RE1,
          ethnicity = RE2,
@@ -401,6 +407,31 @@ Screener &lt;- Screener %&gt;%
          Age = AgeYears) %&gt;%
   data.frame() %&gt;%
   unique()
+
+Screener.SONA &lt;- Screener.SONA %&gt;%
+  select(email = Q94,
+         race = RE1,
+         ethnicity = RE2,
+         Sex,
+         Age = AgeYears) %&gt;%
+  data.frame() %&gt;%
+  unique()
+
+Screener.ROTC &lt;- Screener.ROTC %&gt;%
+  select(email = Q94,
+         race = RE1,
+         ethnicity = RE2,
+         Sex,
+         Age = AgeYears) %&gt;%
+  data.frame() %&gt;%
+  unique()
+  
+
+# Bind all of the Screeners into one dataset
+Screener &lt;- Screener.Ano %&gt;%
+  rbind(Screener.SONA) %&gt;%
+  rbind(Screener.ROTC)
+
 
 # Select the variables of interest for PilotIDs
 PilotIDs &lt;- PilotIDs %&gt;%
@@ -417,8 +448,12 @@ PilotIDs &lt;- PilotIDs %&gt;%
 demographics &lt;- Screener %&gt;%
   merge(PilotIDs, by = &quot;email&quot;)
 
+# Drop the row if the ID column contains an NA
 demographics &lt;- demographics %&gt;%
-  filter(complete.cases(.)) %&gt;%
+  drop_na(ID)
+
+# Some extra data cleaning
+demographics &lt;- demographics %&gt;%
   select(ID, everything()) %&gt;%
   arrange(ID)</code></pre>
 <p>More work to be done, we are missing the demographics of some of our
@@ -427,7 +462,7 @@ ROTC members.</p>
 <div id="current-demographic-information-numbers" class="section level3">
 <h3>Current demographic information numbers</h3>
 <pre class="r"><code>paste(&quot;We have demographic information for:&quot;, length(unique(demographics$ID)),&quot;participants out of&quot;, length(unique(PilotIDs$ID)), sep=&quot; &quot;)</code></pre>
-<pre><code>[1] &quot;We have demographic information for: 179 participants out of 206&quot;</code></pre>
+<pre><code>[1] &quot;We have demographic information for: 180 participants out of 206&quot;</code></pre>
 </div>
 <div id="save-demographic-information" class="section level3">
 <h3>Save demographic information</h3>
