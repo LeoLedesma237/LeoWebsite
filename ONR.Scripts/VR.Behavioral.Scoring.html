@@ -401,7 +401,7 @@ sessions that need to be removed. Then we can label the trials by Go or
 No-Go and finally use the group_by function to reduce the data to give
 us the mean scores for trial type for each ID on their respective
 testing day.</p>
-<pre class="r"><code># Remove Day 0 from out dataset or problematic day types (not noted in the visitor log)
+<pre class="r"><code># Remove Day 0 from our dataset or problematic day types (not noted in the visitor log)
 GnG.removed.days &lt;-  GnG.original %&gt;%
   filter(!(Day.Type %in% c(&quot;Day 0&quot;, &quot;Date not saved in the Visitor Log&quot;)))
 
@@ -439,6 +439,50 @@ practice sessions then labeling the trials by either target or
 distractor. Afterwards we will obtain the mean scores of performance for
 each trial type for all participants on their respective testing
 day.</p>
+<pre class="r"><code># Remove Day 0 from our dataset or problematic day types (not noted in the visitor log)
+Nback.removed.days &lt;- Nback.original %&gt;%
+    filter(!(Day.Type %in% c(&quot;Day 0&quot;, &quot;Date not saved in the Visitor Log&quot;)))
+
+# The dimensions of our new dataset
+dim(Nback.removed.days)</code></pre>
+<pre><code>[1] 300060     42</code></pre>
+<pre class="r"><code># Keep all non practice blocks (there are not practice trials but blocks)
+non.practice.blocks &lt;- c(&quot;N1&quot;,&quot;N2&quot;,&quot;N3&quot;,&quot;N4&quot;)
+Nback.kept.non.practice.blocks &lt;- Nback.removed.days %&gt;%
+  filter(BlockID %in% non.practice.blocks)
+
+# The dimensions of our new dataset
+dim(Nback.kept.non.practice.blocks)</code></pre>
+<pre><code>[1] 282380     42</code></pre>
+<pre class="r"><code># Add target and distractor labels
+# This is tricky but follow along
+# We are gonna copy the ItemID variable and add two blanks in the beginning and remove the last two items
+# We are then gonna match the items from this new variable to ItemID
+# The rows were the IDs for both variables match are target trials
+Nback.kept.non.practice.blocks$ItemID2 &lt;- c(&quot;blank&quot;, 
+                                            &quot;blank&quot;, 
+                                            Nback.kept.non.practice.blocks$ItemID[1:(length(Nback.kept.non.practice.blocks$ItemID)-2)])
+
+Nback.kept.non.practice.blocks %&gt;%
+  mutate(Trial.Type = ifelse(ItemID == ItemID2, &quot;Targer&quot;, &quot;Distractor&quot;)) %&gt;%
+  select(Trial.Type) %&gt;%
+  table()</code></pre>
+<pre><code>Trial.Type
+Distractor     Targer 
+    219450      62930 </code></pre>
+<pre class="r"><code>## NEED TO EMAIL THE GUY THAT CREATED THIS GAME CAUSE THESE NUMBERS DON&#39;T ADD UP</code></pre>
+</div>
+<div id="save-the-data" class="section level3">
+<h3>Save the data</h3>
+<pre class="r"><code># Set the save directory
+setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data&quot;)
+
+# Save the data
+write.csv(x = GnG.grouped.Trial.Type,
+          file = &quot;GnG.trial.type.csv&quot;)
+
+write.csv(x = GnG.grouped.Reaction.Time,
+          file = &quot;GnG.reaction.time.csv&quot;)</code></pre>
 </div>
 
 
