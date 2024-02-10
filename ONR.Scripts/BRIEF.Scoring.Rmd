@@ -20,6 +20,7 @@ knitr::opts_chunk$set(comment = NULL)
 library(tidyverse)
 library(ggplot2)
 library(ggpubr)
+library(readxl)
 library(kableExtra)
 library(fuzzyjoin)
 
@@ -27,7 +28,7 @@ library(fuzzyjoin)
 
 ### Load in the data
 
-```{r load in the data}
+```{r load in the data, warning = FALSE}
 # Set working directory
 setwd("~/ONR/Qualtrics")
 
@@ -233,6 +234,55 @@ Q16: I have trouble doing more than one thing at a time (Question 68)
 The responses to the working memory questions for the most part tend to be uniform, with most responses for most items being half and half between 'sometimes' and 'never' and about 10% of responses for most items being 'often.'
 
 
+### Missing data handling
+
+Any subjects that had more than 2 missing items for either inhibition and working memory were discarded and any subjects that had 2 or 1 items missing had those values replaced with a 1. 
+
+After following this procedure we are left with 80 participants for both Inhibition and Working Memory. In addition, we dropped ID's 125 and n126 since there were two copies of 125 and ID 127 was not present. Thus this needs to be resolved in the original Qualtrics CSV before they can be further included. 
+
+```{r controlling for missing data count}
+# Remove the following 'IDs' since we cannot tell who they actually belong to
+Inhibition <- Inhibition %>%
+  filter(!(ID %in% c("125","n126")))
+
+Working.Memory <- Working.Memory %>%
+  filter(!(ID %in% c("125","n126")))
+
+# Data cleaning: removes "" cells
+Inhibition.NA.count <- Inhibition %>%
+  lapply(., function(x) as.numeric(x)) %>%
+  data.frame()
+
+Working.Memory.NA.count <- Working.Memory %>%
+  lapply(., function(x) as.numeric(x)) %>%
+  data.frame()
+
+# Count the NAs of each ID and place it into the data frame
+Inhibition.NA.count$missing.num <- rowSums(is.na(Inhibition.NA.count))
+Working.Memory.NA.count$missing.num <- rowSums(is.na(Working.Memory.NA.count))
+
+# Remove any rows that have more than two missing values 
+Inhibition.NA.count <- Inhibition.NA.count %>%
+  filter(missing.num < 2)
+
+Working.Memory.NA.count <- Working.Memory.NA.count %>%
+  filter(missing.num < 2)
+
+# Replace any NA's that are remaining into 1, which indicates the average
+Inhibition.cleaned <- Inhibition.NA.count %>%
+  lapply(., function(x) ifelse(is.na(x), 1, x)) %>%
+  data.frame() %>%
+  select(-missing.num)
+
+Working.Memory.cleaned <- Working.Memory.NA.count %>%
+  lapply(., function(x) ifelse(is.na(x), 1, x)) %>%
+  data.frame() %>%
+  select(-missing.num)
+
+# Obtain dimensions of completed cases
+dim(Inhibition.cleaned)
+dim(Working.Memory.cleaned)
+```
 ### Scoring Inhibition and Working Memory Items [Raw Score]
 
 Inhibit: "Control impulses; appropriately stop own behavior at the proper time."
@@ -248,22 +298,8 @@ To score, take the sum of the responses for each item within their respective do
 3 = Often
 
 
+
 ```{r scoring the BRIEF questions, warning = FALSE, out.width= "80%"}
-# Data cleaning: removes "" cells
-Inhibition.cleaned <- Inhibition %>%
-  lapply(., function(x) as.numeric(x)) %>%
-  data.frame() %>%
-  filter(complete.cases(.))
-
-Working.Memory.cleaned <- Working.Memory %>%
-  lapply(., function(x) as.numeric(x)) %>%
-  data.frame() %>%
-  filter(complete.cases(.))
-
-# Obtain dimensions of completed cases
-dim(Inhibition.cleaned)
-dim(Working.Memory.cleaned)
-
 
 # Calculating the raw score
 Inhibition.cleaned <- Inhibition.cleaned %>%
@@ -320,9 +356,6 @@ demographics <- read.csv("complete.demographics.csv")
 demo <- demographics %>%
   select(ID, Age)
 
-# data cleaning (rename 125 to 126)
-Inhibition.cleaned$ID[3] <- 126
-Working.Memory.cleaned$ID[3] <- 126
 
 # Merge to include age
 Inhibition.cleaned.age <- Inhibition.cleaned %>%
@@ -330,5 +363,25 @@ Inhibition.cleaned.age <- Inhibition.cleaned %>%
 
 Working.Memory.cleaned.age <- Working.Memory.cleaned%>%
   merge(demo, by = "ID")
+
+# Remaining participants
+paste("Number of participants with full inhibition data:", length(unique(Inhibition.cleaned.age$ID)))
+paste("Number of participants with full inhibition data:", length(unique(Working.Memory.cleaned.age$ID)))
+
+
+# Calculating T-scores
+# Set working directory
+setwd("~/ONR/Qualtrics")
+
+# Load in the T-score conversion
+T.score.table.18_29 <- read_excel("BRIEF T score conversion table.xlsx", sheet = "18-29")
+T.score.table.30_39 <- read_excel("BRIEF T score conversion table.xlsx", sheet = "30-39")
+
+# Data cleaning- drop all rows with NA's
+T.score.table.18_29 <- drop_na(T.score.table.18_29)
+T.score.table.30_39 <- drop_na(T.score.table.30_39)
+
+# Calculate 
+
 
 ```

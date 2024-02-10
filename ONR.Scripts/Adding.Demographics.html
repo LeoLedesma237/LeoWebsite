@@ -424,6 +424,11 @@ demographics &lt;- demographics %&gt;%
 <p>More work to be done, we are missing the demographics of some of our
 ROTC members.</p>
 </div>
+<div id="current-demographic-information-numbers" class="section level3">
+<h3>Current demographic information numbers</h3>
+<pre class="r"><code>paste(&quot;We have demographic information for:&quot;, length(unique(demographics$ID)),&quot;participants out of&quot;, length(unique(PilotIDs$ID)), sep=&quot; &quot;)</code></pre>
+<pre><code>[1] &quot;We have demographic information for: 179 participants out of 206&quot;</code></pre>
+</div>
 <div id="save-demographic-information" class="section level3">
 <h3>Save demographic information</h3>
 <pre class="r"><code># Set save working directory

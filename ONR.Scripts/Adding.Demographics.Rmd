@@ -78,6 +78,14 @@ demographics <- demographics %>%
 
 More work to be done, we are missing the demographics of some of our ROTC members. 
 
+
+### Current demographic information numbers
+
+```{r count demographic info numbers}
+paste("We have demographic information for:", length(unique(demographics$ID)),"participants out of", length(unique(PilotIDs$ID)), sep=" ")
+
+```
+
 ### Save demographic information
 
 ```{r save demographic information, warning = FALSE}

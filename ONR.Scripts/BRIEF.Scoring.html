@@ -592,6 +592,7 @@ knitr::opts_chunk$set(comment = NULL)</code></pre>
 <pre class="r"><code>library(tidyverse)
 library(ggplot2)
 library(ggpubr)
+library(readxl)
 library(kableExtra)
 library(fuzzyjoin)</code></pre>
 </div>
@@ -940,6 +941,9 @@ raw score for each person.</p>
 <p>1 = Never</p>
 <p>2 = Sometimes</p>
 <p>3 = Often</p>
+<p>Any subjects that had more than 2 missing items for either inhibition
+and working memory were discarded and any subjects that had 2 or 1 items
+missing had those values replaced with a 1.</p>
 <pre class="r"><code># Data cleaning: removes &quot;&quot; cells
 Inhibition.cleaned &lt;- Inhibition %&gt;%
   lapply(., function(x) as.numeric(x)) %&gt;%
@@ -1020,7 +1024,26 @@ Inhibition.cleaned.age &lt;- Inhibition.cleaned %&gt;%
   merge(demo, by = &quot;ID&quot;)
 
 Working.Memory.cleaned.age &lt;- Working.Memory.cleaned%&gt;%
-  merge(demo, by = &quot;ID&quot;)</code></pre>
+  merge(demo, by = &quot;ID&quot;)
+
+# Remaining participants
+paste(&quot;Number of participants with full inhibition data:&quot;, length(unique(Inhibition.cleaned.age$ID)))</code></pre>
+<pre><code>[1] &quot;Number of participants with full inhibition data: 61&quot;</code></pre>
+<pre class="r"><code>paste(&quot;Number of participants with full inhibition data:&quot;, length(unique(Working.Memory.cleaned.age$ID)))</code></pre>
+<pre><code>[1] &quot;Number of participants with full inhibition data: 62&quot;</code></pre>
+<pre class="r"><code># Calculating T-scores
+# Set working directory
+setwd(&quot;~/ONR/Qualtrics&quot;)
+
+# Load in the T-score conversion
+T.score.table.18_29 &lt;- read_excel(&quot;BRIEF T score conversion table.xlsx&quot;, sheet = &quot;18-29&quot;)
+T.score.table.30_39 &lt;- read_excel(&quot;BRIEF T score conversion table.xlsx&quot;, sheet = &quot;30-39&quot;)
+
+# Data cleaning- drop all rows with NA&#39;s
+T.score.table.18_29 &lt;- drop_na(T.score.table.18_29)
+T.score.table.30_39 &lt;- drop_na(T.score.table.30_39)
+
+# Calculate </code></pre>
 </div>
 
 
