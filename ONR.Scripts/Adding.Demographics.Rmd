@@ -135,6 +135,7 @@ paste("Warning, no demographic information could be found for the following ID:"
 manual.demographics <- manual.demographics %>%
   filter(!(ID %in% c("134","181","182","185","191")))
 
+
 # Add manual demographics to the rest of our demographics dataset
 manual.demographics$email <- NA
 manual.demographics$race <- NA
@@ -144,6 +145,8 @@ manual.demographics <- manual.demographics %>% select(ID, email, race, ethnicity
 
 demographics <- demographics %>%
   rbind(manual.demographics)
+
+
 ```
 ### Current demographic information numbers
 

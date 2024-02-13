@@ -70,22 +70,26 @@ go.trials <- c("G1", "G5", "G8", "G12")
 GnG.trial.type <- GnG.removed.practice.blocks %>%
   mutate(Trial.Type = ifelse(ItemID %in% go.trials, "Go", "No-Go"))
 
-# Reduce the dimensions even more by grouping and obtaining performance score
+# Reduce the dimensions even more by grouping and obtaining performance score for each block type
 GnG.grouped.Trial.Type <- GnG.trial.type %>%
-  group_by(UserID, Trial.Type, Day.Type) %>%
+  group_by(UserID, BlockName, Trial.Type, Day.Type) %>%
   summarize(trial.mean.correct = round(mean(Correct),2))
 
-# Create another data frame that reduced dimensions but ony for correct reaction times of Go-Trials
+# Create another data frame that reduced dimensions but only for correct reaction times of Go-Trials
 GnG.grouped.Reaction.Time <- GnG.trial.type %>%
   filter(Trial.Type == "Go" & Correct ==  1) %>%
-  group_by(UserID, Day.Type) %>%
+  group_by(UserID, BlockName, Day.Type) %>%
   summarize(mean.RT = mean(TimeToImpact))
 
 ```
 
 ### Data reduction Nback
 
-Same procedure as above. We will be removing practice days and practice sessions then labeling the trials by either target or distractor. Afterwards we will obtain the mean scores of performance for each trial type for all participants on their respective testing day.
+Same procedure as above. We will be removing practice days and practice sessions then labeling the trials by either target or distractor Afterwards we will obtain the mean scores of performance for each trial type for all participants on their respective testing days.
+
+This dataset does not have an item ID to determine between target stimuli and non-target stimuli (distractor). Thus we devised a way to measure this using code. Our N-back is a 2-back, meaning that the participant must hit a shape that matches two shapes ago. The CSV files recorded indicate the order of shapes presented in row order. Thus the first item presented was recorded in row one and the second item was recorded in row two and so on until the completion of the task. Knowing this, we can copy and paste the the order of items and shift it two rows down. Then, any rows that match between these two variables (original and the shifted two down) will indicate a target trial- below will be a demonstration.
+
+Doing this method seems to be correct. However, it is important to note that we were expecting to have 80% non-target and 20% target trials per N-back task, but instead we are getting roughly 20-23% target trials. This is important to be aware of but shouldn't raise suspicion to the scoring code or the way the game was designed. 
 
 ```{r Nback data reduction}
 # Remove Day 0 from our dataset or problematic day types (not noted in the visitor log)
@@ -103,27 +107,87 @@ Nback.kept.non.practice.blocks <- Nback.removed.days %>%
 # The dimensions of our new dataset
 dim(Nback.kept.non.practice.blocks)
 
-# Add target and distractor labels
-# This is tricky but follow along
-# We are gonna copy the ItemID variable and add two blanks in the beginning and remove the last two items
-# We are then gonna match the items from this new variable to ItemID
-# The rows were the IDs for both variables match are target trials
-Nback.kept.non.practice.blocks$ItemID2 <- c("blank", 
-                                            "blank", 
-                                            Nback.kept.non.practice.blocks$ItemID[1:(length(Nback.kept.non.practice.blocks$ItemID)-2)])
 
-Nback.kept.non.practice.blocks %>%
-  mutate(Trial.Type = ifelse(ItemID == ItemID2, "Targer", "Distractor")) %>%
+#####################################################################################################
+### Example of the proposed code to identify target trials
+example.session <- Nback.kept.non.practice.blocks %>%
+  filter(UserID == 3 & Day.Type == "Day 1")
+
+## Test: Add the additional variable to it identify target trials and shift it down two rows
+example.session$ItemID2 <- c("-", "-", example.session$ItemID[1:(length(example.session$ItemID)-2)])
+
+example.session <- example.session %>%
+  mutate(Trial.Type = ifelse(ItemID == ItemID2, "Target", "Distractor")) %>%
+  select(ItemID, ItemID2, Trial.Type, Correct, Reacted)
+
+# View the example of how scoring works
+example.session %>%
+  head(40) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+
+# Obtain the proportion of target trials
+example.session %>%
   select(Trial.Type) %>%
-  table()
+  table() %>%
+  prop.table() %>%
+  round(2)
+##################################################################################################
+# Add target and distracter labels to all Nback sessions
+# Create an empty list
+all.Nback.sessions <- list()
 
-## NEED TO EMAIL THE GUY THAT CREATED THIS GAME CAUSE THESE NUMBERS DON'T ADD UP
+# Create a 'file.name' for file extraction
+Nback.file.names <- Nback.kept.non.practice.blocks %>% select(UserID, Day.Type) %>% group_by(UserID, Day.Type) %>% unique()
+
+
+# Run the loop 
+for(ii in 1:nrow(Nback.file.names)) {
+  
+  # Extract the ID in the list
+  current.ID <- Nback.file.names$UserID[ii]
+  
+  # Extract the  Day Type in the list
+  current.Day.Type <- Nback.file.names$Day.Type[ii]
+  
+  # Use ID and Day Type to subet one CSV file from the Nback
+  current.Nback <- Nback.kept.non.practice.blocks %>%
+    filter(UserID == current.ID & Day.Type == current.Day.Type)
+  
+  # Add the second variable that duplicates ItemID and shifts it down two rows
+  current.Nback$ItemID2 <- c("-", "-", current.Nback$ItemID[1:(length(current.Nback$ItemID)-2)])
+
+  # Use the second variable to identify target trials by marking matching rows as 'Target
+  current.Nback <- current.Nback %>%
+  mutate(Trial.Type = ifelse(ItemID == ItemID2, "Target", "Distractor")) %>%
+    select(X, UserID, BlockID, ItemID, ItemID2, Trial.Type, everything())
+  
+  # Save this manipulation into the list
+  all.Nback.sessions[[ii]] <- current.Nback
+}
+
+# Save the list with the transformation back as a dataframe
+Nback.trial.type <- all.Nback.sessions%>%
+  do.call(rbind,.) %>%
+  data.frame()
+
+# Reduce the dimensions even more by grouping and obtaining performance score for each block type
+Nback.grouped.Trial.Type <- Nback.trial.type %>%
+  group_by(UserID, BlockName, Trial.Type, Day.Type) %>%
+  summarize(trial.mean.correct = round(mean(Correct),2))
+
+# Create another data frame that reduced dimensions but only for correct reaction times of Nback
+Nback.grouped.Reaction.Time <- Nback.trial.type %>%
+  filter(Trial.Type == "Target" & Correct ==  1) %>%
+  group_by(UserID, BlockName, Day.Type) %>%
+  summarize(mean.RT = mean(TimeToImpact))
 
 ```
 
 ### Save the data
 
-```{r save the data}
+```{r save the data, warning = FALSE}
 # Set the save directory
 setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
 
@@ -133,6 +197,13 @@ write.csv(x = GnG.grouped.Trial.Type,
 
 write.csv(x = GnG.grouped.Reaction.Time,
           file = "GnG.reaction.time.csv")
+
+
+write.csv(x = Nback.grouped.Trial.Type,
+          file = "Nback.trial.type.csv")
+
+write.csv(x = Nback.grouped.Reaction.Time,
+          file = "Nback.reaction.time.csv")
 
 ```
 
