@@ -65,6 +65,30 @@ GnG.removed.practice.blocks <- GnG.removed.days %>%
 # The dimensions of the new dataset
 dim(GnG.removed.practice.blocks)
 
+# Extra check
+GnG.removed.practice.blocks %>%
+  select(BlockName) %>%
+  table() %>%
+  prop.table() %>%
+  names()
+
+# Remove the Day 0's still present in the data
+remaining.practice.trials <-c("Colors  Shape  and Arrow  Day 0",
+                              "Color  Shape and Reverse Arrow  Day 0",
+                              "Colors and Shape  Day 0",
+                              "Colors and Shape with fixed ISI  Day 0",
+                              "Saber Color Matching  Day 0")
+  
+GnG.removed.practice.blocks <- GnG.removed.practice.blocks %>%
+  filter(!(BlockName %in% remaining.practice.trials))
+
+# Extra check again 
+GnG.removed.practice.blocks %>%
+  select(BlockName) %>%
+  table() %>%
+  prop.table() %>%
+  names()
+
 # Add Go and No-Go Labels (This was tested and it came out correct 20/80)
 go.trials <- c("G1", "G5", "G8", "G12")
 GnG.trial.type <- GnG.removed.practice.blocks %>%
@@ -106,6 +130,14 @@ Nback.kept.non.practice.blocks <- Nback.removed.days %>%
 
 # The dimensions of our new dataset
 dim(Nback.kept.non.practice.blocks)
+
+# Extra check
+Nback.kept.non.practice.blocks %>%
+  select(BlockName) %>%
+  table() %>%
+  prop.table() %>%
+  names()
+
 
 
 #####################################################################################################
