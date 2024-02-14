@@ -1522,7 +1522,7 @@ Nback.grouped.Reaction.Time &lt;- Nback.trial.type %&gt;%
 Nback.grouped.Reaction.Target &lt;- Nback.trial.type %&gt;%
   filter(Trial.Type == &quot;Target&quot;) %&gt;%
   group_by(UserID, BlockName, Trial.Type, Day.Type) %&gt;%
-  summarize(trial.mean.reacted = round(mean(Reacted),2))</code></pre>
+  summarize(target.mean.reacted = round(mean(Reacted),2))</code></pre>
 </div>
 <div id="save-the-data" class="section level3">
 <h3>Save the data</h3>

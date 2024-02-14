@@ -28,6 +28,9 @@ This study is investigating how different stressors (intense exercise and sleep 
 
 **VR Behavioral** <add description here>(https://leoledesma237.github.io/LeoWebsite/ONR.Scripts/VR.Behavioral.Scoring.html)
 
+**CFIT** <add description here>(https://leoledesma237.github.io/LeoWebsite/ONR.Scripts/CFIT.Scoring.html)
+
+
 ### Data Analysis
 
 **Validating VR Performance with the BRIEF** <add description here>(https://leoledesma237.github.io/LeoWebsite/ONR.Scripts/Analyzing.BRIEF.VR.Behavior.html)

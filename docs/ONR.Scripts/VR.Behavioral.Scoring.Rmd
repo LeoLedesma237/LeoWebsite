@@ -220,7 +220,7 @@ Nback.grouped.Reaction.Time <- Nback.trial.type %>%
 Nback.grouped.Reaction.Target <- Nback.trial.type %>%
   filter(Trial.Type == "Target") %>%
   group_by(UserID, BlockName, Trial.Type, Day.Type) %>%
-  summarize(trial.mean.reacted = round(mean(Reacted),2))
+  summarize(target.mean.reacted = round(mean(Reacted),2))
 
 ```
 
@@ -236,7 +236,6 @@ write.csv(x = GnG.grouped.Trial.Type,
 
 write.csv(x = GnG.grouped.Reaction.Time,
           file = "GnG.reaction.time.csv")
-
 
 write.csv(x = Nback.grouped.Trial.Type,
           file = "Nback.trial.type.csv")

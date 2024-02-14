@@ -5,15 +5,22 @@ date: "2024-02-10"
 output: html_document
 ---
 
-### Overall goal
+### Our Measures of Interest
 
-We are interested in determining whether scores obtained for executive functioning domains in the BRIEF Self-Report are relate to two cognitive tasks performed in virtual reality (VR). For our study, we have two nearly one hour long VR Sessions where subjects engage in a Go/No-Go (GnG) and N-back paradigm. The GnG is a commonly used measure of inhibition in EEG research that habituates a behavior by displaying high frequency of Go signals (80%), which then have to be stopped during the presence of a No-Go signal (20%). There are 1,500 trials in each GnG session and  5 different versions of the GnG (block sessions) within each session. The N-back, specifically the 2-back, is a paradigm that measures working memory. Several stimuli are presented one by one and when one item matches an item seen two items back,  that item (target) needs to be hit. Overall there are roughly 600 trials and about 20% of them are target trials. Additionally, there are 4 different versions of the N-back (block sessions) within each session. 
+We are interested in determining whether scores obtained for executive functioning domains in the BRIEF Self-Report are relate to two cognitive tasks performed in virtual reality (VR). For our study, we have two nearly one hour long VR Sessions where subjects engage in a Go/No-Go (GnG) and N-back paradigm. The GnG is a commonly used measure of inhibition in EEG research that habituates a behavior by displaying high frequency of Go signals (80%), which then have to be stopped during the presence of a No-Go signal (20%). There are 1,500 trials in each GnG session and  5 different versions of the GnG (block sessions) within each session. The N-back, specifically the 2-back, is a paradigm that measures working memory. Several stimuli are presented one by one and when an item matches an item seen two items back, that item (target) needs to be hit. Overall there are roughly 600 trials and about 20% of them are target trials. Additionally, there are 4 different versions of the N-back (block sessions) within each session. 
 
-Performance in the VR Tasks was calculated by taking the sum of correct trials for each participant and dividing it by the total number of trials presented. This was done for all Go trials and No-Go trials respectively for each version of the GnG. Additionally, the same calculation applies to the Nback for target and non-target trials and for each version of the N-back. 
-
-Lastly, our data includes performance for multiple testing days. For our research interest, we will only be including data for Day 1 of the VR Sessions in our analysis, which is performance at baseline. 
+Performance in the VR Tasks was calculated by taking the sum of correct trials for each participant and dividing it by the total number of trials presented. This was done for all Go and No-Go trials respectively, and for each version of the GnG. Similarly, this was done for target trials in the Nback. For the GnG, we are interested in the version of the task that best measures inhibition- thus we are only using the 'Colors and Shape' block session for our analysis. This particular block displays green cubes as Go trials and green pyramids or red cubes as No-Go trials. For the Nback, we have four block sessions that all include arrow conditions and half contain distractors, such as large green 3D shapes take up space in the background or smaller shapes that sometimes dart across the screen. Again, we are interested in the block session that best captures working memory, so we will using the block session with forward arrows and no distractors. 
 
 The BRIEF Self-Report contains questions for several different domains encompassing executive functioning. We were interested in questions that assessed inhibition and working memory. Thus, T-scores were obtained for each subject on both inhibition and working memory scales.
+
+### Variables that measure performance
+
+In the GnG, the variable 'correct' was used to calculate the mean performance for each person at each block session. This variable is binary (0 or 1) and it informs whether the trial was done correctly or not. This means that for a Go-trial to be correct, the green cube showed must have been hit in a specific amount of time and for No-Go trials, the green pyramid or red cube must not have been struck. For the Nback, we used the variable 'reacted' instead to calcualte mean performance. Since the Nback has four versions that all include arrows, and we are more interested in the ability to identify target trials rather than identifying target trials and hitting in the direction of the arrow, we are using the scores from React to calculate performance. This will allow us to obtain the mean of identifying targets for each subject, which is one way to measure working memory from the way this paradigm was constructed.
+
+### Cross-sectional analysis
+
+The data we are loading into our workspace contains information from multiple testing sessions. Overall, the initial study is collecting data from four testing days (One practice, one baseline, and two stressor conditions). We are only interested in the VR behavioral data from baseline thus, only those days will be included into our analysis. For the BRIEF Self-Report, this information was collected during the very first day of testing (practice session). Thus, we will be comparing scores between these two days but it will not be repeated measures and instead treated as cross-sectional. 
+
 
 ### Universal block code settings
 
@@ -31,11 +38,14 @@ library(tidyverse)
 library(ggplot2)
 library(ggpubr)
 library(readxl)
+library(lmtest) # bptest() function for homoscedasticity
 library(kableExtra)
 
 ```
 
 ### Load in the data
+
+As mentioned above, we are only interested in performance on Day 1 for the 'Colors and Shape' block session for the GnG and the arrows no distractor condition in the Nback. Thus, these data will remain for the rest of the analysis. 
 
 ```{r load in the data, warning = FALSE}
 # Set working directory
@@ -43,19 +53,15 @@ setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_prepr
 
 # Load in the GnG data
 GnG.performance <- read.csv("GnG.trial.type.csv")
-GnG.Reaction.Time <- read.csv("GnG.reaction.time.csv")
 
 # Data cleaning- we are only interested in Day 1
-GnG.performance <- GnG.performance %>% filter(Day.Type == "Day 1")
-GnG.Reaction.Time <- GnG.Reaction.Time %>% filter(Day.Type == "Day 1")
+GnG.performance <- GnG.performance %>% filter(Day.Type == "Day 1" & BlockName == "Colors and Shape")
 
-# Load in the Nback data
-Nback.performance <- read.csv("Nback.trial.type.csv")
-Nback.Reaction.Time <- read.csv("Nback.reaction.time.csv")
+# Load in the Nback data (Reacted)
+Nback.reacted <- read.csv("Nback.target.reacted.csv")
 
 # Data cleaning- we are only interested in Day 1
-Nback.performance <- Nback.performance %>% filter(Day.Type == "Day 1")
-Nback.Reaction.Time <- Nback.Reaction.Time %>% filter(Day.Type == "Day 1")
+Nback.performance <- Nback.reacted %>% filter(Day.Type == "Day 1" & BlockName == "2-Back AR w ND")
 
 # Set working directory
 setwd("~/ONR/BRIEF")
@@ -64,11 +70,17 @@ setwd("~/ONR/BRIEF")
 Inhibtion.T.scores <- read.csv("Inhibition.T.scores.csv")
 Working.Memory.T.scores <- read.csv("Working.Memory.T.scores.csv")
 
+# Clean the BRIEF data
+Inhibtion.T.scores <- Inhibtion.T.scores %>%
+  select(X, ID, Age, T.score)
+
+Working.Memory.T.scores <- Working.Memory.T.scores %>%
+  select(X, ID, Age, T.score)  
 ```
 
-### Merge the datasets together
+### Merge the datasets together (Sample Size)
 
-We now need to merge the data frames for GnG and Nback performance to the data frame containing the BRIEF scores for inhibition and working memory. 
+We now need to merge the data frames for GnG and Nback performance to the data frame containing the BRIEF scores for inhibition and working memory. Our sample size for both analysis are both 53. 
 
 ```{r merge the datasets}
 # merge the inhibition datasets
@@ -118,16 +130,70 @@ setdiff(Inhibtion.T.scores$ID,GnG.performance$UserID)
 Reasons for these discrepancies- data for the BRIEF started collection way after 100 subjects completed the VR tasks Additionally, the BRIEF is collected the very first day of testing while the baseline VR tasks are done on the next visit. Does the discrepancy above could show subjects that either dropped the study after their first visit or that have not yet completed their next visit. 
 
 
-### View the data
+### Statistical Approach
 
-Let's use a scatter plot to see if there are any visual patterns of a relationship between BRIEF T-scores and VR mean performance.
+In order to know whether there is a relationship between the BRIEF Self Report and our VR cognitive tasks, we will be using a multiple regression model. This statistical approach uses the method of least squares and produces a line of fitted values. The more error that can be explained by our model then the better it is, however, before we can run our regressions we need to check if the assumptions are met.
+
+### Assumption 1 Normality
+
+Our outcome variable (VR performance) need to be normally distributed. We can use two methods to investigate whether this is true. The first is to create a histogram of our outcome variables and see if it is normally distributed and the other is to run a Shapiro-Wilk test. 
+
+```{r assumption of normality}
+# Create histogram of Inhibition performance in VR
+GnG.performance.merged %>%
+  ggplot(aes(x = trial.mean.correct)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 10) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,110)) + 
+  theme_classic() +
+  labs(x = "Proportion of correct No-Go Trials",
+       y = "Frequency",
+       caption = bquote(bold("Figure 1:") ~ "A histogram showing the spread of performance for No-Go trials.")) +
+  theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0))
+
+# Create a histogram of Working Memory performance in VR
+Nback.performance.merged %>%
+  ggplot(aes(x = target.mean.reacted)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 10) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,20)) + 
+  theme_classic() +
+  labs(x = "Proportion of correct Target Trials",
+       y = "Frequency",
+       caption = bquote(bold("Figure 2:") ~ "A histogram showing the spread of performance for identifying target trials.")) +
+  theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0))
+
+
+### Shapiro Wilk-Test
+shapiro.test(GnG.performance.merged$trial.mean.correct)
+shapiro.test(Nback.performance.merged$target.mean.reacted)
+
+
+```
+Both the distribution of scores and the Shapiro-Wilk tests show a violation of the assumption of normality for both of our outcome variables.
+
+### Assumption 2: Linearity 
+
+Let's use a scatter plot to see if the data between predictors and outcome variables look linear. They do but outliers are most certainly present. 
 
 ```{r view the data}
 # plot GnG performance and Inhibition T scores as a scatter plot
 # Do this only for the inhibition trial 
 GnG.performance.merged %>%
   filter(Trial.Type == "No-Go") %>%
-  ggplot(aes(x= T.score, y = trial.mean.correct, color = BlockName)) +
+  ggplot(aes(x= T.score, y = trial.mean.correct)) +
   geom_point() +
   geom_smooth(method = "lm") +
   theme_bw() +
@@ -137,12 +203,141 @@ GnG.performance.merged %>%
 # plot Nback performance and Working Memory T scores as a scatter plot
 Nback.performance.merged %>%
   filter(Trial.Type == "Target") %>%
-  ggplot(aes(x= T.score, y = trial.mean.correct, color = BlockName)) +
+  ggplot(aes(x= T.score, y = target.mean.reacted)) +
   geom_point() +
   geom_smooth(method = "lm") +
   theme_bw() +
   labs(x = "BRIEF Working Memory T-scores",
-       y = "VR Nback Performance")
+       y = "Percent of Target Remembered")
+
+```
+
+
+### Assumption 3: Homoscedasticity
+
+This assumption checks whether the variance of the outcome variable is similar across different levels of the predictor variable. Similarly to the assumption of normality, we can assess this through graphs or by running a test. We will be doing both. Below we will display box plots that will be able to capture if the variance of the outcome variable different across the quintile groups of the predictor. Additionally we will use the Breusch-Page test to assess for homoscedasticity.
+
+
+```{r assumption of homoscedasiticty}
+# Box plot to test for homoscedasticity
+# Part 1: Obtain the quintiles of Inhibiton T-scores and save it as a dataframe
+GnG.quantile.df <- quantile(GnG.performance.merged$T.score, probs = seq(0, 1, .2)) %>%
+  data.frame(cut.off =.)
+
+# Part 2: Create a new categorical variable defining which quintile the data belongs to
+GnG.quant <- GnG.performance.merged %>%
+  select(x = T.score,
+         y = trial.mean.correct) %>%
+  arrange(x) %>%
+  mutate(quant.x = ifelse(x < GnG.quantile.df$cut.off[2], "Q1",
+                          ifelse(x < GnG.quantile.df$cut.off[3], "Q2",
+                                 ifelse(x < GnG.quantile.df$cut.off[4], "Q3",
+                                        ifelse(x < GnG.quantile.df$cut.off[5], "Q4", "Q5")))))
+
+# Plot the quintiles of x as boxplots + jitter for our y
+GnG.quant %>%
+  ggplot(aes(x = quant.x, y = y)) +
+  geom_boxplot() +
+  theme_classic() +
+  labs(x = "Inhibtion T-score Quintiles",
+       y = "Proportion of correct No-Go trials",
+       caption = bquote(bold("Figure 3:") ~ "Box plots of No-Go performance by Inhibition T score quintiles.")) +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 15,
+                                    hjust = 0))
+
+
+# Part 1: Obtain the quintiles of Inhibiton T-scores and save it as a dataframe
+Nback.quantile.df <- quantile(Nback.performance.merged$T.score, probs = seq(0, 1, .2)) %>%
+  data.frame(cut.off =.)
+
+# Part 2: Create a new categorical variable defining which quintile the data belongs to
+Nback.quant <- Nback.performance.merged %>%
+  select(x = T.score,
+         y = target.mean.reacted) %>%
+  arrange(x) %>%
+  mutate(quant.x = ifelse(x < Nback.quantile.df$cut.off[2], "Q1",
+                          ifelse(x < Nback.quantile.df$cut.off[3], "Q2",
+                                 ifelse(x < Nback.quantile.df$cut.off[4], "Q3",
+                                        ifelse(x < Nback.quantile.df$cut.off[5], "Q4", "Q5")))))
+
+# Plot the quintiles of x as boxplots + jitter for our y
+Nback.quant %>%
+  ggplot(aes(x = quant.x, y = y)) +
+  geom_boxplot() +
+  theme_classic() +
+  labs(x = "Working Memory T-score Quintiles",
+       y = "Proportion of correct target trials",
+       caption = bquote(bold("Figure 4:") ~ "Box plots of target trial performance by Working Memory T score quintiles.")) +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 15,
+                                    hjust = 0))
+
+
+#### Breush_Pagan tests
+# Create a simple regression and save it
+GnG.model <- lm(trial.mean.correct ~ T.score, data = GnG.performance.merged)
+
+# Run the Breusch-Pagan test
+bptest(GnG.model)
+
+# Create a simple regression and save it
+Nback.model <- lm(target.mean.reacted ~ T.score, data = Nback.performance.merged)
+
+# Run the Breusch-Pagan test
+bptest(Nback.model)
+```
+
+For our graphs, if we were to exclude our outliers in the box plot for Inhibition and GnG then overall these data look to not violate the asummption of homoscedasiticty. Additionally this is further supported with a non significant result in the Bresush-Page test. For the Working Memory and Nback plots, for the most part the box plots look to cover the same range with the exception of Q4, which is much more concentrated between .4 and .75. However, with the inclusion of a non significant Breush-Pagan test, these data also do not violated the assumption of homoscedasticity.
+
+
+### Assumption of Independence Part 1
+
+Our final assumption is split into two parts. The first is verifying that each subject in our analyses only has one score for both the VR tasks and the T-score from the BRIEF Self report. To verify this, we will use the table function to count the number of scores each person has in the data. For this assumption to not be violated, every table should only have a count no greater than one. 
+
+```{r assumption of independence part 1}
+# Create a table for each subject that counts the number of data they have for our outcome variables.
+GnG.performance.merged %>%
+  filter(Trial.Type == "No-Go") %>%
+  group_by(ID, trial.mean.correct) %>%
+  count() %>%
+  filter( n > 1)
+
+Nback.performance.merged %>%
+  filter(Trial.Type == "Target") %>%
+  group_by(ID, target.mean.reacted) %>%
+  count() %>%
+  filter( n > 1)
+
+```
+
+
+For unknown reasons, ID's 141, 171 and 177 have duplicate data. Thus, these ID's have been dropped from our sample until we can verify why that is the case.
+
+```{r dropping IDs with duplicate data}
+# Dropping ID's with duplicate data for inhibition
+GnG.performance.merged <- GnG.performance.merged %>%
+  filter(!ID %in% c(141, 171, 177))
+
+# Dropping ID's with duplicate data for working memory
+Nback.performance.merged <- Nback.performance.merged %>%
+  filter(!ID %in% c(141, 171, 177))
+
+```
+
+### Assumption of Independence Part 2 (Multicolinearity)
+
+We also need to investigate if there is any multicolinearity present. This applies to our continuous covariates for which we are using Age and IQ. To do this we will be using a correlation matrix and if any variables correlate highly (r > .6) then only one of those variables will be included in the analyses.
+
+```{r load in IQ data}
+# Load in IQ data
+
 
 
 ```
@@ -167,7 +362,7 @@ Target.data <- Nback.performance.merged %>%
   filter(Trial.Type == "Target")
 
 # Run the Nback regression
-model2 <- lm(trial.mean.correct ~ T.score, data = Target.data)
+model2 <- lm(target.mean.reacted ~ T.score, data = Target.data)
 
 # Summary of the model
 summary(model2)
