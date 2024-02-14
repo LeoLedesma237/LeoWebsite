@@ -5,26 +5,38 @@ date: "2024-02-14"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+### Universal block code settings
+
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+
 ```
 
-## R Markdown 
+### Load in the data manipulation packages first
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(kableExtra)
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
+### Load in the data
 
-You can also embed plots, for example:
+```{r load in the data, warning = FALSE}
+# Set working directory
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+# Load in the data
+GnG.original <- read.csv("GnG.day.type.added.csv")
+Nback.original <- read.csv("Nback.day.type.added.csv")
+
+# What is the dimensions
+dim(GnG.original)
+dim(Nback.original)
+
 ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

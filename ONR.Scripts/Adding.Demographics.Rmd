@@ -18,6 +18,7 @@ knitr::opts_chunk$set(comment = NULL)
 library(tidyverse)
 library(readr)
 library(readxl)
+library(kableExtra)
 ```
 
 ### Last day this code was ran
@@ -43,6 +44,10 @@ PilotIDs <- read.csv("PilotIDs.csv")
 Screener.Ano <- read.csv("Anonymous.Screener.csv")
 Screener.SONA <- read.csv("SONA.Screener.csv")
 Screener.ROTC <- read.csv("ROTC.Screener.csv")
+
+# Clean the pilot data by dropping NA's from the ID variable
+PilotIDs <- PilotIDs %>%
+  drop_na(ParticipantID)
 
 # Check the dimensions of the screeners
 dim(Screener.Ano)
@@ -115,13 +120,119 @@ demographics <- demographics %>%
   arrange(ID)
 
 ```
+### Data quality inspection of ID's with demographics
 
+There are some duplicates in our data which were caused by multiple screeners filled out by recruited participants. Some of these cases are easy to fix since they have a duplicate with NA's. Thus, those NA rows can be dropped. For the others, these duplicates in data are caused by taking the screeners in between birthdays. Therefore, we have some participants that took the screener at one age and then retook it after their birthdate, creating duplicates. For these cases we will choose the row with the oldest age. Subject 121 reported different Sexes for their screeners. After checking additional demographic information their wrongly chosen sex was dropped, removing the duplicate. Similarly, subject 190 reported being African American in one screener and More than one race in the second, thus we kept the later for their demographic information. 
+
+
+```{r unable to get demographics}
+# Check for duplicates in the data
+demographics %>%
+  group_by(ID) %>%
+  count() %>%
+  filter(n > 1) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+# Some of these duplicates are due to not completing a screener
+# We can eliminate these by droppin rows with NA's
+# Replace any blank cells with NA's
+demographics[demographics == ""] <- NA
+
+# Check for any duplicates in the data or missing data
+demographics %>%
+  filter(!complete.cases(.)) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+
+# Only keep completed cases 
+demographics <- demographics %>%
+  filter(complete.cases(.))
+
+# Check for duplicates in the data
+demographics %>%
+  group_by(ID) %>%
+  count() %>%
+  filter(n > 1) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+
+# Save these duplicate ID's
+duplicate.IDs <- demographics %>%
+  group_by(ID) %>%
+  count() %>%
+  filter(n > 1) %>%
+  select(ID) %>%
+  unlist()
+
+# Duplicate ID's data frame
+duplicate.IDs.df <- demographics %>%
+  filter(ID %in% duplicate.IDs)
+
+
+# Remove the duplicate ID's from the demographics data frame
+demographics <- demographics %>%
+  filter(!(ID %in% duplicate.IDs))
+
+# Create a for loop to keep the rows for each participant with the oldest age
+duplicate.IDs.age.corrected <- list()
+duplicate.IDs <- unique(duplicate.IDs.df$ID)
+
+for(ii in 1:length(duplicate.IDs)) {
+
+  # Obtain the duplicate rows of the current ID
+  current.ID <- duplicate.IDs[ii]
+  
+  # Calculate the maximum age for this ID
+  max.age <- duplicate.IDs.df %>% filter(ID == current.ID) %>% select(Age) %>% unlist() %>% as.numeric() %>% max()
+  
+  # Save the row of the max age
+  duplicate.IDs.age.corrected[[ii]] <- duplicate.IDs.df %>% filter(ID == current.ID & Age == max.age)
+}
+
+# Take the corrected for duplicate age IDs and turn them into a df
+unlisted.duplicate.IDs.age.corrected  <- duplicate.IDs.age.corrected %>% do.call(rbind,.)
+
+# Manual corrections
+corrected.demographics <- unlisted.duplicate.IDs.age.corrected %>%
+  filter(!(ID == 121 & Sex == "Male")) %>%
+  filter(!(ID == 190 & race == "Black or African American"))
+
+# Introduce the corrected demographics back to the main demographic dataset
+demographics <- demographics %>%
+  rbind(corrected.demographics)
+
+# Quality control to see if there are any remaining duplicates or missing data
+demographics %>%
+  group_by(ID) %>%
+  count() %>%
+  filter(n > 1) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+
+demographics %>%
+  filter(!complete.cases(.)) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+
+# Number of unique ID's in this data frame
+length(unique(demographics$ID))
+
+```
 
 ### Adding demographics manually
 
-Unfortunately for some reason, Age and Sex was unable to be recovered from some ID's with the code from above- thus these have been added manually in a separate excel sheet. If this excel sheet does not contain that information then that means it was not recorded during our Day 2 and to the best of my knowledge unattainable unless the participant is contacted for it. No information on race or ethnicity could be recovered regardless.
+Unfortunately, if participants enrolled reported an email for the screener that was mistyped or decided to participate in the study with a different email- then their demographic information would have been missed with the code above. Thus for these cases, their demographic information was added manually.  
+
 
 ```{r manual demographics, warning= FALSE}
+# ID's that need demographic data
+setdiff(PilotIDs$ID, demographics$ID) %>% sort()
+
 # Set working directory
 setwd("~/ONR/Demographics")
 
@@ -130,10 +241,6 @@ manual.demographics <- read_excel("demographics.manual.xlsx")
 
 # no demographic information avaiable
 paste("Warning, no demographic information could be found for the following ID:", manual.demographics$ID[is.na(manual.demographics$Age)],sep=" ")
-
-# Drop the ID's from above
-manual.demographics <- manual.demographics %>%
-  filter(!(ID %in% c("134","181","182","185","191")))
 
 
 # Add manual demographics to the rest of our demographics dataset
