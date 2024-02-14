@@ -68,11 +68,59 @@ variables <- c("ID", series.names, classification.names, condition.names)
 CFIT <- CFIT[,variables]
 ```
 
+
+### Quality control
+
+First let's remove any NA's from our ID column since this is meaningless information. Then let's check for any duplicates in our data which is from tester error. Below are some ID's that have more than two scores for IQ. To fix these scores, we would have to look at the dates of completion between these ID's and neighboring ID's, which may take a while. For now these ID's will be removed from the analysis. 
+
+```{r quality control}
+# Convert any blank information in the cells into NA
+CFIT[CFIT == ""] <- NA
+
+# Dropping NA's in the ID column
+CFIT <- CFIT %>%
+  drop_na(ID)
+
+# Look for duplicates in the data
+CFIT %>%
+  group_by(ID) %>%
+  count() %>%
+  filter(n > 1) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+# Duplicate IDs
+duplicate.IDs <- CFIT %>%
+  group_by(ID) %>%
+  count() %>%
+  filter(n > 1) %>%
+  select(ID) %>%
+  unlist()
+
+# Mentioned how many ID's will be removed
+paste("We will be dropping",length(duplicate.IDs),"IDs from our analysis.")
+
+# Drop duplicate IDs
+CFIT <- CFIT %>%
+  filter(!(ID %in% duplicate.IDs))
+
+# Check for any remaining duplicate IDs
+CFIT %>%
+  group_by(ID) %>%
+  count() %>%
+  filter(n > 1) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+```
+
+
+
 ### CFIT Scoring
 
 We are interested in obtain one raw score per person, thus we will be matching every response to that of the response key. Trials where the answer and response key match will be given a score of 1 and non-matching trials will be given a 0. All points will then be added together to produce our raw score. 
 
-```{r CFIT scoring}
+```{r CFIT scoring, warning = FALSE}
 # Convert the data to long
 CFIT.long <- CFIT %>%
   pivot_longer(-ID)
@@ -80,8 +128,11 @@ CFIT.long <- CFIT %>%
 # Set working directory
 setwd("~/ONR/IQ_data")
 
-# Load in the answerkey 
+# Load in the answer key 
 answer.key <- read_excel("CFIT Raw Score Key.xlsx")
+
+# Create a for loop to score each partici
+
 ```
 
 
