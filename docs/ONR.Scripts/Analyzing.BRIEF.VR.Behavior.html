@@ -465,7 +465,14 @@ setwd(&quot;~/ONR/BRIEF&quot;)
 
 # Load in the BRIEF data
 Inhibtion.T.scores &lt;- read.csv(&quot;Inhibition.T.scores.csv&quot;)
-Working.Memory.T.scores &lt;- read.csv(&quot;Working.Memory.T.scores.csv&quot;)</code></pre>
+Working.Memory.T.scores &lt;- read.csv(&quot;Working.Memory.T.scores.csv&quot;)
+
+# Clean the BRIEF data
+Inhibtion.T.scores &lt;- Inhibtion.T.scores %&gt;%
+  select(X, ID, Age, T.score)
+
+Working.Memory.T.scores &lt;- Working.Memory.T.scores %&gt;%
+  select(X, ID, Age, T.score)  </code></pre>
 </div>
 <div id="merge-the-datasets-together-sample-size" class="section level3">
 <h3>Merge the datasets together (Sample Size)</h3>
@@ -479,7 +486,7 @@ GnG.performance.merged &lt;- GnG.performance %&gt;%
 
 # dimensions of our data
 dim(GnG.performance.merged)</code></pre>
-<pre><code>[1] 112  18</code></pre>
+<pre><code>[1] 112   9</code></pre>
 <pre class="r"><code># Number of unique ID&#39;s in our new dataset
 length(unique(GnG.performance.merged$ID))</code></pre>
 <pre><code>[1] 53</code></pre>
@@ -490,7 +497,7 @@ Nback.performance.merged &lt;- Nback.performance %&gt;%
 
 # dimensions of our data
 dim(Nback.performance.merged)</code></pre>
-<pre><code>[1] 56 18</code></pre>
+<pre><code>[1] 56  9</code></pre>
 <pre class="r"><code># Number of unique ID&#39;s in our new dataset
 length(unique(Nback.performance.merged$ID))</code></pre>
 <pre><code>[1] 53</code></pre>
@@ -717,6 +724,68 @@ bptest(Nback.model)</code></pre>
 
 data:  Nback.model
 BP = 1.7956, df = 1, p-value = 0.1802</code></pre>
+<p>For our graphs, if we were to exclude our outliers in the box plot
+for Inhibition and GnG then overall these data look to not violate the
+asummption of homoscedasiticty. Additionally this is further supported
+with a non significant result in the Bresush-Page test. For the Working
+Memory and Nback plots, for the most part the box plots look to cover
+the same range with the exception of Q4, which is much more concentrated
+between .4 and .75. However, with the inclusion of a non significant
+Breush-Pagan test, these data also do not violated the assumption of
+homoscedasticity.</p>
+</div>
+<div id="assumption-of-independence-part-1" class="section level3">
+<h3>Assumption of Independence Part 1</h3>
+<p>Our final assumption is split into two parts. The first is verifying
+that each subject in our analyses only has one score for both the VR
+tasks and the T-score from the BRIEF Self report. To verify this, we
+will use the table function to count the number of scores each person
+has in the data. For this assumption to not be violated, every table
+should only have a count no greater than one.</p>
+<pre class="r"><code># Create a table for each subject that counts the number of data they have for our outcome variables.
+GnG.performance.merged %&gt;%
+  filter(Trial.Type == &quot;No-Go&quot;) %&gt;%
+  group_by(ID, trial.mean.correct) %&gt;%
+  count() %&gt;%
+  filter( n &gt; 1)</code></pre>
+<pre><code># A tibble: 3 × 3
+# Groups:   ID, trial.mean.correct [3]
+     ID trial.mean.correct     n
+  &lt;int&gt;              &lt;dbl&gt; &lt;int&gt;
+1   141               0.79     2
+2   171               1        2
+3   177               1        2</code></pre>
+<pre class="r"><code>Nback.performance.merged %&gt;%
+  filter(Trial.Type == &quot;Target&quot;) %&gt;%
+  group_by(ID, target.mean.reacted) %&gt;%
+  count() %&gt;%
+  filter( n &gt; 1)</code></pre>
+<pre><code># A tibble: 3 × 3
+# Groups:   ID, target.mean.reacted [3]
+     ID target.mean.reacted     n
+  &lt;int&gt;               &lt;dbl&gt; &lt;int&gt;
+1   141                0.78     2
+2   171                0.47     2
+3   177                0.42     2</code></pre>
+<p>For unknown reasons, ID’s 141, 171 and 177 have duplicate data. Thus,
+these ID’s have been dropped from our sample until we can verify why
+that is the case.</p>
+<pre class="r"><code># Dropping ID&#39;s with duplicate data for inhibition
+GnG.performance.merged &lt;- GnG.performance.merged %&gt;%
+  filter(!ID %in% c(141, 171, 177))
+
+# Dropping ID&#39;s with duplicate data for working memory
+Nback.performance.merged &lt;- Nback.performance.merged %&gt;%
+  filter(!ID %in% c(141, 171, 177))</code></pre>
+</div>
+<div id="assumption-of-independence-part-2-multicolinearity" class="section level3">
+<h3>Assumption of Independence Part 2 (Multicolinearity)</h3>
+<p>We also need to investigate if there is any multicolinearity present.
+This applies to our continuous covariates for which we are using Age and
+IQ. To do this we will be using a correlation matrix and if any
+variables correlate highly (r &gt; .6) then only one of those variables
+will be included in the analyses.</p>
+<pre class="r"><code># Load in IQ data</code></pre>
 </div>
 <div id="simple-regression" class="section level3">
 <h3>Simple regression</h3>
@@ -738,18 +807,18 @@ lm(formula = trial.mean.correct ~ T.score, data = No.Go.data)
 
 Residuals:
      Min       1Q   Median       3Q      Max 
--0.59526  0.01635  0.03472  0.06176  0.09854 
+-0.59658  0.01348  0.02643  0.05932  0.09927 
 
 Coefficients:
              Estimate Std. Error t value Pr(&gt;|t|)    
-(Intercept)  1.061536   0.101674  10.441 1.45e-14 ***
-T.score     -0.002163   0.001823  -1.186    0.241    
+(Intercept)  1.074612   0.107052  10.038 2.23e-13 ***
+T.score     -0.002350   0.001899  -1.237    0.222    
 ---
 Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 
-Residual standard error: 0.1299 on 54 degrees of freedom
-Multiple R-squared:  0.0254,    Adjusted R-squared:  0.007356 
-F-statistic: 1.408 on 1 and 54 DF,  p-value: 0.2406</code></pre>
+Residual standard error: 0.1329 on 48 degrees of freedom
+Multiple R-squared:  0.03092,   Adjusted R-squared:  0.01073 
+F-statistic: 1.531 on 1 and 48 DF,  p-value: 0.2219</code></pre>
 <pre class="r"><code># Run the Nback regression 
 Target.data &lt;- Nback.performance.merged %&gt;%
   filter(Trial.Type == &quot;Target&quot;)
@@ -764,19 +833,19 @@ Call:
 lm(formula = target.mean.reacted ~ T.score, data = Target.data)
 
 Residuals:
-     Min       1Q   Median       3Q      Max 
--0.39999 -0.16197  0.01083  0.17740  0.35698 
+    Min      1Q  Median      3Q     Max 
+-0.3962 -0.1799  0.0190  0.1837  0.3720 
 
 Coefficients:
-             Estimate Std. Error t value Pr(&gt;|t|)    
-(Intercept)  0.516482   0.136384   3.787 0.000385 ***
-T.score     -0.001355   0.002357  -0.575 0.567880    
+             Estimate Std. Error t value Pr(&gt;|t|)   
+(Intercept)  0.486158   0.145571   3.340  0.00163 **
+T.score     -0.001046   0.002470  -0.424  0.67375   
 ---
 Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 
-Residual standard error: 0.2232 on 54 degrees of freedom
-Multiple R-squared:  0.006079,  Adjusted R-squared:  -0.01233 
-F-statistic: 0.3303 on 1 and 54 DF,  p-value: 0.5679</code></pre>
+Residual standard error: 0.2261 on 48 degrees of freedom
+Multiple R-squared:  0.003724,  Adjusted R-squared:  -0.01703 
+F-statistic: 0.1794 on 1 and 48 DF,  p-value: 0.6737</code></pre>
 </div>
 
 

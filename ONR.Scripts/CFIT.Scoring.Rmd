@@ -5,6 +5,11 @@ date: "2024-02-14"
 output: html_document
 ---
 
+
+The CFIT stands for the Culturally Fair Intelligence Tests developed by Raymond Cattell. This assessment contains four types of non-verbal IQ tests. We are interested in Scale 2 of this test, which is the medium difficulty version. Additionally Scale 2 contains Form A and Form B, both forms contain items that correspond to one of the four tests. We collected data strictly from Form B. Unfortunately, there is no standardized way to obtain IQ scores from performance on the CFIT Scale 2 Form B, thus we will only be reporting raw scores for each subject below. 
+
+Raw scores are calculated by taking the sum of correct responses from the four subtests. Meaning there will be one overall score. 
+
 ### Universal block code settings
 
 ```{r setup}
@@ -29,14 +34,56 @@ library(kableExtra)
 
 ```{r load in the data, warning = FALSE}
 # Set working directory
-setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
+setwd("~/ONR/IQ_data")
 
 # Load in the data
-GnG.original <- read.csv("GnG.day.type.added.csv")
-Nback.original <- read.csv("Nback.day.type.added.csv")
-
-# What is the dimensions
-dim(GnG.original)
-dim(Nback.original)
+CFIT <- read.csv("ONR CFIT_February 14, 2024_15.14.csv")
 
 ```
+
+### Data cleaning
+
+```{r data cleaining}
+# Remove unnecessary rows 
+# Remove the first seven rows they are meaningless
+CFIT <- CFIT[8:nrow(CFIT),]
+
+# Keep variables that we are interested in
+CFIT.names <- names(CFIT)
+series.names <- CFIT.names[grepl(pattern = "T1Q" , x = CFIT.names)]
+classification.names <- CFIT.names[grepl(pattern = "T2Q" , x = CFIT.names)]
+matrices.names <- CFIT.names[grepl(pattern = "T3Q" , x = CFIT.names)]
+condition.names <- CFIT.names[grepl(pattern = "T4Q" , x = CFIT.names)]
+
+# The number of items in order should be 12, 14, 12, and 8
+length(series.names)
+length(classification.names)
+length(matrices.names)
+length(condition.names)
+
+# Extract these variable names from our original CFIT
+variables <- c("ID", series.names, classification.names, condition.names)
+
+# Save this new cleaned data set
+CFIT <- CFIT[,variables]
+```
+
+### CFIT Scoring
+
+We are interested in obtain one raw score per person, thus we will be matching every response to that of the response key. Trials where the answer and response key match will be given a score of 1 and non-matching trials will be given a 0. All points will then be added together to produce our raw score. 
+
+```{r CFIT scoring}
+# Convert the data to long
+CFIT.long <- CFIT %>%
+  pivot_longer(-ID)
+
+# Set working directory
+setwd("~/ONR/IQ_data")
+
+# Load in the answerkey 
+answer.key <- read_excel("CFIT Raw Score Key.xlsx")
+```
+
+
+
+
