@@ -62,11 +62,14 @@ length(matrices.names)
 length(condition.names)
 
 # Extract these variable names from our original CFIT
-variables <- c("ID", series.names, classification.names, condition.names)
+variables <- c("ID", series.names, classification.names, matrices.names, condition.names)
 
 # Save this new cleaned data set
 CFIT <- CFIT[,variables]
+
+
 ```
+
 
 
 ### Quality control
@@ -112,6 +115,13 @@ CFIT %>%
   kbl() %>%
   kable_paper(full_width = F)
 
+# Additional data cleaning- changing n126 to 126
+CFIT <- CFIT %>%
+  mutate(ID = ifelse(ID == "n126", "126", ID))
+
+# Changing ID's to numeric
+CFIT$ID <- as.numeric(CFIT$ID)
+
 ```
 
 
@@ -131,10 +141,56 @@ setwd("~/ONR/IQ_data")
 # Load in the answer key 
 answer.key <- read_excel("CFIT Raw Score Key.xlsx")
 
-# Create a for loop to score each partici
+# Create a for loop to score each participant's performance on the CFIT
+Raw.score <- list()
+IDs.num <- unique(CFIT.long$ID)
+
+for(ii in 1:length(IDs.num)) {
+  
+  # Extract the data for the current ID
+  current.ID.df <- CFIT.long %>%
+    filter(ID == IDs.num[ii])
+  
+  # Add the scoring key variable to this data frame (46 values)
+  current.ID.df$scoring.key <- answer.key$Correct_Answers
+  
+  # Score the responses for the current data frame
+  current.ID.df <- current.ID.df %>%
+    mutate(Correct = ifelse(value == scoring.key, 1, 0))
+  
+  # Save the ID and the sum of all correct responses
+  Raw.score[[ii]] <- data.frame(ID = unique(current.ID.df$ID),
+                                CFIT = sum(current.ID.df$Correct, na.rm = TRUE))
+}
+
+# Save the Raw scores for each person
+Raw.score <- Raw.score %>%
+  do.call(rbind,.)
+
+
+# Check for any missing data
+Raw.score %>%
+  filter(!complete.cases(.))
 
 ```
 
+### Current CFIT numbers
+
+```{r current CFIT numbers}
+# Paste the following
+paste("We have CFIT raw scores for",length(unique(Raw.score$ID)),"subjects")
+
+```
+
+### Save the data
+
+```{r save the data}
+# Set a save directory
+setwd("~/ONR/IQ_data/Processed Data")
+
+# Save the data
+write.csv(x = Raw.score, file = "CFIT.raw.scores.csv")
 
 
+```
 

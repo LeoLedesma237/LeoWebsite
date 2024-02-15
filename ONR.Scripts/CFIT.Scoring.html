@@ -637,7 +637,7 @@ length(series.names)</code></pre>
 <pre class="r"><code>length(condition.names)</code></pre>
 <pre><code>[1] 8</code></pre>
 <pre class="r"><code># Extract these variable names from our original CFIT
-variables &lt;- c(&quot;ID&quot;, series.names, classification.names, condition.names)
+variables &lt;- c(&quot;ID&quot;, series.names, classification.names, matrices.names, condition.names)
 
 # Save this new cleaned data set
 CFIT &lt;- CFIT[,variables]</code></pre>
@@ -772,6 +772,12 @@ n
 </tr>
 </tbody>
 </table>
+<pre class="r"><code># Additional data cleaning- changing n126 to 126
+CFIT &lt;- CFIT %&gt;%
+  mutate(ID = ifelse(ID == &quot;n126&quot;, &quot;126&quot;, ID))
+
+# Changing ID&#39;s to numeric
+CFIT$ID &lt;- as.numeric(CFIT$ID)</code></pre>
 </div>
 <div id="cfit-scoring" class="section level3">
 <h3>CFIT Scoring</h3>
@@ -790,7 +796,52 @@ setwd(&quot;~/ONR/IQ_data&quot;)
 # Load in the answer key 
 answer.key &lt;- read_excel(&quot;CFIT Raw Score Key.xlsx&quot;)
 
-# Create a for loop to score each partici</code></pre>
+# Create a for loop to score each participant&#39;s performance on the CFIT
+Raw.score &lt;- list()
+IDs.num &lt;- unique(CFIT.long$ID)
+
+for(ii in 1:length(IDs.num)) {
+  
+  # Extract the data for the current ID
+  current.ID.df &lt;- CFIT.long %&gt;%
+    filter(ID == IDs.num[ii])
+  
+  # Add the scoring key variable to this data frame (46 values)
+  current.ID.df$scoring.key &lt;- answer.key$Correct_Answers
+  
+  # Score the responses for the current data frame
+  current.ID.df &lt;- current.ID.df %&gt;%
+    mutate(Correct = ifelse(value == scoring.key, 1, 0))
+  
+  # Save the ID and the sum of all correct responses
+  Raw.score[[ii]] &lt;- data.frame(ID = unique(current.ID.df$ID),
+                                CFIT = sum(current.ID.df$Correct, na.rm = TRUE))
+}
+
+# Save the Raw scores for each person
+Raw.score &lt;- Raw.score %&gt;%
+  do.call(rbind,.)
+
+
+# Check for any missing data
+Raw.score %&gt;%
+  filter(!complete.cases(.))</code></pre>
+<pre><code>[1] ID   CFIT
+&lt;0 rows&gt; (or 0-length row.names)</code></pre>
+</div>
+<div id="current-cfit-numbers" class="section level3">
+<h3>Current CFIT numbers</h3>
+<pre class="r"><code># Paste the following
+paste(&quot;We have CFIT raw scores for&quot;,length(unique(Raw.score$ID)),&quot;subjects&quot;)</code></pre>
+<pre><code>[1] &quot;We have CFIT raw scores for 192 subjects&quot;</code></pre>
+</div>
+<div id="save-the-data" class="section level3">
+<h3>Save the data</h3>
+<pre class="r"><code># Set a save directory
+setwd(&quot;~/ONR/IQ_data/Processed Data&quot;)
+
+# Save the data
+write.csv(x = Raw.score, file = &quot;CFIT.raw.scores.csv&quot;)</code></pre>
 </div>
 
 
