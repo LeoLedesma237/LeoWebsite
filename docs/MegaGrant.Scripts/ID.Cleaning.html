@@ -1153,11 +1153,11 @@ recover and correct for mistyped ID’s for rsEEG and potentially include
 them back into our Master Excel sheet, which will increase our N by
 some.</p>
 <p>Our next step then is to take only the rows that have at least one
-data missing and split them into two data frames. One data frame will
-contain ID’s that have rsEEG data and another the other will contain
-ID’s that do not have rsEEG data. We can then use ‘fuzzy matching’
-through the stringdist_join() function, which will match ID’s between
-data frames that look similar to each other. It does this by taking our
+data type missing and split them into two data frames. One data frame
+will contain ID’s that have rsEEG data and the other will contain ID’s
+that do not have rsEEG data. We can then use ‘fuzzy matching’ through
+the stringdist_join() function, which will match ID’s between data
+frames that look similar to each other. It does this by taking our
 second data frame (the one with rsEEG data) and comparing the variable
 we choose from it (ID) to all of the IDs in our first data frame (the
 ones with missing rsEEG) and calculating a distance number that
@@ -1165,6 +1165,8 @@ indicates how similar the ID from the second data frame is to that of
 the first. If this distance value is close to zero then there is a high
 likelyhood the ID’s actually do match and that will be displayed as an
 output.</p>
+<p>Then we can manually decide if we agree with the decision of the
+code.</p>
 <pre class="r"><code># Has at least one missing data type dataframe
 missing.some.data &lt;- masterData %&gt;% filter(missing.num != 0)
 
@@ -1178,10 +1180,10 @@ missing.EEG &lt;- missing.some.data[is.na(missing.some.data$RAW),]
 # Check the unique values for rsEEG between data frames (quality control)
 unique(missing.some.data$RAW)</code></pre>
 <pre><code>[1] NA  &quot;+&quot;</code></pre>
-<pre class="r"><code>unique(missing.some.data$RAW)</code></pre>
-<pre><code>[1] NA  &quot;+&quot;</code></pre>
-<pre class="r"><code>unique(missing.some.data$RAW)</code></pre>
-<pre><code>[1] NA  &quot;+&quot;</code></pre>
+<pre class="r"><code>unique(has.EEG$RAW)</code></pre>
+<pre><code>[1] &quot;+&quot;</code></pre>
+<pre class="r"><code>unique(missing.EEG$RAW)</code></pre>
+<pre><code>[1] NA</code></pre>
 <pre class="r"><code># What are the dimensions of both new data frames
 nrow(has.EEG)</code></pre>
 <pre><code>[1] 63</code></pre>
@@ -1748,19 +1750,135 @@ matches to have a ‘dist’ number equal to 1. Meaning that the first 6
 matches are the only matches that seem likely and we can discard the
 rest.</p>
 </div>
-<div id="remove-ids-that-cross-the-17-missing-data-number-threshold" class="section level3">
-<h3>Remove ID’s that cross the 17 missing data number threshold</h3>
+<div id="outcome-of-fuzzy-matching" class="section level3">
+<h3>Outcome of Fuzzy Matching</h3>
+<p>There are two potential steps that now can be done knowing the
+information from above. I could go into the original folder and change
+the name of the original EEG files, however, doing so might change the
+numbers recorded above. Additionally, all rsEEG files already underwent
+preprocessing and there are many different versons of them that
+symbolize different preprocessing stages- all of their names would have
+to be manually changed too. An alternative to is just make note of these
+ID’s when merging future datasets, which will be easy to write as code
+and keep all the previous work from above in tact. I will be going with
+the second option.</p>
+<p>To do this, I will take the RAW variable that is comprised of “+” and
+“-” values and convert them to ID numbers that correspond to their rsEEG
+filenames. This means that for most subjects, the ID in the RAW variable
+will match that of their regular ID, and in a few cases, the typo ID
+will be there instead. This will help with future data merging of
+processed EEG files that have typos in them.</p>
+<pre class="r"><code># Transform the RAW variable to include the file name ID saved in the rsEEG directory
+# First let&#39;s copy over every single ID to RAW that has rsEEG data and then add in the typos as a separate function
+masterData &lt;- masterData %&gt;%
+  mutate(RAW = ifelse(RAW == &quot;+&quot;, ID, RAW)) 
+
+# Add in the fuzzy matches
+fuzzy.matches &lt;- fuzzy.matching2 %&gt;%
+  filter(dist == 1)
+
+# Add a for loop to introduce the typo ID into the real ID row inside of RAW
+for(ii in 1:nrow(masterData)) {
+  
+  # Extract the current ID from masterData
+  current.ID &lt;- masterData$ID[ii]
+  
+  # Create an if statement- if it matches with and ID from fuzzy.matches df, then include the typo ID
+  if(current.ID %in% fuzzy.matches$ID.x) {
+    
+    # Extract the typo ID
+    typo.ID &lt;- fuzzy.matches %&gt;% filter(ID.x == current.ID) %&gt;% select(ID.y) %&gt;% unlist()
+    
+    # Introduce the typo ID into that row in the RAW variable
+    masterData$RAW[ii] &lt;- typo.ID
+    
+  }
+
+}
+
+# QUality check to see if it worked
+# Filter out the ID&#39;s with typos and check if their fuzzy match ID typo is in RAW
+masterData %&gt;%
+  filter(ID %in% fuzzy.matches$ID.x) %&gt;%
+  select(ID, RAW) %&gt;%
+  kbl() %&gt;%
+  kable_paper(full_width = F)</code></pre>
+<table class=" lightable-paper" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+ID
+</th>
+<th style="text-align:left;">
+RAW
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+34867
+</td>
+<td style="text-align:left;">
+34857
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+97991
+</td>
+<td style="text-align:left;">
+97911
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+27242
+</td>
+<td style="text-align:left;">
+27240
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+48183
+</td>
+<td style="text-align:left;">
+48180
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+62030
+</td>
+<td style="text-align:left;">
+62037
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+78160
+</td>
+<td style="text-align:left;">
+78140
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="remove-ids-that-have-16-missing-data-or-more" class="section level3">
+<h3>Remove ID’s that have 16 missing data or more</h3>
 <p>The dimensions for the new dataset after removing ID’s with more than
 17 missing data are now 701 observations by 21 columns (variables). The
 variable number increased by one since we introduced a new variable that
 counts the number of missing data per row.</p>
-<pre class="r"><code># Remove ID&#39;s that have more than 17 missing data
+<pre class="r"><code># Remove ID&#39;s that have more than 15 missing data
 masterData.remaining &lt;- masterData %&gt;%
-  filter(missing.num &lt; 18)
+  filter(missing.num &lt; 16)
 
 # Dimensions of masterData after removing ID&#39;s
 dim(masterData.remaining)</code></pre>
-<pre><code>[1] 778  19</code></pre>
+<pre><code>[1] 701  19</code></pre>
 </div>
 <div id="closer-inspection-of-removed-ids" class="section level3">
 <h3>Closer inspection of removed ID’s</h3>
@@ -1772,7 +1890,7 @@ indicating that this might be a result of a tester working in either of
 these data collection.</p>
 <pre class="r"><code># The code to view this data frame manually
 masterData.removed &lt;- masterData %&gt;%
-  filter(missing.num &gt; 17) </code></pre>
+  filter(missing.num &gt; 15) </code></pre>
 </div>
 <div id="closer-inspection-of-the-kept-ids" class="section level3">
 <h3>Closer inspection of the kept ID’s</h3>

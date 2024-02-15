@@ -40,6 +40,7 @@ library(ggpubr)
 library(readxl)
 library(lmtest) # bptest() function for homoscedasticity
 library(kableExtra)
+library(boot)
 
 ```
 
@@ -384,33 +385,156 @@ cor(Working.Memory.covariates)
 
 Our covariates do not correlate highly with each other- thus the assumption of independence was not violated. 
 
+
+### Multiple Regression
+
+We will now run two multiple regressions. We are not so interested in the output as of just yet, but more in the plots that can be derived from having created the model. These plots will further indicate if assumptions have been violated or not. 
+
+Temporarily removed CFIT until we can identify more scores from manual data cleaning. 
+
+```{r running multiple regression on working memory}
+# Running a multiple regression 
+# Run the GnG regression
+No.Go.data <- GnG.performance.merged %>%
+  filter(Trial.Type == "No-Go")
+  
+Inhibition.model <- lm(trial.mean.correct ~ T.score + Age,data = No.Go.data)
+
+# Run the Nback regression
+Target.data <- Nback.performance.merged %>%
+  filter(Trial.Type == "Target")
+
+Working.Memory.model <- lm(target.mean.reacted ~  T.score + Age, data = Target.data)
+
+```
+
+### Visualizing residuals from both models
+
+```{r visualizing the residuals from the models, out.width = "110%"}
+### First for Inhibiton
+# Add the standardized residuals to our original dataframe
+GnG.performance.merged$standardized.residuals <- rstandard(Inhibition.model)
+
+# Add studentized residuals
+GnG.performance.merged$studentized.residuals <- rstudent(Inhibition.model)
+
+# Add the fitted (predicted) values to our original dataframe
+GnG.performance.merged$fitted.values <- Inhibition.model$fitted.values
+
+# Create a graph using the fitted values and the standardizes residuals
+Inhibition.plot1 <- GnG.performance.merged %>%
+  ggplot(aes(x = fitted.values, y = standardized.residuals)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "black")+
+  theme_bw() +
+  labs(title = "Standardized Residuals vs Fitted Values\n(Inhibition)",
+       x = "Fitted Values",
+       y = "Standardized Residuals",
+       caption = "lm(trial.mean.correct ~ T.score + Age,data = No.Go.data)") +
+  theme(plot.title = element_text(size = 12,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 9, face = "bold"),
+        axis.text = element_text(size = 9),
+        plot.caption = element_text(size = 10))
+
+Inhibition.plot2 <- GnG.performance.merged %>%
+  ggplot(aes(sample= studentized.residuals)) +
+  geom_qq() +
+  stat_qq_line() +
+  theme_bw() +
+  labs( x = "Theoretical Quantiles", 
+        y = "Observed Values") +
+    theme(plot.title = element_text(size = 12,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 9, face = "bold"),
+        axis.text = element_text(size = 9),
+        plot.caption = element_text(size = 10))
+
+ggarrange(Inhibition.plot1, Inhibition.plot2)
+
+
+
+
+
+### Next for Working Memory
+# Add the standardized residuals to our original dataframe
+Nback.performance.merged$standardized.residuals <- rstandard(Working.Memory.model)
+
+# Add studentized residuals
+Nback.performance.merged$studentized.residuals <- rstudent(Working.Memory.model)
+
+# Add the fitted (predicted) values to our original dataframe
+Nback.performance.merged$fitted.values <- Working.Memory.model$fitted.values
+
+# Create a graph using the fitted values and the standardizes residuals
+Working.Memory.plot1 <- Nback.performance.merged %>%
+  ggplot(aes(x = fitted.values, y = standardized.residuals)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "black")+
+  theme_bw() +
+  labs(title = "Standardized Residuals vs Fitted Values\n(Working Memory)",
+       x = "Fitted Values",
+       y = "Standardized Residuals",
+       caption = "lm(target.mean.reacted ~  T.score + Age, data = Target.data)") +
+  theme(plot.title = element_text(size = 12,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 9, face = "bold"),
+        axis.text = element_text(size = 9),
+        plot.caption = element_text(size = 10))
+
+Working.Memory.plot2 <- Nback.performance.merged %>%
+  ggplot(aes(sample= studentized.residuals)) +
+  geom_qq() +
+  stat_qq_line() +
+  theme_bw() +
+  labs( x = "Theoretical Quantiles", 
+        y = "Observed Values") +
+    theme(plot.title = element_text(size = 12,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 9, face = "bold"),
+        axis.text = element_text(size = 9),
+        plot.caption = element_text(size = 10))
+
+ggarrange(Working.Memory.plot1, Working.Memory.plot2)
+```
+
+
 ### Robust regression: bootstrapping 
 
 Since some of our assumptions were violated in the previous sections, we will be using a robust regression boot strapping method with the boot() function in the `boot` packages in r.
 
 
-To answer our question, we will be using a simple regression to assess 1) the relationship between inhibiton T-scores and No-Go trial performance in the GnG; and 2) to assess the relationship between working memory T-scores and Target trial performance in the Nback.
-
-```{r running the simple regression}
-# Run the GnG regression
-No.Go.data <- GnG.performance.merged %>%
-  filter(Trial.Type == "No-Go")
+```{r running a robus regression}
+# Develop a bootstrap function
+bootReg <- function(formula, data, indices)
+{
+  d <- data[indices,]
+  fit <- lm(formula, data = d)
+  return(coef(fit))
   
-model1 <- lm(trial.mean.correct ~ T.score + CFIT + Age,data = No.Go.data)
+}
 
-# Summary of the model
-summary(model1)
+# Run the boostrap function on our regression models
+### First on Inhibition
+Inhibition.bootResults <- boot(statistic = bootReg, formula = trial.mean.correct ~ T.score + Age,data = No.Go.data, R = 2000)
 
-# Run the Nback regression 
-Target.data <- Nback.performance.merged %>%
-  filter(Trial.Type == "Target")
+# Obtain the Confidence Intervals from boot strapping for T.score (index 2)
+boot.ci(Inhibition.bootResults, type = "bca", index = 2)
 
-# Run the Nback regression
-model2 <- lm(target.mean.reacted ~  T.score + CFIT + Age, data = Target.data)
+# Obtain the Confidence Intervals from boot strapping for Age(index 3)
+boot.ci(Inhibition.bootResults, type = "bca", index = 3)
 
-# Summary of the model
-summary(model2)
+### Next on Working Memory
+Working.Memory.bootResults <- boot(statistic = bootReg, formula = target.mean.reacted ~  T.score + Age, data = Target.data, R = 2000)
 
+# Obtain the Confidence Intervals from boot strapping for T.score (index 2)
+boot.ci(Working.Memory.bootResults, type = "bca", index = 2)
+
+# Obtain the Confidence Intervals from boot strapping for Age(index 3)
+boot.ci(Working.Memory.bootResults, type = "bca", index = 3)
+                                
+                     
+                                 
 ```
 
 
