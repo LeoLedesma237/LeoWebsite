@@ -15,7 +15,7 @@ The BRIEF Self-Report contains questions for several different domains encompass
 
 ### Variables that measure performance
 
-In the GnG, the variable 'correct' was used to calculate the mean performance for each person at each block session. This variable is binary (0 or 1) and it informs whether the trial was done correctly or not. This means that for a Go-trial to be correct, the green cube showed must have been hit in a specific amount of time and for No-Go trials, the green pyramid or red cube must not have been struck. For the Nback, we used the variable 'reacted' instead to calcualte mean performance. Since the Nback has four versions that all include arrows, and we are more interested in the ability to identify target trials rather than identifying target trials and hitting in the direction of the arrow, we are using the scores from React to calculate performance. This will allow us to obtain the mean of identifying targets for each subject, which is one way to measure working memory from the way this paradigm was constructed.
+In the GnG, the variable 'correct' was used to calculate the mean performance for each person at each block session. This variable is binary (0 or 1) and it informs whether the trial was done correctly or not. This means that for a Go-trial to be correct, the green cube showed must have been hit in a specific amount of time and for No-Go trials, the green pyramid or red cube must not have been struck. For the Nback, we used the variable 'reacted' instead to calculate mean performance. Since the Nback has four versions that all include arrows, and we are more interested in the ability to identify target trials rather than identifying target trials and hitting in the direction of the arrow, we are using the scores from React to calculate performance. This will allow us to obtain the mean of identifying targets for each subject, which is one way to measure working memory from the way this paradigm was constructed.
 
 ### Cross-sectional analysis
 
@@ -55,13 +55,13 @@ setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_prepr
 GnG.performance <- read.csv("GnG.trial.type.csv")
 
 # Data cleaning- we are only interested in Day 1
-GnG.performance <- GnG.performance %>% filter(Day.Type == "Day 1" & BlockName == "Colors and Shape")
+GnG.performance <- GnG.performance %>% filter(Day.Type == "Day 1" & BlockName == "Colors and Shape") %>% select(-X)
 
 # Load in the Nback data (Reacted)
 Nback.reacted <- read.csv("Nback.target.reacted.csv")
 
 # Data cleaning- we are only interested in Day 1
-Nback.performance <- Nback.reacted %>% filter(Day.Type == "Day 1" & BlockName == "2-Back AR w ND")
+Nback.performance <- Nback.reacted %>% filter(Day.Type == "Day 1" & BlockName == "2-Back AR w ND") %>% select(-X)
 
 # Set working directory
 setwd("~/ONR/BRIEF")
@@ -72,10 +72,10 @@ Working.Memory.T.scores <- read.csv("Working.Memory.T.scores.csv")
 
 # Clean the BRIEF data
 Inhibtion.T.scores <- Inhibtion.T.scores %>%
-  select(X, ID, Age, T.score)
+  select(ID, Age, T.score)
 
 Working.Memory.T.scores <- Working.Memory.T.scores %>%
-  select(X, ID, Age, T.score)  
+  select(ID, Age, T.score)  
 ```
 
 ### Merge the datasets together (Sample Size)
@@ -104,6 +104,25 @@ dim(Nback.performance.merged)
 
 # Number of unique ID's in our new dataset
 length(unique(Nback.performance.merged$ID))
+
+
+# Also merge to add IQ data
+setwd("~/ONR/IQ_data/Processed Data")
+
+# Load in the CFIT data
+CFIT <- read.csv("CFIT.raw.scores.csv")
+
+# Remove variable X from CFIT
+CFIT <- CFIT %>% select(-X)
+
+
+# Add IQ covariate- since it is not a predictor nor outcome variable, keep NA's for those missing CFIT data
+GnG.performance.merged <- GnG.performance.merged %>%
+  merge(CFIT, by = "ID", all.x = TRUE)
+
+# Do the same for the Nback
+Nback.performance.merged <- Nback.performance.merged %>%
+  merge(CFIT, by = "ID", all.x = TRUE)
 ```
 
 ### Loss of data
@@ -144,8 +163,8 @@ GnG.performance.merged %>%
   ggplot(aes(x = trial.mean.correct)) +
   geom_histogram(fill = "white",
                  color = "black",
-                 bins = 10) +
-  scale_y_continuous(expand = c(0,0), limits = c(0,110)) + 
+                 bins = 40) +
+  #scale_y_continuous(expand = c(0,0), limits = c(0,110)) + 
   theme_classic() +
   labs(x = "Proportion of correct No-Go Trials",
        y = "Frequency",
@@ -294,7 +313,7 @@ Nback.model <- lm(target.mean.reacted ~ T.score, data = Nback.performance.merged
 bptest(Nback.model)
 ```
 
-For our graphs, if we were to exclude our outliers in the box plot for Inhibition and GnG then overall these data look to not violate the asummption of homoscedasiticty. Additionally this is further supported with a non significant result in the Bresush-Page test. For the Working Memory and Nback plots, for the most part the box plots look to cover the same range with the exception of Q4, which is much more concentrated between .4 and .75. However, with the inclusion of a non significant Breush-Pagan test, these data also do not violated the assumption of homoscedasticity.
+For our graphs, if we were to exclude our outliers in the box plot for Inhibition and GnG then overall these data look to not violate the assumption of homoscedasiticty. Additionally this is further supported with a non significant result in the Breusch-Page test. The Working Memory and Nback plots box plots look to cover the same range with the exception of Q4, which is much more concentrated between .4 and .75. However, with the inclusion of a non significant Breusch-Pagan test, these data also do not violated the assumption of homoscedasticity.
 
 
 ### Assumption of Independence Part 1
@@ -335,15 +354,40 @@ Nback.performance.merged <- Nback.performance.merged %>%
 
 We also need to investigate if there is any multicolinearity present. This applies to our continuous covariates for which we are using Age and IQ. To do this we will be using a correlation matrix and if any variables correlate highly (r > .6) then only one of those variables will be included in the analyses.
 
-```{r load in IQ data}
-# Load in IQ data
+```{r load in IQ data, warning = FALSE}
+# Create a correlation matrix with our covariates for inhibition
+Inhibition.covariates <- GnG.performance.merged %>%
+  select(Age, CFIT) %>%
+  unique() %>%
+  filter(complete.cases(.))
 
+# get the dimensions of our GnG covariates
+dim(Inhibition.covariates)
 
+# Run a correlation matrix
+cor(Inhibition.covariates)
 
+# Create a correlation matrix with our covariates for working memory
+Working.Memory.covariates <- Nback.performance.merged %>%
+  select(Age, CFIT) %>%
+  unique() %>%
+  filter(complete.cases(.))
+
+# get the dimensions of our GnG covariates
+dim(Working.Memory.covariates)
+
+# Run a correlation matrix
+cor(Working.Memory.covariates)
+
+  
 ```
 
+Our covariates do not correlate highly with each other- thus the assumption of independence was not violated. 
 
-### Simple regression
+### Robust regression: bootstrapping 
+
+Since some of our assumptions were violated in the previous sections, we will be using a robust regression boot strapping method with the boot() function in the `boot` packages in r.
+
 
 To answer our question, we will be using a simple regression to assess 1) the relationship between inhibiton T-scores and No-Go trial performance in the GnG; and 2) to assess the relationship between working memory T-scores and Target trial performance in the Nback.
 
@@ -352,7 +396,7 @@ To answer our question, we will be using a simple regression to assess 1) the re
 No.Go.data <- GnG.performance.merged %>%
   filter(Trial.Type == "No-Go")
   
-model1 <- lm(trial.mean.correct ~ T.score ,data = No.Go.data)
+model1 <- lm(trial.mean.correct ~ T.score + CFIT + Age,data = No.Go.data)
 
 # Summary of the model
 summary(model1)
@@ -362,9 +406,20 @@ Target.data <- Nback.performance.merged %>%
   filter(Trial.Type == "Target")
 
 # Run the Nback regression
-model2 <- lm(target.mean.reacted ~ T.score, data = Target.data)
+model2 <- lm(target.mean.reacted ~  T.score + CFIT + Age, data = Target.data)
 
 # Summary of the model
 summary(model2)
+
+```
+
+
+
+```{r delete me}
+CFIT %>%
+  ggplot(aes(x = CFIT)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 25)
 
 ```

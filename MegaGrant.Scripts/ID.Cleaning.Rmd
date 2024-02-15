@@ -246,8 +246,9 @@ dim(masterData)
 
 We really care about data from two variables, our predictor and outcome variable. In our case, this would be the spelling scores in the ARFA and the resting-state EEG data (RAW). Since we are missing a good chunk of rsEEG data (19%), it is worth investigating if some of that data is not actually missing, but saved as an incorrect ID file name. If that is the case, then we could have some ID's that have rsEEG data but are missing a lot of other types of data to be similar (maybe contain the same numbers but are in a different order or contain the same numbers with the exception of one) to IDs that have a lot of data present with the exception of rsEEG. This would mean that we could recover and correct for mistyped ID's for rsEEG and potentially include them back into our Master Excel sheet, which will increase our N by some. 
 
-Our next step then is to take only the rows that have at least one data missing and split them into two data frames. One data frame will contain ID's that have rsEEG data and another the other will contain ID's that do not have rsEEG data. We can then use 'fuzzy matching' through the stringdist_join() function, which will match ID's between data frames that look similar to each other. It does this by taking our second data frame (the one with rsEEG data) and comparing the variable we choose from it (ID) to all of the IDs in our first data frame (the ones with missing rsEEG) and calculating a distance number that indicates how similar the ID from the second data frame is to that of the first. If this distance value is close to zero then there is a high likelyhood the ID's actually do match and that will be displayed as an output.
+Our next step then is to take only the rows that have at least one data type missing and split them into two data frames. One data frame will contain ID's that have rsEEG data and the other will contain ID's that do not have rsEEG data. We can then use 'fuzzy matching' through the stringdist_join() function, which will match ID's between data frames that look similar to each other. It does this by taking our second data frame (the one with rsEEG data) and comparing the variable we choose from it (ID) to all of the IDs in our first data frame (the ones with missing rsEEG) and calculating a distance number that indicates how similar the ID from the second data frame is to that of the first. If this distance value is close to zero then there is a high likelyhood the ID's actually do match and that will be displayed as an output.
 
+Then we can manually decide if we agree with the decision of the code. 
 
 ```{r fuzzy matching part 1}
 # Has at least one missing data type dataframe
@@ -262,8 +263,8 @@ missing.EEG <- missing.some.data[is.na(missing.some.data$RAW),]
 
 # Check the unique values for rsEEG between data frames (quality control)
 unique(missing.some.data$RAW)
-unique(missing.some.data$RAW)
-unique(missing.some.data$RAW)
+unique(has.EEG$RAW)
+unique(missing.EEG$RAW)
 
 # What are the dimensions of both new data frames
 nrow(has.EEG)
@@ -328,14 +329,61 @@ head(fuzzy.matching2,10) %>%
 This helped quite a bit. Now instead of having 494 observations, it was reduced to 150. Another thing to notice is the variable 'dist.' This is a numerical value indicating the similarity between the paired IDs. Visually inspecting the data- it seems that matches with a 'dist' of 1 seem very likely to be correct matches, while a 'dist' of 2 seem to be a lot less unlikely to be matches. Thus we will chose potential fuzzy matches to have a 'dist' number equal to 1. Meaning that the first 6 matches are the only matches that seem likely and we can discard the rest.  
 
 
-### Remove ID's that cross the 17 missing data number threshold
+### Outcome of Fuzzy Matching
+
+There are two potential steps that now can be done knowing the information from above. I could go into the original folder and change the name of the original EEG files, however, doing so might change the numbers recorded above. Additionally, all rsEEG files already underwent preprocessing and there are many different versons of them that symbolize different preprocessing stages- all of their names would have to be manually changed too. An alternative to is just make note of these ID's when merging future datasets, which will be easy to write as code and keep all the previous work from above in tact. I will be going with the second option.
+
+To do this, I will take the RAW variable that is comprised of "+" and "-" values and convert them to ID numbers that correspond to their rsEEG filenames. This means that for most subjects, the ID in the RAW variable will match that of their regular ID, and in a few cases, the typo ID will be there instead. This will help with future data merging of processed EEG files that have typos in them.  
+
+```{r implementing the fuzz matches}
+# Transform the RAW variable to include the file name ID saved in the rsEEG directory
+# First let's copy over every single ID to RAW that has rsEEG data and then add in the typos as a separate function
+masterData <- masterData %>%
+  mutate(RAW = ifelse(RAW == "+", ID, RAW)) 
+
+# Add in the fuzzy matches
+fuzzy.matches <- fuzzy.matching2 %>%
+  filter(dist == 1)
+
+# Add a for loop to introduce the typo ID into the real ID row inside of RAW
+for(ii in 1:nrow(masterData)) {
+  
+  # Extract the current ID from masterData
+  current.ID <- masterData$ID[ii]
+  
+  # Create an if statement- if it matches with and ID from fuzzy.matches df, then include the typo ID
+  if(current.ID %in% fuzzy.matches$ID.x) {
+    
+    # Extract the typo ID
+    typo.ID <- fuzzy.matches %>% filter(ID.x == current.ID) %>% select(ID.y) %>% unlist()
+    
+    # Introduce the typo ID into that row in the RAW variable
+    masterData$RAW[ii] <- typo.ID
+    
+  }
+
+}
+
+# QUality check to see if it worked
+# Filter out the ID's with typos and check if their fuzzy match ID typo is in RAW
+masterData %>%
+  filter(ID %in% fuzzy.matches$ID.x) %>%
+  select(ID, RAW) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+```
+
+
+
+### Remove ID's that have 16 missing data or more
 
 The dimensions for the new dataset after removing ID's with more than 17 missing data are now 701 observations by 21 columns (variables). The variable number increased by one since we introduced a new variable that counts the number of missing data per row. 
 
 ```{r removing fake IDs}
-# Remove ID's that have more than 17 missing data
+# Remove ID's that have more than 15 missing data
 masterData.remaining <- masterData %>%
-  filter(missing.num < 18)
+  filter(missing.num < 16)
 
 # Dimensions of masterData after removing ID's
 dim(masterData.remaining)
@@ -348,7 +396,7 @@ It is good to manually check which ID's we are removing from our original datase
 ```{r closer inspection on removed IDs}
 # The code to view this data frame manually
 masterData.removed <- masterData %>%
-  filter(missing.num > 17) 
+  filter(missing.num > 15) 
 
 ```
 

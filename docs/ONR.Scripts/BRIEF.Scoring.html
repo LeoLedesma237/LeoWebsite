@@ -1058,13 +1058,13 @@ msg4 &lt;- paste(&quot;We need to find the demographic data for the remaining&qu
 
 # Print out all of the messages
 msg1</code></pre>
-<pre><code>[1] &quot;74 out of our 79 participants with inhibition data have demographic data&quot;</code></pre>
+<pre><code>[1] &quot;79 out of our 79 participants with inhibition data have demographic data&quot;</code></pre>
 <pre class="r"><code>msg2</code></pre>
-<pre><code>[1] &quot;We need to find the demographic data for the remaining 5 participants&quot;</code></pre>
+<pre><code>[1] &quot;We need to find the demographic data for the remaining 0 participants&quot;</code></pre>
 <pre class="r"><code>msg3</code></pre>
-<pre><code>[1] &quot;74 out of our 79 participants with working memory data have demographic data&quot;</code></pre>
+<pre><code>[1] &quot;79 out of our 79 participants with working memory data have demographic data&quot;</code></pre>
 <pre class="r"><code>msg4</code></pre>
-<pre><code>[1] &quot;We need to find the demographic data for the remaining 5 participants&quot;</code></pre>
+<pre><code>[1] &quot;We need to find the demographic data for the remaining 0 participants&quot;</code></pre>
 <pre class="r"><code># Merge to include age
 Inhibition.cleaned.age &lt;- Inhibition.cleaned %&gt;%
   merge(demo, by = &quot;ID&quot;) %&gt;%
@@ -1181,9 +1181,9 @@ Working.Memory.cleaned.age$T.score &lt;- unlist(Working.Memory.T.scores)</code><
 <h3>Total data remaining</h3>
 <pre class="r"><code># Report the total data that we have
 paste(&quot;We have&quot;,length(unique(Inhibition.cleaned.age$ID)), &quot;participants with T-scores for their BRIEF inhibit items&quot;)</code></pre>
-<pre><code>[1] &quot;We have 74 participants with T-scores for their BRIEF inhibit items&quot;</code></pre>
+<pre><code>[1] &quot;We have 79 participants with T-scores for their BRIEF inhibit items&quot;</code></pre>
 <pre class="r"><code>paste(&quot;We have&quot;,length(unique(Working.Memory.cleaned.age$ID)), &quot;participants with T-scores for their BRIEF Working Memory items&quot;)</code></pre>
-<pre><code>[1] &quot;We have 74 participants with T-scores for their BRIEF Working Memory items&quot;</code></pre>
+<pre><code>[1] &quot;We have 79 participants with T-scores for their BRIEF Working Memory items&quot;</code></pre>
 </div>
 <div id="save-the-data" class="section level3">
 <h3>Save the data</h3>

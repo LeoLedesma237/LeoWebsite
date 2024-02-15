@@ -41,6 +41,9 @@ Nback.original <- read.csv("Nback.day.type.added.csv")
 dim(GnG.original)
 dim(Nback.original)
 
+# Data cleaning- removing variable x
+GnG.original <- GnG.original %>% select(-X)
+Nback.original <- Nback.original %>% select(-X)
 ```
 
 The data dimensions above are gigantic and unnecessary. This is because each person had roughly 1,500 trials for each GnG session and around 600 trials for the Nback. Our goal is to reduce these dimensions for each person.
@@ -193,7 +196,7 @@ for(ii in 1:nrow(Nback.file.names)) {
   # Use the second variable to identify target trials by marking matching rows as 'Target
   current.Nback <- current.Nback %>%
   mutate(Trial.Type = ifelse(ItemID == ItemID2, "Target", "Distractor")) %>%
-    select(X, UserID, BlockID, ItemID, ItemID2, Trial.Type, everything())
+    select(UserID, BlockID, ItemID, ItemID2, Trial.Type, everything())
   
   # Save this manipulation into the list
   all.Nback.sessions[[ii]] <- current.Nback
