@@ -28,12 +28,14 @@ library(fuzzyjoin)
 
 ### Load in the data
 
+Download the data from Qualtrics using Choice NUMBERS or else it will break the code!
+
 ```{r load in the data, warning = FALSE}
 # Set working directory
 setwd("~/ONR/Qualtrics")
 
 # Load in the data
-Qualtrics <- read.csv("ONR Questionnaires_February 9, 2024_10.47.csv")
+Qualtrics <- read.csv("ONR Questionnaires_February 15, 2024_14.35.csv")
 
 ```
 
@@ -238,15 +240,15 @@ The responses to the working memory questions for the most part tend to be unifo
 
 Any subjects that had more than 2 missing items for either inhibition or working memory were discarded and any subjects that had 2 or 1 items missing had those values replaced with a 1. 
 
-After following this procedure we are left with 80 participants for both Inhibition and Working Memory. In addition, we dropped ID's 125 and n126 since there were two copies of 125 and ID 127 was not present. Thus this needs to be resolved in the original Qualtrics CSV before they can be further included. 
+After following this procedure we are left with 80 participants for both Inhibition and Working Memory. In addition, we dropped ID's 125 and n126 since there were two copies of 125 and ID 127 was not present and we dropped 171 since there were two copies as well. Thus this needs to be resolved in the original Qualtrics CSV before they can be further included. 
 
 ```{r controlling for missing data count}
 # Remove the following 'IDs' since we cannot tell who they actually belong to
 Inhibition <- Inhibition %>%
-  filter(!(ID %in% c("125","n126")))
+  filter(!(ID %in% c("125","n126", "171")))
 
 Working.Memory <- Working.Memory %>%
-  filter(!(ID %in% c("125","n126")))
+  filter(!(ID %in% c("125","n126", "171")))
 
 # Data cleaning: removes "" cells
 Inhibition.NA.count <- Inhibition %>%
@@ -390,7 +392,6 @@ Working.Memory.cleaned.age <- Working.Memory.cleaned.age %>%
 
 
 ```{r calculating t scores, warning = FALSE}
-
 # Calculating T-scores
 # Set working directory
 setwd("~/ONR/Qualtrics")

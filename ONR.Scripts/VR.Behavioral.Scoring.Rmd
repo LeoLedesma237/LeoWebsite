@@ -98,9 +98,15 @@ GnG.trial.type <- GnG.removed.practice.blocks %>%
   mutate(Trial.Type = ifelse(ItemID %in% go.trials, "Go", "No-Go"))
 
 # Reduce the dimensions even more by grouping and obtaining performance score for each block type
+# Every subject should have 30 rows: 2 (trial types) x 5 (BlockName) x 3 (Days) = 30
 GnG.grouped.Trial.Type <- GnG.trial.type %>%
   group_by(UserID, BlockName, Trial.Type, Day.Type) %>%
-  summarize(trial.mean.correct = round(mean(Correct),2))
+  mutate(trial.mean.correct = round(mean(Correct),2),
+         trial.num = length(Correct)) %>%
+  ungroup() %>%
+  select(UserID, BlockName, Trial.Type, Day.Type, trial.mean.correct, trial.num) %>%
+  unique()
+
 
 # Create another data frame that reduced dimensions but only for correct reaction times of Go-Trials
 GnG.grouped.Reaction.Time <- GnG.trial.type %>%
@@ -221,9 +227,14 @@ Nback.grouped.Reaction.Time <- Nback.trial.type %>%
 ### Additionally- we are going to save this data frame to the Nback as a reaction to a target trial being correct
 # This means that it ignores trials being wrong by not hitting with the arrows.
 Nback.grouped.Reaction.Target <- Nback.trial.type %>%
-  filter(Trial.Type == "Target") %>%
   group_by(UserID, BlockName, Trial.Type, Day.Type) %>%
-  summarize(target.mean.reacted = round(mean(Reacted),2))
+  mutate(target.mean.reacted = round(mean(Reacted),2),
+         trial.num = length(Reacted)) %>%
+  ungroup() %>%
+  select(UserID, BlockName, Trial.Type, Day.Type, target.mean.reacted, trial.num) %>%
+  unique()
+
+
 
 ```
 

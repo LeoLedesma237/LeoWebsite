@@ -375,7 +375,7 @@ library(purrr)</code></pre>
 <div id="last-day-this-code-was-ran" class="section level3">
 <h3>Last day this code was ran</h3>
 <pre class="r"><code>paste(&quot;This code was last ran on:&quot;, Sys.Date())</code></pre>
-<pre><code>[1] &quot;This code was last ran on: 2024-02-05&quot;</code></pre>
+<pre><code>[1] &quot;This code was last ran on: 2024-02-15&quot;</code></pre>
 </div>
 <div id="create-ids-with-leading-zeroes" class="section level3">
 <h3>Create ID’s with leading zeroes</h3>
@@ -540,7 +540,7 @@ CSVs.merged.UH_ONR &lt;- CSVs.UH_ONR %&gt;%
 
 # Total unique ID&#39;s from all subjects that have a VR session saved
 paste(&quot;There is at least one CSV file saved from&quot;, length(unique(CSVs.merged.UH_ONR$ID)), &quot;participants&quot;, sep= &quot; &quot;)</code></pre>
-<pre><code>[1] &quot;There is at least one CSV file saved from 200 participants&quot;</code></pre>
+<pre><code>[1] &quot;There is at least one CSV file saved from 207 participants&quot;</code></pre>
 <pre class="r"><code># IDs that have 8 file names
 completed.IDs &lt;- CSVs.merged.UH_ONR %&gt;%
   group_by(ID) %&gt;%
@@ -555,7 +555,7 @@ CSVs.merged.UH_ONR &lt;- CSVs.merged.UH_ONR %&gt;%
 
 # Total unique ID&#39;s from all subjects that have all VR sessions accounted for
 paste(&quot;All VR sessions accounted for&quot;, length(completed.IDs), &quot;participants&quot;, sep= &quot; &quot;)</code></pre>
-<pre><code>[1] &quot;All VR sessions accounted for 119 participants&quot;</code></pre>
+<pre><code>[1] &quot;All VR sessions accounted for 126 participants&quot;</code></pre>
 </div>
 <div id="read-in-the-files" class="section level3">
 <h3>Read in the files</h3>
@@ -586,7 +586,7 @@ for(ii in 1:nrow(CSVs.merged.UH_ONR)) {
 
 # Check to see that the above code worked
 paste(&quot;There are&quot;, length(all.CSVs),&quot;CSV files that were read in&quot;, sep =&quot; &quot;)</code></pre>
-<pre><code>[1] &quot;There are 1290 CSV files that were read in&quot;</code></pre>
+<pre><code>[1] &quot;There are 1356 CSV files that were read in&quot;</code></pre>
 <pre class="r"><code># Half of the CSVs, the ones for GnG have the following dimensions
 dim(all.CSVs[[8]])</code></pre>
 <pre><code>[1] 1150   40</code></pre>
@@ -735,24 +735,31 @@ all.data &lt;- all.data %&gt;% select(file.num, ID, Day.type, Testing.Date, ever
 all.data %&gt;%
   filter(Day.type == &quot;Date not saved in the Visitor Log&quot;) %&gt;%
   select(-tibbles)</code></pre>
-<pre><code>  file.num  ID                          Day.type Testing.Date Task.type
-1     1179 142 Date not saved in the Visitor Log   2023-10-31   Go/NoGo
-2     1180 142 Date not saved in the Visitor Log   2023-10-31    N-back
-3      806 171 Date not saved in the Visitor Log   2024-01-04   Go/NoGo
-4      807 171 Date not saved in the Visitor Log   2024-01-04    N-back
-5      836 175 Date not saved in the Visitor Log   2024-01-22   Go/NoGo
-6      837 175 Date not saved in the Visitor Log   2024-01-22    N-back
-7      840 177 Date not saved in the Visitor Log   2024-01-27   Go/NoGo
-8      841 177 Date not saved in the Visitor Log   2024-01-27    N-back
-  Computer.num
-1   Computer 2
-2   Computer 2
-3   Computer 1
-4   Computer 1
-5   Computer 1
-6   Computer 1
-7   Computer 1
-8   Computer 1</code></pre>
+<pre><code>   file.num  ID                          Day.type Testing.Date Task.type
+1      1213 142 Date not saved in the Visitor Log   2023-10-31   Go/NoGo
+2      1214 142 Date not saved in the Visitor Log   2023-10-31    N-back
+3       806 171 Date not saved in the Visitor Log   2024-01-04   Go/NoGo
+4       807 171 Date not saved in the Visitor Log   2024-01-04    N-back
+5      1303 183 Date not saved in the Visitor Log   2024-02-10   Go/NoGo
+6      1304 183 Date not saved in the Visitor Log   2024-02-10    N-back
+7      1335 199 Date not saved in the Visitor Log   2024-02-10   Go/NoGo
+8      1336 199 Date not saved in the Visitor Log   2024-02-10    N-back
+9      1343 206 Date not saved in the Visitor Log   2024-02-05   Go/NoGo
+10     1344 206 Date not saved in the Visitor Log   2024-02-05    N-back
+   Computer.num
+1    Computer 2
+2    Computer 2
+3    Computer 1
+4    Computer 1
+5    Computer 2
+6    Computer 2
+7    Computer 2
+8    Computer 2
+9    Computer 2
+10   Computer 2</code></pre>
+<pre class="r"><code># Number of Unique ID&#39;s accounted for in the visitor log
+length(unique(all.data$ID))</code></pre>
+<pre><code>[1] 207</code></pre>
 </div>
 <div id="adding-the-day-type-into-the-original-datasets" class="section level3">
 <h3>Adding the day type into the original datasets</h3>
