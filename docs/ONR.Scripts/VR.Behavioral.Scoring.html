@@ -608,9 +608,12 @@ Nback.original &lt;- read.csv(&quot;Nback.day.type.added.csv&quot;)
 
 # What is the dimensions
 dim(GnG.original)</code></pre>
-<pre><code>[1] 575960     42</code></pre>
+<pre><code>[1] 607960     42</code></pre>
 <pre class="r"><code>dim(Nback.original)</code></pre>
-<pre><code>[1] 341020     42</code></pre>
+<pre><code>[1] 360100     42</code></pre>
+<pre class="r"><code># Data cleaning- removing variable x
+GnG.original &lt;- GnG.original %&gt;% select(-X)
+Nback.original &lt;- Nback.original %&gt;% select(-X)</code></pre>
 <p>The data dimensions above are gigantic and unnecessary. This is
 because each person had roughly 1,500 trials for each GnG session and
 around 600 trials for the Nback. Our goal is to reduce these dimensions
@@ -631,7 +634,7 @@ GnG.removed.days &lt;-  GnG.original %&gt;%
 
 # The dimensions of the new dataset
 dim(GnG.removed.days)</code></pre>
-<pre><code>[1] 514300     42</code></pre>
+<pre><code>[1] 544200     41</code></pre>
 <pre class="r"><code># Remove practice trials
 GnG.practice.blocks &lt;- c(paste(&quot;G&quot;,1:5,&quot;0&quot;,sep=&quot;&quot;))
 GnG.removed.practice.blocks &lt;- GnG.removed.days %&gt;%
@@ -639,7 +642,7 @@ GnG.removed.practice.blocks &lt;- GnG.removed.days %&gt;%
 
 # The dimensions of the new dataset
 dim(GnG.removed.practice.blocks)</code></pre>
-<pre><code>[1] 469520     42</code></pre>
+<pre><code>[1] 496820     41</code></pre>
 <pre class="r"><code># Extra check
 GnG.removed.practice.blocks %&gt;%
   select(BlockName) %&gt;%
@@ -681,9 +684,15 @@ GnG.trial.type &lt;- GnG.removed.practice.blocks %&gt;%
   mutate(Trial.Type = ifelse(ItemID %in% go.trials, &quot;Go&quot;, &quot;No-Go&quot;))
 
 # Reduce the dimensions even more by grouping and obtaining performance score for each block type
+# Every subject should have 30 rows: 2 (trial types) x 5 (BlockName) x 3 (Days) = 30
 GnG.grouped.Trial.Type &lt;- GnG.trial.type %&gt;%
   group_by(UserID, BlockName, Trial.Type, Day.Type) %&gt;%
-  summarize(trial.mean.correct = round(mean(Correct),2))
+  mutate(trial.mean.correct = round(mean(Correct),2),
+         trial.num = length(Correct)) %&gt;%
+  ungroup() %&gt;%
+  select(UserID, BlockName, Trial.Type, Day.Type, trial.mean.correct, trial.num) %&gt;%
+  unique()
+
 
 # Create another data frame that reduced dimensions but only for correct reaction times of Go-Trials
 GnG.grouped.Reaction.Time &lt;- GnG.trial.type %&gt;%
@@ -720,7 +729,7 @@ Nback.removed.days &lt;- Nback.original %&gt;%
 
 # The dimensions of our new dataset
 dim(Nback.removed.days)</code></pre>
-<pre><code>[1] 300060     42</code></pre>
+<pre><code>[1] 317740     41</code></pre>
 <pre class="r"><code># Keep all non practice blocks (there are not practice trials but blocks)
 non.practice.blocks &lt;- c(&quot;N1&quot;,&quot;N2&quot;,&quot;N3&quot;,&quot;N4&quot;)
 Nback.kept.non.practice.blocks &lt;- Nback.removed.days %&gt;%
@@ -728,7 +737,7 @@ Nback.kept.non.practice.blocks &lt;- Nback.removed.days %&gt;%
 
 # The dimensions of our new dataset
 dim(Nback.kept.non.practice.blocks)</code></pre>
-<pre><code>[1] 282380     42</code></pre>
+<pre><code>[1] 299020     41</code></pre>
 <pre class="r"><code># Extra check
 Nback.kept.non.practice.blocks %&gt;%
   select(BlockName) %&gt;%
@@ -1495,7 +1504,7 @@ for(ii in 1:nrow(Nback.file.names)) {
   # Use the second variable to identify target trials by marking matching rows as &#39;Target
   current.Nback &lt;- current.Nback %&gt;%
   mutate(Trial.Type = ifelse(ItemID == ItemID2, &quot;Target&quot;, &quot;Distractor&quot;)) %&gt;%
-    select(X, UserID, BlockID, ItemID, ItemID2, Trial.Type, everything())
+    select(UserID, BlockID, ItemID, ItemID2, Trial.Type, everything())
   
   # Save this manipulation into the list
   all.Nback.sessions[[ii]] &lt;- current.Nback
@@ -1520,9 +1529,12 @@ Nback.grouped.Reaction.Time &lt;- Nback.trial.type %&gt;%
 ### Additionally- we are going to save this data frame to the Nback as a reaction to a target trial being correct
 # This means that it ignores trials being wrong by not hitting with the arrows.
 Nback.grouped.Reaction.Target &lt;- Nback.trial.type %&gt;%
-  filter(Trial.Type == &quot;Target&quot;) %&gt;%
   group_by(UserID, BlockName, Trial.Type, Day.Type) %&gt;%
-  summarize(target.mean.reacted = round(mean(Reacted),2))</code></pre>
+  mutate(target.mean.reacted = round(mean(Reacted),2),
+         trial.num = length(Reacted)) %&gt;%
+  ungroup() %&gt;%
+  select(UserID, BlockName, Trial.Type, Day.Type, target.mean.reacted, trial.num) %&gt;%
+  unique()</code></pre>
 </div>
 <div id="save-the-data" class="section level3">
 <h3>Save the data</h3>
@@ -1535,7 +1547,6 @@ write.csv(x = GnG.grouped.Trial.Type,
 
 write.csv(x = GnG.grouped.Reaction.Time,
           file = &quot;GnG.reaction.time.csv&quot;)
-
 
 write.csv(x = Nback.grouped.Trial.Type,
           file = &quot;Nback.trial.type.csv&quot;)

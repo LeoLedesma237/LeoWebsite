@@ -382,6 +382,8 @@ all.data %>%
   filter(Day.type == "Date not saved in the Visitor Log") %>%
   select(-tibbles)
 
+# Number of Unique ID's accounted for in the visitor log
+length(unique(all.data$ID))
 
 ```
 

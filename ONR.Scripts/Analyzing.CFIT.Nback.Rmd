@@ -1,0 +1,449 @@
+---
+title: "CFIT and Nback Analysis"
+author: "Leandro Ledesma"
+date: "2024-02-16"
+output: html_document
+---
+
+### Our Measures of Interest
+
+We are interested in investigating whether performance on the CFIT can explain some of the outcome variance of Nback performance. Initially, there has been a large interest in the literature to compare working memory and intelligence, and for a while some argued it was the same construct. More papers later showed this was not the case, however, I am certainly positive that most IQ and Working Memory measures do not involve the CFIT and the Nback- instead they would use either verbal measures of IQ or Raven's Progressive Matrices. For Working Memory, more simpler and shorter tasks would be used instead of the Nback like Digit Span task (Tbh I could be wrong I haven't read these types of papers in like more than a year). Anyway there is something useful here that can add to the literature about the relationship between IQ and working memory. Additionally, this is the type of research that the military really enjoys- thus this would have a good shot of making it through the abstract selection process. 
+
+### CFIT
+
+The CFIT stands for the Cultural Fair Intelligence Test. It is comprised of four subtests that are presented in the following order: Series, Classification, Matrices and Conditions. All of these tests are timed and measure a different aspect of non-verbal IQ. Additionally, the number of items per tests are also different. Series has 12 items, Classification has 14, Matrices has 12 and Conditions has 8. The CFIT is scored by summing all correct items from all tests into one raw score. It can then be transformed into an IQ score once considering a person's age. Unfortunately, the CFIT has different scales (measures the difficulty of the items) and forms (A or A + B). We are using Scale 2 (medium difficulty) and Form B. The problem is that there currently only two methods to standardized raw scores to IQ scores for the Scale 2, and that is by having Scale 2 Form A raw scores of the cumulative raw score of Scale 2 Form A and B. We only have Scale 2 Form B, so we cannot do this. Thus, our values will be simply CFIT raw scores.
+
+
+### Nback
+
+The Nback is a paradigm that measures working memory. The 'N' in Nback is a placeholder for a number. In our case, that number is 2, which means that target trials are items that were seen two items ago. Additionally, our task was done in a VR system and there are four different versions of it. Additionally, this dataset contains the performance of the Nback for a practice day, baseline, and two stress conditions. We are only interested in baseline day (Day 1), so only those testing sessions will be kept in the analysis. Additionally, I may want to incorporate reaction time into thus analysis too but not sure yet how to go about it. According to the internet, the best approach to measure both ideas is to use Bayesian statistics (Linear Ballistic Accumulator)- unfortunately I don't think I can learn that in the next couple of days so we will be improvising. 
+
+### Cross sectional analysis
+
+We will be doing a regression to see if the raw CFIT scores can predict a significant amount of the variance in the Nback performance. To do this, we will be constructing two models. One that scores working memory as the percentage of target trials marked correctly and the other as d prime, which takes into account performance both on target trials and non-target trials in the Nback. I might create a few more models that do this for reaction times as well- we'll see.
+
+### Hypotheses
+
+There are very to the point hypotheses. Subjects with higher CFIT raw scores will have better accuracy in the Nback and likely faster reaction times on correct trials.
+
+
+### Universal block code settings
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+
+```
+
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(lmtest) # bptest() function for homoscedasticity
+library(kableExtra)
+library(boot)
+
+```
+
+### Load in the data
+
+As mentioned above, we are only interested in performance on Day 1 for the 'Colors and Shape' block session for the GnG and the forward arrows no distractor condition in the Nback. Thus, these data will remain for the rest of the analysis. 
+
+```{r load in the data, warning = FALSE}
+# Set working directory
+setwd("~/ONR/IQ_data/Processed Data")
+
+# Save the data
+CFIT <- read.csv("CFIT.raw.scores.csv")
+
+# Data cleaning
+CFIT <- CFIT %>% select(-X)
+
+# Set working directory
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
+
+# Load in the Nback data (Reacted)
+Nback.reacted <- read.csv("Nback.target.reacted.csv")
+
+# Data cleaning- we are only interested in Day 1
+Nback.performance <- Nback.reacted %>% filter(Day.Type == "Day 1" & BlockName == "2-Back AR w ND") %>% select(-X)
+
+# Load Nback reaction time data
+Nback.RT <- read.csv("Nback.reaction.time.csv")
+
+# Data cleaning- we are only interested in Day 1
+Nback.RT <- Nback.RT %>% filter(Day.Type == "Day 1" & BlockName == "2-Back AR w ND") %>% select(-X)
+
+# Adding demographic data
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/Demographics")
+
+# Save the data as a CSV
+demographics <- read.csv("complete.demographics.csv")
+
+# Clean demographics
+demographics <- demographics %>%
+  select(-c(X, email))
+
+```
+
+
+### Merge the datasets together 
+
+Here we will merge our datasets to include demographic information, the raw scores from our CFIT, and our performance on the Nback in Day 1 VR. 
+
+```{r merge the datasets}
+# merge the inhibition datasets
+Nback.performance.merged <- Nback.performance %>%
+  rename(ID = UserID) %>%
+  merge(CFIT, by = "ID") %>%
+  merge(demographics, by = "ID")
+
+# merge the working memory datasets
+Nback.reaction.time.merged <- Nback.RT %>%
+  rename(ID = UserID) %>%
+  merge(CFIT, by = "ID")  %>%
+  merge(demographics, by = "ID")
+
+```
+
+### Getting to know our data (Sample size, etc.)
+
+The first dataset contains 326 rows and 11 variables. Each participant has two rows that correspond to them- and these rows show performance on the target trial and show false alarm rate (hitting an item that was not supposed to be hit). All data from this dataset is from Day 1 and we are only interested in the Nback with forward arrows and no distractors '2-Back AR w ND.' In this case when we say distractor, that means that there are no large green 3-D shapes in the background of the tasks nor flying green shapes that are shot across the screen. This is also not to be confused with the trial types, which are target and distractor. That target trial is one where a presented item matches an item that was shown two shapes back. The distractor trial is basically a non-target trial. We can see that the trial number shows on average there are 124 distractor trials and 36 target trials, which is roughly and 80/20% ratio. Lastly the CFIT raw score is included, which will be our predictor variable along with demographic information that may function as covariates and just give us an idea of how we can generalize our results.
+
+
+The second dataset contains 163 rows and 10 variables. This dataset is another transformed version of the previous one- except in this case we have the reaction times of only correct target trials per subject- thus there is only one row per subject. Additionally, these data are all from Day 1 and are from the '2-Back AR w ND' condition. The outcome variable is included and we also have demographic information such as Age, Race, Sex, and Ethnicity. The only variable not present here is number of trials but it should be identical to the number of trials shown in the target trials in the other dataset. Both datasets should essentially be the same, we are just taking extra precautions with the code below to check for any unexpected errors.
+
+```{r getting to know our data}
+# This is what it looks like
+Nback.performance.merged %>%
+  head(10)  %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+# Missing data
+Nback.missing.data <- Nback.performance.merged %>%
+  select(-c(race, ethnicity)) %>%
+  filter(!complete.cases(.))
+
+paste("We have:",nrow(Nback.missing.data),"missing data for the inhibition dataset- not including demographic")
+
+# The dimensions
+dim(Nback.performance.merged)
+
+# Testing day types present
+unique(Nback.performance.merged$Day.Type)
+
+# Types of GnG versions present
+unique(Nback.performance.merged$BlockName)
+
+# Types of stimuli present
+unique(Nback.performance.merged$Trial.Type)
+
+# Trial numbers per trial type
+Nback.performance.merged %>%
+  group_by(Trial.Type, trial.num) %>%
+  count()
+
+# Sample size
+paste("Our sample size for the Nback data is:", length(unique(Nback.performance.merged$ID)))
+
+
+# Now do the same with the reaction time data frame
+Nback.reaction.time.merged %>%
+  head(10)  %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+# Missing data
+Nback.missing.data2 <- Nback.performance.merged %>%
+  select(-c(race, ethnicity)) %>%
+  filter(!complete.cases(.))
+
+paste("We have:",nrow(Nback.missing.data2),"missing data for the inhibition dataset- not including demographic")
+
+# The dimensions
+dim(Nback.reaction.time.merged)
+
+# Testing day types present
+unique(Nback.reaction.time.merged$Day.Type)
+
+# Types of Nback versions present
+unique(Nback.reaction.time.merged$BlockName)
+
+# Trial numbers per trial type
+Nback.reaction.time.merged %>%
+  group_by(Trial.Type) %>%
+  count()
+
+# Sample size
+paste("Our sample size for the Nback data is:", length(unique(Nback.reaction.time.merged$ID)))
+
+```
+
+### Demographic information
+
+We have a pretty diverse population, with the Asian, White, and African American making up more than 80% of the sample. Around one third of our participants are Hispanic. There are slightly more males than females in our sample and one intersex person. Lastly our sample is mostly made up of 19-24 years old, with fewer subject being older than this but not older than 35. 
+
+
+```{r demographic information}
+# Demographic information for inhibition data set
+# Race
+Nback.performance.merged$race %>% 
+  table() %>%
+  prop.table() %>%
+  stack() %>%
+  select(Race = ind, Proportion = values) %>%
+  arrange(Proportion) %>%
+  mutate(Proportion = round(Proportion,2))
+
+# Ethnicity
+Nback.performance.merged$ethnicity %>% 
+  table() %>%
+  prop.table() %>%
+  stack() %>%
+  select(Ethnicity = ind, Proportion = values) %>%
+  arrange(Proportion) %>%
+  mutate(Proportion = round(Proportion,2))
+
+# Sex
+Nback.performance.merged$Sex %>% 
+  table() %>%
+  prop.table() %>%
+  stack() %>%
+  select(Sex = ind, Proportion = values) %>%
+  arrange(Proportion) %>%
+  mutate(Proportion = round(Proportion,2))
+
+# Age
+hist(Nback.performance.merged$Age)
+
+```
+
+
+### Statistical Approach
+
+Our predictor and outcome variable are both continuous values, however, in terms of our accuracy analysis we will be creating two models. They will both be regressions, except for one of our models our outcome variable (Nback performance) will be calculated by the proportion of correct target trials and in the other model, Nback performance will be defined as d prime. We will most likely go with the results of the latter model, since it incorporates performance from the target trial while also controlling for false alarm rate. This is important since d prime can function as a tie breaker between two subjects that both perform the same during target trials but have differences in their false alarm rate, the participant with the lower false alarm rate will be ranked as the better performer, and d prime does this. Our predictor variable will be the raw scores of the CFIT. 
+
+Our second statistical approach will also include continuous variables. Our predictor will be the raw scores of the CFIT and our outcome variable will be the reaction time of correct target trials. Thus, this dataset contains the mean reaction time for only correct target trials. We will use a regression to see if potentially higher CFIT raw scores indicate faster reaction times. 
+
+Third analysis- while taking into account d prime and reaction time as one outcome variable is too complex for this abstract, we can at least try to look at the relationship between CFIT scores, d prime, and reaction time by making creating groupings? We could .. not sure yet. 
+
+
+### Models for accuracy
+
+Let's start by creating our accuracy models and plotting them in a scatterplot.
+
+```{r scatter plot using target trials as outcome}
+# Create a scatterplot
+Nback.performance.merged %>%
+  filter(Trial.Type == "Target") %>%
+  ggplot(aes(x = CFIT, y = target.mean.reacted)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_bw() +
+  labs(title = "Scatterplot of CFIT Raw Scores and Proportion of Correct Target Trials",
+       x = "CFIT Raw Scores",
+       y = "Proportion of Correct Target Trials") +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12))
+```
+
+SO far this looks promising. 
+
+### Calculating d prime
+
+d prime is calculated by taking the difference of the z-score for the proportion correct target trials by the z-score of false alarm rates. The outcome variable will then be numbers that range between positive and negative numbers. The higher the d prime value, the better the subject did in terms of target trial accuracy and minimizing false alarms. 
+
+```{r calculating d prime}
+# Calculating d prime
+Nback.data.wide <- Nback.performance.merged %>%
+  select(-c(trial.num)) %>%
+  pivot_wider(names_from = Trial.Type, values_from = target.mean.reacted) %>%
+  rename(Hit.rate = Target, False.Alarm.Rate = Distractor)
+
+# View the range of scales for the target performance
+Nback.data.wide$Hit.rate %>% sort()
+
+# Modify the zeroes in this vector by making them not zero but still less than the next smallest score
+Nback.data.wide <- Nback.data.wide %>%
+  mutate(Hit.rate = ifelse(Hit.rate == 0, .02, Hit.rate))
+
+# Quality check
+Nback.data.wide$Hit.rate %>% sort()
+
+# View the range of scales for the distractor performance - it checks out
+Nback.data.wide$False.Alarm.Rate %>% sort()
+
+# Modify the zeroes in this vector by making them not zero but still less than the next smallest score
+Nback.data.wide <- Nback.data.wide %>%
+  mutate(False.Alarm.Rate = ifelse(False.Alarm.Rate == 0, .005, False.Alarm.Rate))
+
+# Quality check
+Nback.data.wide$False.Alarm.Rate %>% sort()
+
+# Convert the hit and false rate into z scores
+Nback.data.wide <- Nback.data.wide %>%
+  transmute(ID,
+            Age,
+            Sex,
+            CFIT,
+            Hit.rate,
+            Hit.rate.mean = mean(Hit.rate),
+            Hit.rate.sd = sd(Hit.rate),
+            Hit.rate.z = (Hit.rate - Hit.rate.mean)/Hit.rate.sd,
+            False.Alarm.Rate,
+            False.Alarm.Rate.mean = mean(False.Alarm.Rate),
+            False.Alarm.Rate.sd = sd(False.Alarm.Rate),
+            False.Alarm.Rate.z = (False.Alarm.Rate - False.Alarm.Rate.mean)/False.Alarm.Rate.sd,
+            d.prime = Hit.rate.z - False.Alarm.Rate.z)
+
+# Some minor data cleaning
+Nback.dprime <- Nback.data.wide %>%
+  select(ID, Age, Sex, Hit.rate, False.Alarm.Rate, d.prime, CFIT)
+
+```
+
+Now let's visualize with d prime as our outcome variable
+
+```{r scatter plot with d prime}
+# Create a scatterplot
+Nback.dprime %>%
+  ggplot(aes(x = CFIT, y = d.prime)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_bw() +
+  labs(title = "Scatterplot of CFIT Raw Scores and d-prime",
+       x = "CFIT Raw Scores",
+       y = "d-prime") +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12))
+
+
+
+```
+ 
+With visual inspection these both look good, but it seems the d prime model has much larger outliers than expected.
+ 
+### Run the regression models
+ 
+```{r run the regression models}
+# Run the regression with target as the outcome
+target.regression <- lm(target.mean.reacted ~ CFIT + Sex + Age, data = Nback.performance.merged)
+
+# Summary of the model
+summary(target.regression)
+
+# Run the regression with d prime as the outcome
+dprime.regression <- lm(d.prime ~ CFIT + Sex + Age, data = Nback.dprime)
+
+# Summary of the model
+summary(dprime.regression)
+
+```
+ 
+### Regression Conlusion
+
+From the two models, the one that uses d.prime as an outcome variable was significant, with a p < .001 and an R^2 of .14. When looking at predictors, CFIT was significant and our demographics information was not. 
+
+### Plot the Residuals
+
+Now let's plot the residuals of the model to determine whether we can use this statistical analysis or have to switch to something more robust, or maybe even non-parametric.
+
+
+```{r plot the residuals}
+# Add standardized residuals to our data frame
+Nback.dprime$standardized.residuals <- rstandard(dprime.regression)
+
+# Add fitted values to our data frame
+Nback.dprime$fitted.values <- dprime.regression$fitted.values
+
+# Create a graph using the fitted values and the standardized residuals 
+Nback.dprime %>%
+  ggplot(aes(x = fitted.values, y=standardized.residuals)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "black") +
+  theme_bw() +
+  labs(title = "Standardized Residuals vs Fitted Values ",
+       x = "Fitted Values",
+       y = "Standardized Residuals",
+       caption = "lm(d.prime ~ CFIT + Age + Sex)") +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 12))
+
+
+```
+There seems to be an outlier kinda, but overall I think this is good enough!!!
+
+
+### Model for reaction time
+
+We are now interest to see if the CFIT and the reaction time of correct Target trials are related to each other. It could potentially go both ways or not be significant at all. It could be possible that people with higher CFIT raw scores are faster at hitting target trials, it could also be that they are slower since they take the extra time to really verifiy if that is in fact a target trial or not, to reduce the chance of engaging in false alarms.
+
+Regardless, to test this we will be using a regression as well with CFIT raw score as the predictor and mean reaction times to correct target trials per person.
+
+### Visualizing the data
+
+```{r create a scatterplot looking at reaction time}
+# Create a scatterplot
+Nback.reaction.time.merged %>%
+  ggplot(aes(x = CFIT, y = mean.RT)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_bw() +
+  labs(title = "Scatterplot of CFIT Raw Scores and Reaction Time of Correct Target Trials",
+       x = "CFIT Raw Scores",
+       y = "Reaction Times of Correct Target Trials") +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12))
+
+
+```
+
+It looks like the higher the CFIT Raw Scores the slower they are at hitting target trials. Maybe they are more focused with doing the task correctly so are slower in their reponse?
+
+### Run the regression
+
+```{r run the regression for reaction time}
+# Run the regression for reaction time
+RT.regression <- lm(mean.RT ~ CFIT + Sex + Age, data = Nback.reaction.time.merged)
+
+# Summary of the model
+summary(RT.regression)
+
+```
+We can see that the model is significant p <.001 and that CFIT is a significant predictor of reaction times of correct target trials in the Nback.
+
+
+### Looking at both Accuracy and Reaction Time
+
+Merge the datasets into one large one
+
+```{r merging some datasets}
+# Clean the dprime data set
+Nback.dprime2 <- Nback.dprime %>% select(ID, d.prime, CFIT)
+
+# Clean the reaction time dataset
+Nback.reaction.time.merged2 <- Nback.reaction.time.merged %>% select(ID, BlockName, mean.RT)
+
+# Merge the data sets
+all.Nback.data <- Nback.dprime2 %>%
+  merge(Nback.reaction.time.merged2, by = "ID")
+
+```
+
+..ignore this for now- I need to learn more stats first. 
+
+
