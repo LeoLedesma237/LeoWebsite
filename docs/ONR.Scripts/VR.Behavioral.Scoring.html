@@ -1523,7 +1523,7 @@ Nback.grouped.Trial.Type &lt;- Nback.trial.type %&gt;%
 # Create another data frame that reduced dimensions but only for correct reaction times of Nback
 Nback.grouped.Reaction.Time &lt;- Nback.trial.type %&gt;%
   filter(Trial.Type == &quot;Target&quot; &amp; Correct ==  1) %&gt;%
-  group_by(UserID, BlockName, Day.Type) %&gt;%
+  group_by(UserID, BlockName, Day.Type, Trial.Type) %&gt;%
   summarize(mean.RT = mean(TimeToImpact))
 
 ### Additionally- we are going to save this data frame to the Nback as a reaction to a target trial being correct
