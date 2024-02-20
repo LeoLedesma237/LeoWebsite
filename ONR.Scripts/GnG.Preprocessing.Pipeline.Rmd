@@ -1,0 +1,274 @@
+---
+title: "GnG EEG Preprocessing Pipeline"
+author: "Leandro Ledesma"
+date: "2024-02-17"
+output: html_document
+---
+
+### Overview
+
+The ONR project is collecting neurophysiological data through EEG recordings. There are three EEG recording sessions. The first is for resting-state EEG, which is obtaining the brain's electrical activity while participants are not engaging in any activity. Then there is an EEG recording during the Go/No-Go task in VR and finally another EEG recording during the Nback task in VR. We are interested in the data for the GnG EEG recordings. Specifically, we are interested in obtaining event-related potentials (ERPs), which are peaks created in the EEG data after averaging for several trials. In our case, we will be averaging Go and No-Go trials and then obtaining the amplitudes, latencies, and topographical location of these ERPs for analysis. However, before we can begin the analysis, there are several other steps that must be covered first. This document will serve to record what these steps are. Essentially, there is an initial processing state that involves manually adding markers to the EEG data, then we will need to clean the data using EEGLAB plugin functions in MATLAB, then organize the data into final folders so they are ready for analysis, and lastly engage in the analysis portion. This document will cover the first three steps.
+
+Additionally, this document will keep track of file names saved in different directories, which indicate the number of files that have gone through each processing step.
+
+### Universal block code settings
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+
+```
+
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(lmtest) # bptest() function for homoscedasticity
+library(kableExtra)
+library(boot)
+
+```
+
+### All GnG EEG data collected so far
+
+Here we will report the total number of GnG EEG data collected so far in the ONR study. The GnG was added since the same directory contains resting state and Nback EEG data, which will not be accounted for in the code below. We are collecting GnG EEG data from three different testing days (Day 1, Day2, and Day3). Here we will show the a) total number of the GnG EEG recordings so far; b) the total number of unique ID's that have at least one GnG EEG recording; c) A frequency table indicating how many GnG EEG recordings we have so far for each day; d) Number of files that have multiple versions or are recovered. 
+
+```{r GnG EEG recordings count, warning = FALSE}
+# Total number of GnG EEG recordings so far
+# Set working directory
+setwd("M:/EEG_XDFs/EEG_DATA")
+
+# List all of the files in the first computer
+ONR1.EEG.files <- list.files()
+
+# Set working directory
+setwd("M:/EEG_XDFs/EEG_DATA2")
+
+# List all of the files in the second computer
+ONR2.EEG.files <- list.files()
+
+# Combine all of the EEG files into one vector
+ONR.EEG.files.combined <- c(ONR1.EEG.files, ONR2.EEG.files)
+
+# Extract only the GnG files
+GnG.EEG.files <- unique(ONR.EEG.files.combined[grepl(pattern = "GnG", x = ONR.EEG.files.combined)])
+
+# Create a data frame that contains the ID's and Days for each of these files
+GnG.EEG.df <- data.frame(ID = substr(x = GnG.EEG.files, start = 1, stop =3),
+                         Day = substr(x = GnG.EEG.files, start = 5, stop =8),
+                         file = GnG.EEG.files)
+
+# Create a variable to detect odd files
+GnG.EEG.df <- GnG.EEG.df %>%
+  mutate(extra.version = ifelse(grepl(pattern = "_2|_3", file),"Yes", "No"),
+         recovered = ifelse(grepl(pattern = "recovered", file), "Yes", "No"))
+
+
+paste("The total number of GnG EEG recordings so far are:",nrow(GnG.EEG.df))
+paste(length(unique(GnG.EEG.df$ID)),"subjects have at least one GnG EEG recording")
+
+GnG.EEG.df$Day %>%
+  table()
+
+paste("If the table of days and the number of unique EEG ID's conflict, it is likely because of multiple versions of a GnG file:")
+table(GnG.EEG.df$extra.version)
+
+```
+
+
+### Part 1: Adding markers
+
+There are several types of data being recorded during the GnG session. These data are saved as streams and include EEG data, VR specific data such as head and joystick movement, and contains marker information. Essentially, what we need to do is to superimpose the marker data onto the EEG. This is because the markers give us detailed information about each trial presented in the VR GnG. The markers give us information about what stimuli the subject is focused on, very detailed information of the stimulus trial such as the version of the GnG, what type of trial (Go or NoGo), information on the shape, and more. Additionally, there are also markers on the response that the subject initiates during that trial, either hitting the shape or not. Thus, all of this information is invaluable for our EEG analysis since it will tell us which EEG segments should be included in our analysis.
+
+Three scripts using MATLAB were designed for this first step (All are located in the MBAP server).
+
+The first uses MobiLab, something that was downloaded into EEGLAB to basically combine streams of data together and then export them as one file, but as a text file. This has to be done manually- unfortunately, but there might be a way to automate this if I get in contact with Dr. Lindner. 
+
+The next line of code takes that txt file with marker data and actually superimposes it onto the EEG data.
+
+Lastly, there is a timing issue involved that needs to be addressed, especially since EEG data is very sensitive to markers being off by a fraction of a second. Thus, another script was created that uses information from a photosensor.
+
+Below we will report all of the GnG EEG data that has markers on them- keep in mind this is a manual process, thus we will expect a fraction of files to be present here from the full number above. 
+
+```{r reporting on the Data with Markers, warning=FALSE}
+# Set working directory
+setwd("M:/EEG_XDFs_Copy_2/0_EEG_DATA_WITH_MARKERS")
+
+# List all of the files
+EEG.marker.files <- list.files()[grepl(pattern = ".set", x = list.files())]
+
+
+# Create a data frame that contains the ID's and Days for each of these files
+GnG.EEG.marker.df <- data.frame(ID = substr(x = EEG.marker.files, start = 1, stop =3),
+                         Day = substr(x = EEG.marker.files, start = 5, stop =8),
+                         file = EEG.marker.files)
+
+# Create a variable to detect odd files
+GnG.EEG.marker.df <- GnG.EEG.marker.df %>%
+  mutate(extra.version = ifelse(grepl(pattern = "_2|_3", file),"Yes", "No"),
+         recovered = ifelse(grepl(pattern = "recovered", file), "Yes", "No"))
+
+paste("The total number of GnG EEG recordings with markers so far are:",nrow(GnG.EEG.marker.df))
+paste(length(unique(GnG.EEG.marker.df$ID)),"subjects have at least one GnG EEG recording")
+
+GnG.EEG.marker.df$Day %>%
+  table()
+
+paste("If the table of days and the number of unique EEG ID's conflict, it is likely because of multiple versions of a GnG file:")
+table(GnG.EEG.marker.df$extra.version)
+
+```
+
+
+### Part 2: Preprocessing the EEG Data
+
+Now that the EEG data has marker data superimposed to it, we need to go through a cleaning process. Raw EEG data is not suitable for analysis, several cleaning steps have to occur to remove any artifacts in the data and represent brain electrical activity accurately. This EEG data was preprocessed using the following pipeline:
+
+#### Obtain all of the file na,es
+```{r Part 1 and obtain all of the file names of each each preprocessing folder}
+# Get information of the number of files of interest per preprocessing folder
+# set working directory
+setwd("M:/EEG_XDFs_Copy_2")
+global_wd <- setwd("M:/EEG_XDFs_Copy_2")
+
+# Obtain numbers of interest to create the flow chart
+all_folder_names <- list.files()
+
+# Create a loop that returns the number files inside each folder
+all_folder_file_num_list <- list()
+
+for(ii in 1:length(all_folder_names)) {
+  
+  current_wd <- paste(global_wd,"/",all_folder_names[ii],sep="")
+  setwd(current_wd)
+  getwd()
+  
+  files_inside_current_folder <- list.files()
+  files_num <- length(files_inside_current_folder)
+  
+  current_Tib <- data.frame(Directory = all_folder_names[ii],
+                            Files_num = files_num) %>% as_tibble()
+  
+  all_folder_file_num_list[[ii]] <- current_Tib
+  
+}
+
+preprocessing_flowchart <- do.call(rbind, all_folder_file_num_list)
+
+```
+
+#### Count the file names in each folder 
+
+```{r count the EEG files names from above }
+# Start the flow chart generation
+# Lets begins with the numeric variables of interest
+All_Marker_Data_num <- preprocessing_flowchart %>% filter(Directory == "0_EEG_DATA_WITH_MARKERS") %>% select(Files_num) %>% unlist() %>% as.numeric()/2
+Preprocessed_Data_num <- preprocessing_flowchart %>% filter(Directory == "1_Preprocessed EEG data - needs ICA") %>% select(Files_num) %>% unlist() %>% as.numeric()/2
+MARA_Ready_Data_num <- preprocessing_flowchart %>% filter(Directory == "2_Preprocessed EEG data - needs MARA and componenet rejection") %>% select(Files_num) %>% unlist() %>% as.numeric()/2
+Almost_Cleaned_Data_num <- preprocessing_flowchart %>% filter(Directory == "3_Preprocessed EEG data - needs segmentation rejection") %>% select(Files_num) %>% unlist() %>% as.numeric()/2
+Cleaned_Data_num <- preprocessing_flowchart %>% filter(Directory == "4_Fully cleaned EEG data") %>% select(Files_num) %>% unlist() %>% as.numeric()/2
+
+Interpolation_CSV_num <- preprocessing_flowchart %>% filter(Directory == "CSVs_Interpolation number") %>% select(Files_num) %>% unlist() %>% as.numeric()
+Component_rej_CSV_num <- preprocessing_flowchart %>% filter(Directory == "CSVs_Component rejected number") %>% select(Files_num) %>% unlist() %>% as.numeric()
+Segments_rem_CSV_num <- preprocessing_flowchart %>% filter(Directory == "CSVs_Segments remaining") %>% select(Files_num) %>% unlist() %>% as.numeric()
+
+# Now lets turn them into characters
+All_Marker_Data <- paste("(n=",All_Marker_Data_num,")",sep="")
+Preprocessed_Data  <- paste("(n=",Preprocessed_Data_num,")",sep="")
+MARA_Ready_Data  <- paste("(n=",MARA_Ready_Data_num,")",sep="")
+Almost_Cleaned_Data  <- paste("(n=",Almost_Cleaned_Data_num,")",sep="")
+Cleaned_Data <- paste("(n=",Cleaned_Data_num,")",sep="") 
+Interpolation_CSV <- paste("(n=",Interpolation_CSV_num,")",sep="") 
+Component_rej_CSV <- paste("(n=",Component_rej_CSV_num,")",sep="") 
+Segments_rem_CSV <- paste("(n=",Segments_rem_CSV_num,")",sep="") 
+
+```
+
+#### Visualize the number of files for each preprocessing step 
+
+```{r now lets visualize this data, warning = FALSE}
+# Add labels manually
+labels <- c(paste("All EEG marker data",All_Marker_Data, sep="\n"),
+            paste("Preprocessed data",Preprocessed_Data, sep="\n"),
+            paste("MARA ready data",MARA_Ready_Data, sep="\n"),
+            paste("Almost cleaned data",Almost_Cleaned_Data, sep="\n"),
+            paste("Cleaned data",Cleaned_Data, sep="\n"))
+
+
+# Create a data with box labels
+data <- data.frame(box = paste("box",1:5))  
+  
+
+# Create a data frame with coordinates for the boxes
+coords <- data.frame(x = c(1, 1, 1, 1, 1),
+                      y = c(10, 9, 8, 7, 6))
+
+# Design min and max for x and y coordinates and include labels from above
+coords <- coords %>%
+  mutate(xmin = x - 0.20,
+         xmax = x + 0.20,
+         ymin = y - 0.35,
+         ymax = y + 0.35) %>%
+  mutate(labels = labels)
+
+# WHat does our data look like so far
+cbind.data <- cbind(data, coords)
+
+# Create a separate data frame telling the arrows where to start and end
+plot_edges <- data %>%
+  rename(from = box) %>%
+  mutate(to = paste("box",2:6),
+         id = row_number()) %>%
+  pivot_longer(cols = c("from", "to"),
+               names_to = "Direction",
+               values_to = "box") %>%
+  left_join(cbind.data, by ="box") %>%
+  select(-c(y, xmin, xmax, labels)) %>%
+  mutate(y = ifelse(Direction == "from",ymin, ymax)) %>%
+  select(-c(ymin, ymax)) %>%
+  filter(complete.cases(.))
+
+# Plotting the graph- one step at a time
+# Part 1: Creating the Boxes
+plot1 <- ggplot() +
+  geom_rect(data = coords,
+            mapping = aes(xmin = xmin, ymin = ymin, 
+                          xmax = xmax, ymax = ymax,
+                          fill = "white", color = "black" ),
+            alpha = 0.5)
+
+# Part 2: Making the boxes and background pretty
+plot1 <- plot1 +
+  scale_fill_manual(values = "white") +
+  scale_color_manual(values = "black") +
+  theme_void() +
+  theme(legend.position = "none") +
+  xlim(.7,1.3)
+
+# Part 3: Adding the labels we created (file names + counts)
+plot1 <- plot1 +  
+  geom_text(data = coords,
+            mapping = aes(x = x, y = y, label = labels))
+
+# Part 4: Adding the arrows to the boxes
+plot1 <- plot1 +
+  geom_path(data = plot_edges,
+            mapping = aes(x = x, y = y, group = id),
+            arrow = arrow(length = unit(0.3, "cm"), type = "closed"))
+
+# Print the plot
+plot1
+
+```
+
+
+
+
+
+
+
+

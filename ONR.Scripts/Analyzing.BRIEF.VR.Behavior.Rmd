@@ -26,6 +26,8 @@ The data we are loading into our workspace contains information from multiple te
 
 There are very to the point hypotheses. That the lower the subject's T-score is in the BRIEF scale, the better the performance will be in the VR task. 
 
+At Elena's request, we will also add an analysis for reaction time for both types of analyses. This will be done with a regression. 
+
 ### Universal block code settings
 
 ```{r setup}
@@ -91,6 +93,26 @@ demographics <- read.csv("complete.demographics.csv")
 # Clean demographics
 demographics <- demographics %>%
   select(-c(X, email))
+
+### Additionally we are going to load in reaction times
+# Set working directory
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
+
+GnG.rt <- read.csv("GnG.reaction.time.csv")
+Nback.rt <- read.csv("Nback.reaction.time.csv")
+
+# Additional data cleaning
+# For GnG, we are only interested in Colors and Shape Condition for Day and for correct Go trials.
+GnG.rt <- GnG.rt %>%
+  filter(BlockName == "Colors and Shape" & Day.Type == "Day 1" & Trial.Type == "Go" & Correct == 1) %>%
+  select(-X)
+
+# Additional data cleaning
+# For GnG, we are only interested in Colors and Shape Condition for Day and for correct Go trials.
+Nback.rt <- Nback.rt %>%
+  filter(BlockName == "2-Back AR w ND" & Day.Type == "Day 1" & Trial.Type == "Target" & Correct == 1) %>%
+  select(-X)
+
 ```
 
 ### Merge the datasets together 
@@ -106,6 +128,18 @@ GnG.performance.merged <- GnG.performance %>%
 
 # merge the working memory datasets
 Nback.performance.merged <- Nback.performance %>%
+  rename(ID = UserID) %>%
+  merge(Working.Memory.T.scores, by = "ID")  %>%
+  merge(demographics, by = "ID")
+
+# merge to the GnG reaction time dataset
+GnG.rt.merged <- GnG.rt %>%
+  rename(ID = UserID) %>%
+  merge(Inhibtion.T.scores, by = "ID")  %>%
+  merge(demographics, by = "ID")
+
+# merge to the GnG reaction time dataset
+Nback.rt.merged <- Nback.rt %>%
   rename(ID = UserID) %>%
   merge(Working.Memory.T.scores, by = "ID")  %>%
   merge(demographics, by = "ID")
@@ -229,6 +263,10 @@ GnG.performance.merged$Sex %>%
 # Age
 hist(GnG.performance.merged$Age)
 
+# Age descriptive statistics
+mean(GnG.performance.merged$Age)
+sd(GnG.performance.merged$Age)
+
 # Demographic information for working memory data set
 Nback.performance.merged$race %>% 
   table() %>%
@@ -257,6 +295,9 @@ Nback.performance.merged$Sex %>%
 # Age
 hist(Nback.performance.merged$Age)
 
+# Age descriptive statistics
+mean(Nback.performance.merged$Age)
+sd(Nback.performance.merged$Age)
 
 ```
 
@@ -389,7 +430,7 @@ Now we will run an ANOVA to then visualize the spread of the residuals. I am add
 aov.model <- aov(T.score ~ Group + Sex + Age, data = GnG.data)
 
 # Obtain the summary of the model
-summary(aov.model)
+summary.lm(aov.model)
 
 
 # Run an interaction ANOVA
@@ -478,6 +519,42 @@ GnG.data %>%
 ```
 
 This makes a lot of sense. A higher T-score indicates more impulsivity. Here we can see that typically as our participants are older they are less likely to engage in impulsive behaviors. 
+
+
+### Adding a reaction time analysis
+
+Now we will see if there is a relationship between inhibition T scores and the reaction times of correct Go trials in the GnG. 
+
+```{r Creating groups from reaction times}
+# Step 1: Create a regression from correct RTs (predictor) onto incorrect RTs (the criterion)
+gng.rt.model <- lm(mean.RT ~ T.score + Age + Sex,data = GnG.rt.merged)
+
+#Get the summary of the model
+summary(gng.rt.model)
+
+# Step 2 test for an interaction effect
+gng.rt.model.int <- lm(mean.RT ~ T.score*Sex + Age,data = GnG.rt.merged)
+
+#Get the summary of the model
+summary(gng.rt.model.int)
+
+
+
+```
+
+
+```{r visualize the data from above}
+# Create a scatterplot of inhibition T scores and correct Go trials reaction time
+GnG.rt.merged %>%
+  ggplot(aes(x = T.score, y = mean.RT)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_bw() +
+  labs(title = "A scatterplot of Inhibition T scores and mean reaction Times of Correct Go Trials",
+       x = "BRIEF-A Inhbition T scores",
+       y = "Correct Go Condition Mean Reation Time (ms)")
+
+```
 
 
 ## Working Memory analysis
@@ -596,3 +673,12 @@ Nback.dprime %>%
 ```
 
 
+### Regression of working memory T score and reaction time for correct target trials (Nback)
+
+```{r creating a reaction time nback regression }
+# Create the regression mode
+Nback.rt.model <- lm(mean.RT~ T.score + Age + Sex, data = Nback.rt.merged)
+
+# Let's look at the model
+summary(Nback.rt.model)
+```

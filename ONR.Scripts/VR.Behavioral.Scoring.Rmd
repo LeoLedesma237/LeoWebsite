@@ -110,8 +110,7 @@ GnG.grouped.Trial.Type <- GnG.trial.type %>%
 
 # Create another data frame that reduced dimensions but only for correct reaction times of Go-Trials
 GnG.grouped.Reaction.Time <- GnG.trial.type %>%
-  filter(Trial.Type == "Go" & Correct ==  1) %>%
-  group_by(UserID, BlockName, Day.Type) %>%
+  group_by(UserID,Trial.Type, Correct, BlockName, Day.Type) %>%
   summarize(mean.RT = mean(TimeToImpact))
 
 ```
@@ -220,8 +219,7 @@ Nback.grouped.Trial.Type <- Nback.trial.type %>%
 
 # Create another data frame that reduced dimensions but only for correct reaction times of Nback
 Nback.grouped.Reaction.Time <- Nback.trial.type %>%
-  filter(Trial.Type == "Target" & Correct ==  1) %>%
-  group_by(UserID, BlockName, Day.Type, Trial.Type) %>%
+  group_by(UserID,Trial.Type, Correct, BlockName, Day.Type) %>%
   summarize(mean.RT = mean(TimeToImpact))
 
 ### Additionally- we are going to save this data frame to the Nback as a reaction to a target trial being correct

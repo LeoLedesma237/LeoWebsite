@@ -21,6 +21,8 @@ This study is investigating how different stressors (intense exercise and sleep 
 
 **Step 2**: Including demographic information [[Click here to view script]](https://leoledesma237.github.io/LeoWebsite/ONR.Scripts/Adding.Demographics.html)
 
+**Step 3**: GnG EEG data Preprocessing [[Click here to view script]](https://leoledesma237.github.io/LeoWebsite/ONR.Scripts/GnG.Preprocessing.Pipeline.html)
+
 
 ### Data Scoring
 

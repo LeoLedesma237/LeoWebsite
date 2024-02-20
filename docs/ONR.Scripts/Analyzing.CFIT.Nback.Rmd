@@ -75,8 +75,10 @@ Nback.performance <- Nback.reacted %>% filter(Day.Type == "Day 1" & BlockName ==
 # Load Nback reaction time data
 Nback.RT <- read.csv("Nback.reaction.time.csv")
 
-# Data cleaning- we are only interested in Day 1
-Nback.RT <- Nback.RT %>% filter(Day.Type == "Day 1" & BlockName == "2-Back AR w ND") %>% select(-X)
+# Data cleaning- we are only interested in Day 1, in BlockName 2-Back AR w ND, for only correct trials of the target
+Nback.RT <- Nback.RT %>% 
+  filter(Day.Type == "Day 1" & BlockName == "2-Back AR w ND" & Correct == 1 & Trial.Type == "Target") %>% 
+  select(-c(X, Correct))
 
 # Adding demographic data
 setwd("C:/Users/lledesma.TIMES/Documents/ONR/Demographics")
@@ -220,6 +222,10 @@ Nback.performance.merged$Sex %>%
 
 # Age
 hist(Nback.performance.merged$Age)
+
+# Age descriptive statistics
+mean(Nback.performance.merged$Age)
+sd(Nback.performance.merged$Age)
 
 ```
 
