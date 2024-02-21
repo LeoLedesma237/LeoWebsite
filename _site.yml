@@ -8,6 +8,8 @@ navbar:
       href: MegaGrant.html
     - text: "ONR"
       href: ONR.html
+    - text: "KBB"
+      href: KBB.html
     - text: "Links"
       href: Links.html
 output_dir: "docs"

@@ -1,0 +1,17 @@
+---
+title: "KBB Data Overview"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The KBB study stands for 'Kulanganya Buyumu-yumu Bwabana,' which means “Addressing the Difficulties of Children.” It is a large R01 funded study in Macha, Zambia that is collecting behavioral, neurophysiological, and genetic data from children screened to have developmental disabilities (DD) and their non-DD siblings. The Washington Group and UNICEF Child Function Modulfe (CFM) is the screener used to recruit probands and their siblings into the study. Their orginal names are CFM2_4 and CFM5_17, since they are devised to measure different types of difficulties in children based on age. However, we are recruiting children and adolescents 3-18 years of age. Thus, we have renamed these screeners to CFM3_4 and CFM5_18 just to reduce confusion for which screener is being used for each child's age.
+
+
+### Data cleaning
+
+**Step 1** Screener data[[Click here to view script]](https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/ID.Cleaning.html)
+
+
