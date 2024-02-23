@@ -1,0 +1,45 @@
+---
+title: "Analyzing effects of Color on Performance in the Color Saber Match Condition of the VR Go/No-Go"
+author: "Leandro Ledesma"
+date: "2024-02-21"
+output: html_document
+---
+
+
+### Overview 
+
+This is a research idea by Candace Martinez that investigates if the wavelength properties of color  affect performance in the Color Saber Match Condition of the Go/No-Go (GnG). In a quick recap, color is perceived from wavelengths of light, and several studies showed that there is an association between color wavelength and performance in different types of cognitive related tasks. For our purposes, we have a version of the GnG called the Color Saber Matching condition. In this version, we have 210 trials of which 168 trials (80%) are Go trials and 42 trials (20%) are No-Go trials. The Go trials are defined as conditions where the presented stimulus, which can be one of the following colors: purple, blue, green, yellow, red, matches one of the colors of the sabers. In contrast, the No-Go trials is a condition where the color of the stimulus does not match the color of the sabers. For further context, this GnG task is being implemented in a virtual reality (VR) environment. Thus, the participant will be wielding a joy stick in both hands that function as virtual sticks (sabers) to hit stimuli during the Go-trials.
+
+### Universal block code settings
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+
+```
+
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(kableExtra)
+library(fuzzyjoin)
+
+```
+
+### Load in the data
+
+Download the data from Qualtrics using Choice NUMBERS or else it will break the code!
+
+```{r load in the data, warning = FALSE}
+# Set working directory
+setwd("~/ONR/Qualtrics")
+
+# Load in the data
+Qualtrics <- read.csv("ONR Questionnaires_February 15, 2024_14.35.csv")
+
+```

@@ -12,6 +12,8 @@ The KBB study stands for 'Kulanganya Buyumu-yumu Bwabana,' which means “Addres
 
 ### Data cleaning
 
-**Step 1** Screener data[[Click here to view script]](https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/ID.Cleaning.html)
+**Step 1** Screener data[[Click here to view script]](https://leoledesma237.github.io/LeoWebsite/KBB.Scripts/CFM2_4.Scoring.html)
+
+
 
 
