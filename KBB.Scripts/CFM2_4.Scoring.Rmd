@@ -25,7 +25,7 @@ library(lubridate)
 
 ### Load in the data
 
-Download the data from Qualtrics using Choice NUMBERS or else it will break the code!
+
 
 ```{r load in the data, warning = FALSE}
 # Set working directory to import data
@@ -91,8 +91,8 @@ CFM2_4.removed.variables <- CFM2_4.uncleaned %>%
          Child_Last_Name,
          Child_Gender,
          Child_Date_of_Birth,
-         Child_s_Biological_Father,
-         Child_s_Biological_Mother,
+         BF = Child_s_Biological_Father,
+         BM = Child_s_Biological_Mother,
          Respondant_relationship = `_08_Respondant_s_Relationship_`,
          CF1,
          CF2,

@@ -371,8 +371,6 @@ library(lubridate)</code></pre>
 </div>
 <div id="load-in-the-data" class="section level3">
 <h3>Load in the data</h3>
-<p>Download the data from Qualtrics using Choice NUMBERS or else it will
-break the code!</p>
 <pre class="r"><code># Set working directory to import data
 setwd(&quot;~/KBB_new_2/1_screener/raw_data&quot;)
 
@@ -432,8 +430,8 @@ dimensions include 46 variables.</p>
          Child_Last_Name,
          Child_Gender,
          Child_Date_of_Birth,
-         Child_s_Biological_Father,
-         Child_s_Biological_Mother,
+         BF = Child_s_Biological_Father,
+         BM = Child_s_Biological_Mother,
          Respondant_relationship = `_08_Respondant_s_Relationship_`,
          CF1,
          CF2,
@@ -641,8 +639,8 @@ CFM2_4 &lt;- CFM2_4 %&gt;%
 DD)</h3>
 <p>It is also interesting for us to know exactly how many different
 domains the child has difficulty in. We can do this by almost working
-backwards a bit, and recoding our labeled data back into numbers. Except
-this time, no difficulty will be represented as 0 and any type of
+backwards a bit, and recording our labeled data back into numbers.
+Except this time, no difficulty will be represented as 0 and any type of
 reported difficulty will be converted to a 1. Then we can just sum the
 number of 1’s for each CFM question to get this variable.</p>
 <p>We will be doing this to our variable that is looking for how the CFM
@@ -790,7 +788,7 @@ However, there is more to the definition of DD by KBB. We also need to
 include information from epilepsy. Therefore our final sample will
 contain the following four group conditions.</p>
 <ol style="list-style-type: decimal">
-<li><p>Child with no DD</p></li>
+<li><p>Child with no DD and no epilepsy</p></li>
 <li><p>Child with CFM DD - included into the study as DD</p></li>
 <li><p>Child with epilepsy - included into the study as DD</p></li>
 <li><p>Child with CFM DD and epilepsy - included into the study as
