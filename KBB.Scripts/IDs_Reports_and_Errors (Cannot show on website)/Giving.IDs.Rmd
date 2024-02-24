@@ -1,0 +1,230 @@
+---
+title: "Giving Subjects an ID"
+author: "Leandro Ledesma"
+date: "2024-02-24"
+output: html_document
+---
+
+### Universal block code settings
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+
+```
+
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(openxlsx) # To save excel files with multiple tabs
+
+```
+
+### Load in the data
+
+There is already an existing dataset with ID's that are present.
+
+
+```{r load the data}
+# Set working directory
+setwd("C:/Users/lledesma.TIMES/Documents/KBB_new_2/matched_siblings")
+
+# Load the existing excel file with ID numbers
+existing.IDs <- read_excel("matched_data_send_to_Ackim_blinded.xlsx")
+
+# Set working directory
+setwd("C:/Users/lledesma.TIMES/Documents/KBB_new_2/1_screener/final_data")
+
+# load in the matched data created from R
+matched.data <- read_excel("All CFM Eligible Children.xlsx")
+
+```
+
+
+### Create a variable to merge the datasets
+
+Before we can merge these datasets, we need to create a new variable from variables that are shared between these two datasets. 
+
+```{r create new variable to merge the datasets}
+# What variables are shared between the two datasets
+intersect.variables <- intersect(names(existing.IDs),names(matched.data))
+intersect.variables
+
+# Create an ID to match between the datasets based on the variables that are intersected
+# Let's choose HOH First and Last name and the Child first and last name as this variable
+existing.IDs <- existing.IDs %>%
+  mutate(x = paste(HOH_First_Name, HOH_Last_Name, Child_First_Name, Child_Last_Name),
+         ID = as.numeric(ID))
+
+matched.data <- matched.data %>%
+  mutate(x = paste(HOH_First_Name, HOH_Last_Name, Child_First_Name, Child_Last_Name))
+
+```
+
+
+### Quality control
+
+First, we will need to identify which ID's have been given an ID but should NOT have been given an ID. We need to load in children that were excluded so we can verify why these children that were given an ID must now have it revoked.
+
+- As of right now, there are 6 children that have 'Cannot at all' for sensory issues and must be removed and their siblings. These include the following:
+
+- IDs: 35, 36, 49, 50, 99, 100, 115, 116, 129, 130, 169, 170 
+
+- Additionally, other ID's have been identified that should have been excluded for not having a match
+
+- IDs: 41, 116, 118, 129, 138, 170
+
+- Lastly and idk how, but one ID that is suppose to be from one household was included- might have been an ID that was manually fixed at one point
+
+- IDs: 155 
+```{r quality control the IDs}
+### Which ID's need to be revoked
+IDs.to.revoke <- setdiff(existing.IDs$x, matched.data$x)
+
+IDs.to.revoke_df <- existing.IDs %>%
+  filter(x %in% IDs.to.revoke)
+
+IDs.to.revoke.actual.ID <- existing.IDs %>%
+  filter(x %in% IDs.to.revoke) %>%
+  mutate(ID = as.numeric(ID)) %>%
+  select(ID) %>% unlist()
+
+# set the working directory
+setwd("~/KBB_new_2/1_screener/final_data")
+
+# Load in the excluded children
+excluded.children.DD <- read_excel("All CFM Excluded Children and Why.xlsx", sheet = "excluded_DD")
+excluded.children.noDD <- read_excel("All CFM Excluded Children and Why.xlsx", sheet = "excluded_no_DD")
+excluded.children.noMatch <- read_excel("All CFM Excluded Children and Why.xlsx", sheet = "Unable_to_match")
+
+# Give these excluded dataframes the same variable x to be merged to
+excluded.children.DD <- excluded.children.DD %>%
+  mutate(x = paste(HOH_First_Name, HOH_Last_Name, Child_First_Name, Child_Last_Name))
+  
+excluded.children.noDD <- excluded.children.noDD %>%
+  mutate(x = paste(HOH_First_Name, HOH_Last_Name, Child_First_Name, Child_Last_Name))
+
+excluded.children.noMatch <- excluded.children.noMatch %>%  
+  mutate(x = paste(HOH_First_Name, HOH_Last_Name, Child_First_Name, Child_Last_Name))
+
+# Report which children that should have ID's revoked fall under which category
+intersect(IDs.to.revoke_df$x, excluded.children.DD$x)
+
+intersect(IDs.to.revoke_df$x, excluded.children.noDD$x)
+
+intersect(IDs.to.revoke_df$x, excluded.children.noMatch$x)
+
+```
+
+
+### Which ID's that should be revoked have already been used?
+
+From all the behavioral assessments that have already been used out in the field to collect data, it seems that the Vineland-II has the most ID's captured. Thus, we will be using this dataset just to see how many of these ID's that should be revoked have already been used out in the field. Also just to be more positive, we will also include physical data and triangles too. For those IDs that have not been used, then we should go ahead and revoke them in the creation of a new ID tracker excel sheet. However, for those that have been used- we will just have to make a note of it. 
+
+Unfortunately, 7 ID's that should be revoked are in the field. These include IDs: 41, 99, 100, 115, 116, 129, and 130. From these ID's, 100, 115, and 130 are children with 'Cannot at all' sensory disabilities. On further inspection this is their disability.
+
+100: Cannot walk
+
+115: Cannot walk
+
+130: Cannot walk
+
+In all honestly, this may be problematic if they have severe cerebral palsy, but if they can move their arms then I guess it is okay. Regardless these ID's should either be recycled or at this point kept and we honor our mistake in the study.
+
+Fortunately, we were able to rescue the following ID's. As in we can reuse them with someone else. These are the ID's: 35, 36, 49, 50, 118, 138, 155, 169, 170
+
+
+```{r which ids have been used}
+# Set the working directory
+setwd("~/KBB_new_2/matched_siblings/behavioral assessments used for revoking ID decision")
+
+# Load in the Vineland data
+Vineland <- read_excel("Vineland-II_Adaptive_Behavior_Scales_-_all_versions_-_False_-_2024-02-24-05-39-05.xlsx")
+Physical.data <- read_excel("Physical_Data_-_all_versions_-_False_-_2024-02-24-06-02-00.xlsx")
+Tiangles <- read_excel("K-ABC_Triangles_-_all_versions_-_False_-_2024-02-24-06-02-29.xlsx")
+
+# Used IDs in the field
+IDs.in.field <- union(Vineland$Child_Study_ID,
+                      Physical.data$Child_ID) %>%
+  union(Tiangles$Child_ID) %>% sort()
+                      
+
+
+# Which ID's that we need to revoke are in the field?
+Bad.IDs.We.Must.Keep <- intersect(IDs.in.field, IDs.to.revoke.actual.ID)
+
+# Which IDs have not been used and should be revoked?
+IDs.We.Must.Recycle <- setdiff(IDs.to.revoke.actual.ID, IDs.in.field)
+
+```
+
+
+### Creating a new ID tracking excel sheet
+
+With the data we have above, we need to use this information to create a new data frame that removes the IDs that need to be recycled. We will then have to manually keep track of the ID's that should have been revoked but weren't. Maybe by highliting them in an excel file or something.
+
+Now then, take this new dataset and save it somewhere. Next, manually create a copy of it, this will function as your new ID tracker.
+
+Additionally, we need to reintroduce whether they are DD or not- the team needs this information
+
+```{r creating a new tracking ID excel sheet}
+# set working directory
+setwd("~/KBB_new_2/1_screener/final_data")
+
+# load in the dataset that contains DD status
+all.data <- read_excel("All Children.xlsx")
+
+# Data cleaning, only keep the DD status and recreate the variable x to merge
+all.data.dd.status <- all.data %>%
+  transmute(x = paste(HOH_First_Name, HOH_Last_Name, Child_First_Name, Child_Last_Name),
+            KBB_DD_status)
+            
+
+# Create a new data ID tracker without the IDs.We.Must.Recycle
+new.existing.IDs <- existing.IDs %>%
+  left_join(all.data.dd.status, by = "x") %>%
+  filter(!(ID %in% IDs.We.Must.Recycle))
+
+# Set working directory
+setwd("C:/Users/lledesma.TIMES/Documents/KBB_new_2/matched_siblings")
+
+# Save the data
+write.xlsx(x = new.existing.IDs,
+           file = "New automatic ID Tracker.xlsx")
+
+```
+
+### Load in the manual ID tracker
+
+Now let's load in the manual tracker. We will then use the function setdiff to identify the new participants that are eligible to join in our study. We will then give them an ID manually.
+
+
+```{r load in the manual ID tracker}
+# set working directory
+setwd("~/KBB_new_2/matched_siblings")
+
+# Load in the data
+new.ID.tracker <- read_excel("New ID Tracker.xlsx")
+
+# Which subjects need an ID
+give.an.ID <- matched.data %>%
+  filter(!(x %in% new.ID.tracker$x))
+
+# Save this excel sheet to give new ID's too
+write.xlsx(x = give.an.ID,
+           file = "Subjects that need an ID.xlsx")
+
+# Data checking to make sure we are not missing ID's
+max.ID.num <- new.ID.tracker$ID %>% sort() %>% max()
+
+# Create a vector from 1 to the max ID num
+vector <- 1:max.ID.num
+
+# See if we missed to give an ID number
+setdiff(vector, new.ID.tracker$ID)
+
+```
