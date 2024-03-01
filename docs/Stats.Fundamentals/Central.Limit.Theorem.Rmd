@@ -1,0 +1,9 @@
+---
+title: "Four Fundamental Concepts"
+author: "Leandro Ledesma"
+date: "2024-03-01"
+output: html_document
+---
+
+The following document is heavily inspired by Chapter 5: Four Fundamental Concepts from Statistics Unplugged 4th Edition (2013) by Sally Caldwell. The information below essentially makes up the logic behind inferential statistics. Thus if these concepts are not well understood then I would advise you to continue to review it or else understanding why we use statistical methods in behavioral research will be bleak. 
+
