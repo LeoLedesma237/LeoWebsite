@@ -5,26 +5,149 @@ date: "2024-02-29"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+### Our measure of interest
+
+
+
+
+
+### Universal block code settings
+
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+
 ```
 
-## R Markdown
+### Load in the data manipulation packages first
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
- 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(lmtest) # bptest() function for homoscedasticity
+library(kableExtra)
 
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
+### Load in the data
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r load in the data, warning = FALSE}
+# Set working directory
+setwd("M:/EEG_XDFs_Copy_2/6_GnG_EEG ERPs means")
+
+# obtain the list names of all the files
+all.file.names <- list.files()
+
+# keep only Day 1 files
+Day1.N2.files <- all.file.names[grepl(pattern = "Day1",
+                       x = all.file.names)]
+
+# Load in the files
+N2.list <- list()
+
+for(ii in 1:length(Day1.N2.files)) {
+
+  # Load in the data
+  current.data <- read.csv(Day1.N2.files[ii],
+                           sep = "\t")
+  
+  
+  # Save this transformed dataset into the list
+  N2.list[[ii]] <- current.data %>% select(ERPset, everything())
+  
+}
+
+# Merge into one dataset
+N2.data <- N2.list %>%
+  do.call(rbind,.)
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+### Data Cleaning
+
+We have variable names that indicate 1) whether the trial was a Go (bin1) or a NoGo (bin2) trial and 2) what electrode the brain activity was recorded from. What we need to do is to extract the bin information from the variable names and have that as its own variable. 
+
+```{r data cleaning}
+# Create a dataset for Go trial activity
+N2.Go.bin <- N2.data %>%
+  select(ERPset, starts_with("bin1")) %>%
+  pivot_longer(-ERPset, names_to = "Bin.Type", values_to = "Value")
+
+N2.NoGo.bin <- N2.data %>%
+  select(ERPset, starts_with("bin2")) %>%
+  pivot_longer(-ERPset, names_to = "Bin.Type", values_to = "Value")
+
+
+# Merge the datasets together
+N2.long <- N2.data %>%
+  pivot_longer(-ERPset, names_to = "Bins", values_to = "Value") %>%
+  mutate(Trial.Type = ifelse(grepl("bin1",Bins),"Go","NoGo"),
+         Channel = sub("^[^_]*_", "", Bins)) %>%
+  select(ERPset, Trial.Type, Channel, Value)
+
+```
+
+
+# Graphing the data
+
+
+```{r graphing time}
+# Average all of the data by channels and Trial.Type
+
+averaged.N2 <- N2.long %>%
+  group_by(Trial.Type, Channel) %>%
+  summarize(mean.Value = mean(Value))
+
+
+# Graph it
+averaged.N2 %>%
+  ggplot(aes(x = Channel, y = mean.Value, color = Trial.Type, group = Trial.Type)) +
+  geom_point() +
+  stat_summary(fun = "mean",
+               geom = "line") +
+  theme_bw()
+
+
+# Create a grouping based on topographical location
+
+Topographical_group_fun <- function(channel) {
+  case_when(
+    channel %in% c("AF3", "AF4", "F3", "F4","F7", "F8", "Fz") ~ "Frontal",
+    channel %in% c("FT10", "FT9","T7","T8") ~ "Temporal",
+    channel %in% c("FC1", "FC2", "FC5", "FC6", "C3", "C4", "CP1", "CP2", "CP5", "CP6","CZ") ~ "Central",
+    channel %in% c("P3","P4","P7","P8","Pz") ~ "Parietal",
+    channel %in% c("O1","O2", "Oz") ~ "Occipital",
+    TRUE ~ as.character(channel)
+  )
+}
+
+averaged.N2 <- averaged.N2 %>%
+  mutate(Topography = Topographical_group_fun(Channel),
+         Topography = factor(Topography,
+                             levels = c("Frontal",
+                                        "Central",
+                                        "Temporal",
+                                        "Parietal",
+                                        "Occipital")))
+
+
+# Graph as bar graphs
+averaged.N2 %>%
+  ggplot(aes(x = Topography, y = mean.Value, fill = Trial.Type)) +
+  stat_summary(fun = "mean",
+               geom = "bar",
+               position = "dodge") +
+  stat_summary(fun.data = mean_cl_normal,
+               geom = "errorbar",
+               width = .2,
+               position = position_dodge(width = .9)) +
+  labs(title = "N2 between averaged Go and NoGo trials across topographical locations") +
+  theme_classic()
+
+```
+
