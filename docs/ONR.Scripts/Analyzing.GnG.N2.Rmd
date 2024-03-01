@@ -93,7 +93,7 @@ N2.long <- N2.data %>%
 ```
 
 
-# Graphing the data
+# Graphing the data (Line graph)
 
 
 ```{r graphing time}
@@ -112,6 +112,11 @@ averaged.N2 %>%
                geom = "line") +
   theme_bw()
 
+```
+
+# Graphing the data part (Graphing by topographical location)
+
+```{r graphing time2}
 
 # Create a grouping based on topographical location
 
@@ -126,7 +131,7 @@ Topographical_group_fun <- function(channel) {
   )
 }
 
-averaged.N2 <- averaged.N2 %>%
+N2.long <- N2.long %>%
   mutate(Topography = Topographical_group_fun(Channel),
          Topography = factor(Topography,
                              levels = c("Frontal",
@@ -137,8 +142,23 @@ averaged.N2 <- averaged.N2 %>%
 
 
 # Graph as bar graphs
-averaged.N2 %>%
-  ggplot(aes(x = Topography, y = mean.Value, fill = Trial.Type)) +
+N2.long %>%
+  ggplot(aes(x = Topography, y = Value, fill = Trial.Type)) +
+  stat_summary(fun = "mean",
+               geom = "bar",
+               position = "dodge") +
+  stat_summary(fun.data = mean_cl_normal,
+               geom = "errorbar",
+               width = .2,
+               position = position_dodge(width = .9)) +
+  geom_jitter(position = position_dodge(width = .7)) +
+  labs(title = "N2 between averaged Go and NoGo trials across topographical locations") +
+  theme_classic()
+
+
+# Graph as bar graphs
+N2.long %>%
+  ggplot(aes(x = Topography, y = Value, fill = Trial.Type)) +
   stat_summary(fun = "mean",
                geom = "bar",
                position = "dodge") +
@@ -150,4 +170,3 @@ averaged.N2 %>%
   theme_classic()
 
 ```
-
