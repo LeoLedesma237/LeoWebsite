@@ -40,3 +40,5 @@ This study is investigating how different stressors (intense exercise and sleep 
 **CFIT and Nback analysis** <add description here>(https://leoledesma237.github.io/LeoWebsite/ONR.Scripts/Analyzing.CFIT.Nback.html)
 
 **Color influence in Color Saber Match GnG** <add description here>(https://leoledesma237.github.io/LeoWebsite/ONR.Scripts/Analyzing.Color.GnG.html)
+
+**GnG EEG N2** <add description here>(https://leoledesma237.github.io/LeoWebsite/ONR.Scripts/Analyzing.GnG.N2.html)

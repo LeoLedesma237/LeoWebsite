@@ -360,23 +360,48 @@ in the Color Saber Match Condition of the VR Go/No-Go</h1>
 
 <div id="overview" class="section level3">
 <h3>Overview</h3>
-<p>This is a research idea by Candace Martinez where we are
-investigating if the wavelength properties of color are affecting
-performance in the Color Saber Match Condition of the Go/No-Go (GnG). In
-a quick recap, color is perceived wavelengths of light, and several
-studies showed that there is an association between wavelength and
-performance in different types of cognitive related tasks. For our
-purposes, we have a version of the GnG called the Color Saber Matching
-condition. In this version, we have 210 trials of which 168 trials (80%)
-are Go trials and 42 trials (20%) are No-Go trials. The Go trials are
-defined as conditions where the presented stimulus, which can be one of
-the following colors: purple, blue, green, yellow, red, matches one of
-the colors of the sabers. In contrast, the No-Go trials is condition
-where the color of the stimulus does not match the color of the sabers.
-For further context, this GnG task is being implemented in a virtual
-reality (VR) environment. Thus, the participant will be wielding a joy
-stick in both hands that function as virtual sticks (sabers) to hit
-stimuli during the Go-trials.</p>
+<p>This is a research idea by Candace Martinez that investigates if the
+wavelength properties of color affect performance in the Color Saber
+Match Condition of the Go/No-Go (GnG). In a quick recap, color is
+perceived from wavelengths of light, and several studies showed that
+there is an association between color wavelength and performance in
+different types of cognitive related tasks. For our purposes, we have a
+version of the GnG called the Color Saber Matching condition. In this
+version, we have 210 trials of which 168 trials (80%) are Go trials and
+42 trials (20%) are No-Go trials. The Go trials are defined as
+conditions where the presented stimulus, which can be one of the
+following colors: purple, blue, green, yellow, red, matches one of the
+colors of the sabers. In contrast, the No-Go trials is a condition where
+the color of the stimulus does not match the color of the sabers. For
+further context, this GnG task is being implemented in a virtual reality
+(VR) environment. Thus, the participant will be wielding a joy stick in
+both hands that function as virtual sticks (sabers) to hit stimuli
+during the Go-trials.</p>
+</div>
+<div id="universal-block-code-settings" class="section level3">
+<h3>Universal block code settings</h3>
+<pre class="r"><code>knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)</code></pre>
+</div>
+<div id="load-in-the-data-manipulation-packages-first" class="section level3">
+<h3>Load in the data manipulation packages first</h3>
+<pre class="r"><code>library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(kableExtra)
+library(fuzzyjoin)</code></pre>
+</div>
+<div id="load-in-the-data" class="section level3">
+<h3>Load in the data</h3>
+<p>Download the data from Qualtrics using Choice NUMBERS or else it will
+break the code!</p>
+<pre class="r"><code># Set working directory
+setwd(&quot;~/ONR/Qualtrics&quot;)
+
+# Load in the data
+Qualtrics &lt;- read.csv(&quot;ONR Questionnaires_February 15, 2024_14.35.csv&quot;)</code></pre>
 </div>
 
 

@@ -756,6 +756,8 @@ with</p>
 and will be given an ID to participate</p>
 <p>Excel 3: Head of Household IDs (for fuzzy matching) - HOH_ID with one
 child - HOH_ID with more than one children</p>
+<p>Excel 4: Has all data of everyone - This is important for the Giving
+ID script</p>
 <pre class="r"><code># Save the data 
 # Set working directory
 setwd(&quot;~/KBB_new_2/1_screener/final_data&quot;)
@@ -772,7 +774,11 @@ write.xlsx(list(eligible_children = eligible_children_df2), file = &quot;All CFM
 # Save excel sheet 3
 write.xlsx(list(error_household = potential_errors_households,
                 correct_household = correct_households_df),
-           file =  &quot;Potential_Household_errors.xlsx&quot;)</code></pre>
+           file =  &quot;Potential_Household_errors.xlsx&quot;)
+
+# Save excel sheet 4
+write.xlsx(list(all_data = CFM_data_before_exclusion),
+           file =  &quot;All Children.xlsx&quot;)</code></pre>
 </div>
 <div id="next-steps-please-read" class="section level2">
 <h2>Next steps (Please read)</h2>
@@ -786,7 +792,9 @@ identifiable information.</p>
 <p>Excel 3 is also important. Just like above, we CANNOT save this
 information on the website. We will need to create another script to do
 fuzzy matching to inform our team members which ID’s that need to be
-manually cleaned to hopefully increase our recruitment numbers.</p>
+manually cleaned to hopefully increase our recruitment numbers.
+Additionally, this script could also report on any missing data or other
+types of mistakes that have been done during data collection.</p>
 <p>Lastly, we need to create an additional script that reports back all
 of this information. It will be shared every Tuesday during out
 meetings.</p>

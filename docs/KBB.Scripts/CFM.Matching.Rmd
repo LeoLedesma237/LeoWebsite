@@ -398,6 +398,9 @@ Excel 2: Children that are eligible
 Excel 3: Head of Household IDs (for fuzzy matching)
     - HOH_ID with one child
     - HOH_ID with more than one children
+    
+Excel 4: Has all data of everyone
+    - This is important for the Giving ID script
 
 
 ```{r save the data}
@@ -419,6 +422,9 @@ write.xlsx(list(error_household = potential_errors_households,
                 correct_household = correct_households_df),
            file =  "Potential_Household_errors.xlsx")
 
+# Save excel sheet 4
+write.xlsx(list(all_data = CFM_data_before_exclusion),
+           file =  "All Children.xlsx")
 
 ```
 
@@ -428,6 +434,6 @@ Excel 1 is really to keep for our records. We are not necessarily going to do an
 
 Excel 2 is very important. We now need to take these IDs and place them into a separate RMarkdown so we can give them ID's. This new created script CANNOT be linked to in the website since it contains identifiable information. 
 
-Excel 3 is also important. Just like above, we CANNOT save this information on the website. We will need to create another script to do fuzzy matching to inform our team members which ID's that need to be manually cleaned to hopefully increase our recruitment numbers. 
+Excel 3 is also important. Just like above, we CANNOT save this information on the website. We will need to create another script to do fuzzy matching to inform our team members which ID's that need to be manually cleaned to hopefully increase our recruitment numbers. Additionally, this script could also report on any missing data or other types of mistakes that have been done during data collection. 
 
 Lastly, we need to create an additional script that reports back all of this information. It will be shared every Tuesday during out meetings.

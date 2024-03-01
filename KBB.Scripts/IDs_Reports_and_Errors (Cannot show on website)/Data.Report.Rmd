@@ -1,0 +1,154 @@
+---
+title: "KBB Data Report"
+author: "Leandro Ledesma"
+date: "2024-02-27"
+output: html_document
+---
+
+This document will be reporting current data collected from the CFM questionnaires.
+
+### Universal block code settings
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+
+```
+
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+library(kableExtra)
+library(openxlsx) # To save excel files with multiple tabs
+```
+
+### Load in the data 
+
+We will be loading in data that most likely has typos in the name. 
+
+```{r load in the data, warning = FALSE}
+# Set the working directory
+setwd("C:/Users/lledesma.TIMES/Documents/KBB_new_2/1_screener/final_data")
+
+# Load in all useful data
+All.Children <- read_excel("All Children.xlsx")
+Excluded.Children.DD <- read_excel("All CFM Excluded Children and Why.xlsx", sheet = "excluded_DD")
+Excluded.Children.noDD <- read_excel("All CFM Excluded Children and Why.xlsx", sheet = "excluded_no_DD")
+Excluded.Children.NoMatch <- read_excel("All CFM Excluded Children and Why.xlsx", sheet = "Unable_to_match")
+Eligible.Children <- read_excel("All CFM Eligible Children.xlsx")
+
+# Save numbers as objects
+All.DD <- All.Children %>% filter(KBB_DD_status == "Yes") %>% nrow()
+All.noDD <- All.Children %>% filter(KBB_DD_status == "No") %>% nrow()
+Excluded.DD <- Excluded.Children.DD %>% filter(KBB_DD_status == "Yes") %>% nrow()
+Excluded.noDD <- Excluded.Children.noDD %>% filter(KBB_DD_status == "No") %>% nrow()
+Excluded.DD.NoMatch <- Excluded.Children.NoMatch  %>% filter(KBB_DD_status == "Yes") %>% nrow()
+Excluded.noDD.NoMatch <- Excluded.Children.NoMatch  %>% filter(KBB_DD_status == "No") %>% nrow()
+Eligible.DD <- Eligible.Children  %>% filter(KBB_DD_status == "Yes") %>% nrow()
+Eligible.noDD <- Eligible.Children  %>% filter(KBB_DD_status == "No") %>% nrow()
+```
+
+
+### All Children Screened
+
+```{r all children screened, echo = FALSE}
+# Create a dataframe that just gives the total of these numbers
+data.text <- data.frame(text = c("Total number of children screened so far is:",
+                    "Total number of children excluded is:",
+                    "Total number of children unable to match is:",
+                    "Total number of children eligible to be recruited is:"),
+           values = c(nrow(All.Children),
+                      Excluded.DD + Excluded.noDD,
+                      Excluded.DD.NoMatch + Excluded.noDD.NoMatch,
+                      Eligible.DD + Eligible.noDD))
+
+
+# Print out the table
+data.text %>%
+  kbl() %>%
+  kable_paper(font_size = 18, bootstrap_options = "striped", full_width = F) %>%
+  footnote(general =c("Overview of data collected so far."))
+
+
+
+
+data <- data.frame(group = rep(c("All Children","Excluded", "No Match", "Eligible"), each = 2),
+           DD.status = rep(c("DD","noDD"),4),
+           n = c(All.DD, 
+                 All.noDD, 
+                 Excluded.DD,
+                 Excluded.noDD, 
+                 Excluded.DD.NoMatch,
+                 Excluded.noDD.NoMatch,
+                 Eligible.DD,
+                 Eligible.noDD))
+
+
+# Plot the data
+plot1 <- data %>%
+  filter(group == "All Children") %>%
+  ggplot(aes(x = group, y = n, fill = DD.status)) +
+  geom_bar(stat = "identity",
+           position = "dodge",
+           width = .45,
+           color = "black") +
+  geom_text(aes(label = n),
+            position = position_dodge(width = .45),
+            vjust = -0.5) +
+  scale_y_continuous(expand = c(0,0), limits = c(0, nrow(All.Children))) +
+  theme_classic() +
+  scale_fill_manual(values=c('#E3735E','#F9F6EE')) +
+  labs(y = "Count",
+       caption = bquote(bold("Figure 1:") ~ "DD status of all screened children (at least some difficulty).")) +
+  theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0))
+
+
+
+
+plot2 <- data %>%
+  filter(group != "All Children") %>%
+  mutate(group = factor(group,
+                        levels = c("All Children",
+                                   "Excluded",
+                                   "No Match",
+                                   "Eligible"))) %>%
+ggplot(aes(x = group, y = n, fill = DD.status)) +
+  geom_bar(stat = "identity",
+           position = "dodge",
+           width = .75,
+           color = "black") +
+  geom_text(aes(label = n),
+            position = position_dodge(width = .75),
+            vjust = -0.5) +
+  scale_y_continuous(expand = c(0,0), limits = c(0, nrow(Excluded.Children.NoMatch)+35)) +
+  theme_classic() +
+  scale_fill_manual(values=c('#E3735E','#F9F6EE')) +
+  labs(y = "Count",
+       caption = bquote(bold("Figure 2:") ~ "DD status of excluded, not matched, and eligible children.")) +
+  theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0))
+
+
+# Print plot 1
+plot1
+
+# Print plot 2
+plot2
+
+
+
+
+```

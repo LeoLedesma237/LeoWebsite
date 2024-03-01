@@ -10,6 +10,8 @@ navbar:
       href: ONR.html
     - text: "KBB"
       href: KBB.html
+    - text: "OVC"
+      href: OVC.html
     - text: "Links"
       href: Links.html
 output_dir: "docs"

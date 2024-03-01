@@ -398,6 +398,9 @@ Excel 2: Children that are eligible
 Excel 3: Head of Household IDs (for fuzzy matching)
     - HOH_ID with one child
     - HOH_ID with more than one children
+    
+Excel 4: Has all data of everyone
+    - This is important for the Giving ID script
 
 
 ```{r save the data}
@@ -419,6 +422,9 @@ write.xlsx(list(error_household = potential_errors_households,
                 correct_household = correct_households_df),
            file =  "Potential_Household_errors.xlsx")
 
+# Save excel sheet 4
+write.xlsx(list(all_data = CFM_data_before_exclusion),
+           file =  "All Children.xlsx")
 
 ```
 
