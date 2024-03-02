@@ -1,0 +1,20 @@
+---
+title: "Central Limit Theorem Practice Problems"
+author: "Leandro Ledesma"
+date: "2024-03-02"
+output: html_document
+---
+
+The following questions are from Chapter 5: Four Fundamental Concepts in Statistics Unplugged (4th edition) by Sally Cadwell.
+
+### Questions
+
+1) In a random sample, every unit in the population has a(n) ______ chance of being selected?
+
+2) In a random sample, the selection of any one unit ______ affec the selection of any other unit.
+
+3) In a random sample, ________ combinations are possible.
+
+4) When selection a sample, the physical representation of the population is known as the ______
+
+5) 

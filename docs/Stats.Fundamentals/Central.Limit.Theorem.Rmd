@@ -7,3 +7,78 @@ output: html_document
 
 The following document is heavily inspired by Chapter 5: Four Fundamental Concepts from Statistics Unplugged 4th Edition (2013) by Sally Caldwell. The information below essentially makes up the logic behind inferential statistics. Thus if these concepts are not well understood then I would advise you to continue to review it or else understanding why we use statistical methods in behavioral research will be bleak. 
 
+Let's first start by covering some jargon, which need to be ingrained into memory. Each one will be covered in more detail in their respective section.
+
+1) Random Sampling
+
+2) Sampling Error
+
+3) The Sampling Distribution of Sample Means
+
+4) The Central Limit Theorem
+
+
+### Quick background knowledge
+
+In behavioral research, we are very interested in understanding how something works in a specific population. So first, we need to have good idea of what we want our population to be. If not familiar with this term, a population is all existing scores of something in the natural world. It can be any size, but it is typically large and is technically chosen by the researcher and essentially you. To ground this concept further, let's say we are interested in studying undergraduates at the University of Houston- this will be our population. Now, a quick Google search shows that in 2022, the University of Houston had nearly 38,000 undergraduates enrolled ... that is a lot of people. Now if we truly wanted to know something about this population, let's say how well they would perform in an exam, we could go to each student one by one and ask them to participate in out study and take this exam. Assuming somehow you got everyone to say yes, imagine how long that would take? to collect all of this data? It is impractical! By the time you are done, they would all have grand children and you might be close to death.
+
+A better approach?
+
+Through the work of brilliant statisticians, all of this trouble can be drastically reduced! This is because we can obtain information about the characteristics of our population (exam performance from all 38,000 undergraduates at the University of Houston) from a sample. A sample is a smaller group of scores that represents a population. With this in mind, we can now go to the next section. 
+
+### 1. Random Sampling
+
+Above we mentioned a sample, which is a small group of scores from a population. In continuation of our example, this would mean a small number of undergraduate students instead of all 38,000. However, there is a catch. Not any sample of undergraduate students would do. What we need is a sample that was obtained through a specific method known as **random sampling**. 
+
+We will not be discussing the different techniques that give you a random sample, but instead describe the characteristics of a random sample. What makes a random sample special is that everyone who enrolls had an equal chance of being selected. Additionally, the way of their enrollment was also randomized- meaning there were no added rules from the researcher for enrolling subjects, as in enrolling someone who is 20, then 21, then 22, then 20 and repeat to have an equal sample size for all ages. Instead, 30 people could have been enrolled and all be 20 years-old followed by 5 more enrollments who just happened to be a mixture of 21 and 22 years-old. Thus, this might be annoying for a researcher that wanted to do age group comparisons on the test (because they will have a lot of scores for 20 year-olds and not enough scores for 21 and 22 year-olds). Lastly, everyone enrolled has to be selected in a way where ALL combinations are possible. Now, this last rule is interesting because this potentially can mean that our sample could potentially be 100% females, even though in the population it is more evenly split (~ 50%). 
+
+### 2. Sampling Error
+
+Okay then, so we discuss and understand the importance of a sample in terms of giving us valuable information about a population and about how we need to make sure our sample is random. Now, we need to combine these two ideas together to understand sampling error. If we were to propose my study multiple times, to use a sample to understand how all 38,000 undergraduates would perform an exam, and compare my results across these studies, I would see some slight differences in my results. This difference is known as the **sampling error**.
+
+Here it is how it works. Let's start by first allocating a true mean (mu) to my population, and that the mean represents the average performance on my exam which is 70%. If I were to collect 100 samples from this population, each sample containing 40 students, and had them all take the test and then obtain the average test performance for each sample, they would NOT all be 70%. In matter of fact, most if potentially not all would be 70%, but it would be close! This difference between test performance for each sample (sample mean) and the true population performance (population mean) is **sampling error**. This error just comes from the fact that all different types of scores in our sample had an equal chance of being enrolled, and that in some cases that combination of students that make up the sample perform less or more than what would be expected from the population average. This is to distinguish from another type of error, which is **bias** and that is a result from tester error or a poorly developed experiment. Sampling error is just the phenomenon of differences from estimated values of samples and the true population characteristics just because of random sampling- it is to be expected and there is no way around this. 
+
+### 3. The Sampling Distribution of Sample Means and Standard Error
+
+Well then, if the results (statistics) we obtain from our sample mean are not equal to that of the population mean, and there is nothing we can do to avoid this, then is there any point in even learning/doing statistics? Well yes, yes there is. Keep in mind, that even though they do not match exactly, most of the time, it will be pretty darn close! Now, you could just take my word on this or we can actually prove it (scroll below to show how this works). Essentially, if we already know the characteristics of a population, which we can by creating our own dummy data, and then take samples from this dummy data and obtain the sample means, and then compare that mean to that of the population (subtracting)- most of the time the mean will be close and only a very few times will it be kinda not close, and almost never (but still possible) is it something wayy way off. Additionally, the certainty that this will occur every single time we attempt this with a new population is highly dependent on the size of all the samples. If it is a decent size (let's say around 40), then this should occur every time. 
+
+Now then, let's say we obtain a ridiculous number of samples, calculate their means, and subtract it from the population mean. What do we do next? Well, we can plot them as a histogram and get a good idea of the spread of these numbers, which in fact are errors! Think about, we are now graphing the difference between each sample mean and the population mean. Essentially what is that? Well it is error, the error from each sample in terms of it attempting to predict the population mean. And this error goes both ways, it could have overestimated (positive error value) or underestimated (negative error value) the population mean. Additionally when plotted, we will get a normal distribution curve, and it we look at the spread of these values and compare it to the spread of scores in the population, the spread of **sampling distribution of sample means** is highly restricted to the center portion of the population histogram. Thus, this shows that most of the time, we can get a fairly accurate (but not perfect) understanding of our population by using a sample.
+
+
+### 4. The Central Limit Theorem
+
+The Central Limit Theorem is the conclusion from all the jargon that was just discussed: random sampling, sampling error, and the sampling distribution of sample means. It is essentially a short-cut or the main point of all these principles, and that is that if we take an infinite number of samples of size n from a population and calculate the mean of all the sample means, then that grand mean will be **exactly equal** to the population mean (mu). Additionally, the second component is that if we were to calculate the standard deviation of the distribution of sample means, which is called the **standard error**, that this number would be equal to the population standard deviation divided by the square root of n (sample size used for each sample). For me personally, the first concept definitely makes sense to me intuitively after explaining all of these sections. The latter conclusion, however, as of right now seems fuzzy and we should just memorize it.
+
+### Proving these concepts
+
+We are now going to prove the following things mentioned by creating dummy data using R code. We will construct a population of scores using the rnorm() function in R and have the size of this population be 38,000 to be consistent with our example. The scores presented in this distribution will represent test performance for all undergraduates that took my test and we will set the mean performance to be 70 (meaning 70%). Additionally, I will set the standard deviation to 10. Thus, most people (95%) scores will be between 50 and 90. 
+
+The next step is to take 500 samples from our population each with a size n = 40. These will be saved in a list and then we will calculate each mean of the sample, subtract it from the population mean (mu = 70) and store these errors in a vector that will be used later to graph the distribution of sample means and physically compare it to that of the population distribution.
+
+Lastly, we will calculate the standard deviation of our distribution of sample means (standard error) and then compare it to the standard deviation of the population mean divided by the square root of n. (Hopefully doing this will give me clarity on why this is important).
+
+```{r creating a population distribution}
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
