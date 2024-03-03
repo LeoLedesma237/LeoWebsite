@@ -1,0 +1,104 @@
+---
+title: "Confidence Intervals"
+author: "Leandro Ledesma"
+date: "2024-03-03"
+output: html_document
+---
+
+The following document is heavily inspired by Chapter 6: Confidence Intervals from Statistics Unplugged 4th Edition (2013) by Sally Caldwell and Chapter 5: Foundations for inference from OpenIntro Statistics 4th Edition (2019) by David Diez. To make sense of the following information, a good understanding of the Central Limit Theorem is a must. We will be covering this concept again in this document, however, for a much more indepth guide to the Central Limit Theorem, please visit the prior page. 
+
+### Quick background knowledge
+
+In inferential statistics, the goal is to make inferences about the parameters of a populations based on the statistics from its sample. We know already that a sample (if selected randomly) is highly likely to produce statistics that are similar to the parameters of the population. For example, if we think back to the sampling distribution of sample means, we know that if we collect a thousand samples with a sample size of 40 from a population, calculate their means, and graph them as a histogram, that most of the sample means will be fairly close to the population mean. In addition, if this was to be done an infinite number of times, two things become certain.
+
+1) The mean of the sample means will be exactly the same as the mean of the population.
+
+2) The standard deviation of the sampling distribution (Standard error) will be equal to the standard deviation of the population divided by the square root of the sample size. 
+
+Now some may be asking, what is standard error? If this is you please go back and re-read the document on the Central Limit Theorem. For a quick refresher, the standard error is a measurement of the average error of sample means estimating the population mean. It is a fairly small distribution, but normal nonetheless, thus uses the same rules that underline z-distributions. We will come back to this later.
+
+### Confidence Interval
+
+So then, what is a confidence interval? A confidence interval is a statisticians best way to identifying what the true population mean is. Cutting directly to the point, because samples will always provide statistics that vary from each other, and because they frequently are not equivalent to the population parameter, but instead close to it, then the best we can do is not provide one number, but instead provide two! These two numbers will function as a range, and in that range, it will be very likely that the true population mean will be present.
+
+Now let's get some jargon out of the way. When discussing confidence interval, our starting point is always the statistic of the sample, in this case it will be the mean. This value will be called the **point estimate**. Again think of this as your starting point to identifying what the true population mean is. The next thing we need to think about is constructing a range around our point estimate (mean of our sample). This range will then determine (to a degree) a possible location of where the true population mean is. It is very likely that it is somewhere in there but we can NEVER be sure what it will be exactly. And a lot of times, we don't really need to know it either.
+
+
+### The degree of confidence behind a confidence interval
+
+A confidence interval gets its name for two reasons. The first is the interval portion, which implies that there will be two values which will create a range or an interval that will very likely contain the true population parameter withing it. The next part of the name is the confidence We can actually modify what our degree of confidence is. For example, in research the two commonly used confidence intervals are 95% confidence and 99% confidence. In 95% confidence intervals, we are essentially calculating two values the cushion the point estimate and within this range we are 95% confident that the population mean is located somewhere there. For 99% confidence intervals, this same logic applies, we calculate two values that cushion our point estimate and within this range we are 99% confident that the true population parameter is within it. 
+
+The two values calculated for a 95% confidence interval and the two values calculate for a 99% confidence interval are not going to be the same but will be similar. The values for the latter will produce a larger interval/range, and this make sense since by doing so we can increase our confidence that our population parameter will be present. So while the pro to choosing a larger interval is higher accuracy, think about it, if I say that someone for a test scored between 0-100, the accuracy/likelihood of this being correct is essentially 100%, however, the con is that my **precision** will be lower.  
+
+
+### Confidence Interval Problem Types
+
+We are getting a better understanding conceptually of what a confidence interval is and what is its function. To solidify this concept we should start by creating some examples and following through with the math that is involved. There are three types of problems that you would be asked on homework questions of tests in relation to confidence intervals. These would be on the following:
+
+1) Confidence intervals in relation to z-distributions
+
+2) Confidence intervals in relation to t-distributions
+
+3) Confidence intervals in relation to proportions 
+
+We will be focusing first on confidence intervals in relation to z-distributions because it is the most common. 
+
+### Confidence intervals with a known population standard deviation
+
+When I first heard about this, I was very confused and you might be too. Why would we learn about confidence intervals that relate to a population with a known standard deviation. Wasn't the point of inferential statistics to infer about the population from a sample because we do not know anything about the population, including its standard deviation? Well yea, but most of the time not always. As mentioned in Statistics Unplugged 4th Edition (2013), there are cases where the standard deviation of a population is known and having a good concept of this type of confidence interval problem will make the others easier to understand. 
+
+So in what cases are the standard deviation of a population known? Well, in standardized tests, the standard deviation is already known. For example, in standardized tests like the GRE, the creators of these test have devised it to be at a certain difficulty where the average person who takes the test will score a 150. This average can be converted into a percentile of 50%, using the same principles of the z-distribution. Additionally the standard deviation is also known, which for the verbal subtest is 8.5. Now that we know the standard deviation (by using Google) from the population (all GRE verbal test takers), we can use it to calculate the standard error. The standard error is the measure that we use to construct our confidence interval, so calculating it is the first thing that we will always have to do.
+
+The formula below shows how to do that when the population standard deviation is known. 
+
+\begin{align*}
+
+se =\frac{\sigma}{\sqrt{n}}
+
+\end{align*}
+
+
+So then for our concrete example, let's say we got a sample of 45 test takers that got an average score of 148 for the verbal test. This will be our point estimate. Next we will need to calculate the standard error.
+
+\begin{align*}
+
+se =\frac{8.5}{\sqrt{45}} = 1.26
+
+\end{align*}
+
+Now that we have the statistics that we need: 
+
+sample mean = 148
+
+standard error = 1.26
+
+We can start the calculation of the confidence interval which is the following:
+
+\begin{align*}
+
+CI = \overline{X} \pm Z*se
+
+\end{align*}
+
+The confidence interval equation now requires our final value. Which is the z-value. Since our example includes a standard deviation of the population, then our estimated standard error will belong to a normal distribution (z-distribution), thus we can apply the knowledge from that distribution to our example. If we are interested in constructing a confidence interval of 95%, which will produce two values around our point estimate that will have a 95% likelihood that the population parameter is present, then we can rely on the z-values 1.96. This is common knowledge and something that should memorized. The z-value 1.96, which is very close to the number 2, contain 95% of all scores in a normal distribution. For more information on this, please look at the z-distribution document. With this last piece of information out of the way, we can now calculate our confidence interval.
+
+\begin{align*}
+
+CI = 148 \pm 1.96 * 1.26 = c(145.5, 150.5)
+
+\end{align*}
+
+
+And there we go, we can now say the following: We are 95% confident that the true population mean is between 145.5 and 150.5. And in this cases, it just so happened to be true. However, it is very easy for some of you to say, well you chose the number 148 knowing in advance that it would produce a confidence interval between 145.5 and 150.5, which is happened to contain the true population mean of 150. This is not proof. And interestingly, you would be correct. So now the question is how can we prove this instead of taking this example at face value?
+
+
+### Confidence intervals with a known population standard deviation (Proof)
+
+The explanation from above utilized information about a population and a single sample. Fortunately, we can produce similar results by creating a population of scores with an established mean and standard deviation. Then we will take one hundred samples and see how well the confidence interval for each sample captures the population mean. 
+
+```{r creating a population}
+# Create a population
+
+
+```
+
