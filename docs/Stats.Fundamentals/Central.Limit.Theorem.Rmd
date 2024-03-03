@@ -49,36 +49,211 @@ Now then, let's say we obtain a ridiculous number of samples, calculate their me
 
 The Central Limit Theorem is the conclusion from all the jargon that was just discussed: random sampling, sampling error, and the sampling distribution of sample means. It is essentially a short-cut or the main point of all these principles, and that is that if we take an infinite number of samples of size n from a population and calculate the mean of all the sample means, then that grand mean will be **exactly equal** to the population mean (mu). Additionally, the second component is that if we were to calculate the standard deviation of the distribution of sample means, which is called the **standard error**, that this number would be equal to the population standard deviation divided by the square root of n (sample size used for each sample). For me personally, the first concept definitely makes sense to me intuitively after explaining all of these sections. The latter conclusion, however, as of right now seems fuzzy and we should just memorize it.
 
-### Proving these concepts
+### Universal block code settings
 
-We are now going to prove the following things mentioned by creating dummy data using R code. We will construct a population of scores using the rnorm() function in R and have the size of this population be 38,000 to be consistent with our example. The scores presented in this distribution will represent test performance for all undergraduates that took my test and we will set the mean performance to be 70 (meaning 70%). Additionally, I will set the standard deviation to 10. Thus, most people (95%) scores will be between 50 and 90. 
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
 
-The next step is to take 500 samples from our population each with a size n = 40. These will be saved in a list and then we will calculate each mean of the sample, subtract it from the population mean (mu = 70) and store these errors in a vector that will be used later to graph the distribution of sample means and physically compare it to that of the population distribution.
+```
 
-Lastly, we will calculate the standard deviation of our distribution of sample means (standard error) and then compare it to the standard deviation of the population mean divided by the square root of n. (Hopefully doing this will give me clarity on why this is important).
+### Load in the data manipulation packages first
 
-```{r creating a population distribution}
-
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(kableExtra)
 
 ```
 
 
 
+### Proving these concepts
+
+We are now going to prove the following things mentioned by creating dummy data using R code. We will construct a population of scores using the rnorm() function in R and have the size of this population be 38,000 to be consistent with our example. However, this time we will have them take an IQ test instead of a regular examination as mentioned prior. Thus the scores present in this distribution will represent IQ scores for all undergraduates at the University of Houston. The population mean (mu) will be 100 and the standard deviation will be 15. This means that 95% of all scores in the population will be between 70 and 130 (Figure 1).
 
 
+The next step is to take 500 samples from our population each with an n size of 40. These numbers will be saved in a list as vectors. We will calculate the mean of IQ scores from each sample and graph them, which will show the **sampling distribution of sample means** (Figure 2). Additionally, we will take our sample means and subtract each from the population mean (mu = 100) and store these errors in a vector that will be used later for graphing (Figure 3).
+
+Lastly, we will calculate the standard deviation of our distribution of sample means (standard error) and then compare it to the standard deviation of the population mean divided by the square root of n. (Hopefully doing this will give me clarity on why this is important).
+
+#### Create a population
+```{r creating a population distribution}
+# set a seed
+set.seed(123)
+
+# Creating a population 
+population.IQ.scores <- rnorm(n = 38000, mean = 100, sd = 15)
+
+# Save it as a dataframe for easier graphing later
+population.IQ.scores <- data.frame(x = population.IQ.scores)
+
+```
+
+#### Extract 500 samples (n=40)
+```{r taking 500 samples}
+# Create a for loop and list
+samples.500 <- list()
+
+for(ii in 1:500) {
+  
+# Extract a sample of 40 subjects from the population with replacement
+samples.500[[ii]] <-  sample(x = population.IQ.scores$x,
+         size = 40,
+         replace = TRUE)
+  
+}
+
+```
 
 
+#### Take the mean for each sample
+
+```{r take the sample}
+# Use sapply to take the mean of each vector in the list
+example.IQ.scores <- samples.500 %>%
+  sapply(., function(x) mean(x))
+
+# Save as a dataframe for easier graphing later
+example.IQ.scores <- data.frame(x = example.IQ.scores)
+```
+
+#### Calculate error (population mean - sample means)
+
+```{r calculate error}
+# Subtract the population mean by the mean of each sample (saved as a data frame to graph in the next step) 
+error <- data.frame(x = mean(population.IQ.scores$x) - example.IQ.scores)
+```
+
+#### Graph the population distribution, the sampling distribution of means, and error
+
+```{r graph time, warning = FALSE}
+# Graph the population distribution of scores
+population.IQ.scores %>%
+  ggplot(aes(x = x)) +
+  geom_histogram(fill = "white",
+                 color = "black") +
+  scale_y_continuous(expand = c(0,0), limits = c(0,5000)) +
+  xlim(mean(population.IQ.scores$x) - 4*sd(population.IQ.scores$x), 
+       mean(population.IQ.scores$x) + 4*sd(population.IQ.scores$x)) +
+  labs(title = "All UH Undegraduate IQ scores (n = 38,000)", 
+       x = "Distribution of IQ Scores",
+       y = "Frequency",
+       caption = "Figure 1: Blue line represents the mean and the red lines represent 2 SD in both directions.") +
+  theme_classic() +
+  theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0)) +
+  geom_vline(xintercept= mean(population.IQ.scores$x),
+             size = .5,
+             color = "blue") +
+    geom_vline(xintercept= c(mean(population.IQ.scores$x) + 2*sd(population.IQ.scores$x),
+                             mean(population.IQ.scores$x) - 2*sd(population.IQ.scores$x)),
+             size = .5,
+             color = "red")
+  
+
+# Graph the sampling distribution of means
+example.IQ.scores %>%
+  ggplot(aes(x= x)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 100) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,120)) +
+  xlim(mean(population.IQ.scores$x) - 4*sd(population.IQ.scores$x), 
+       mean(population.IQ.scores$x) + 4*sd(population.IQ.scores$x)) +
+  labs(title = "The Sampling Distribution of mean IQ scores", 
+       x = "500 sample means of IQ scores",
+       y = "Frequency",
+       caption = "Figure 2: Blue line represents the mean; each sample mean was calculated from a sample of 40.") +
+  theme_classic() +
+  theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0)) +
+  geom_vline(xintercept= mean(population.IQ.scores$x),
+             size = .5,
+             color = "blue") +
+      geom_vline(xintercept= c(mean(example.IQ.scores$x) + 2*sd(example.IQ.scores$x),
+                             mean(example.IQ.scores$x) - 2*sd(example.IQ.scores$x)),
+             size = .5,
+             color = "red")
+
+# Calculate the error (redundant)
+error %>%
+  ggplot(aes(x= x)) +
+  geom_histogram(fill = "white",
+                 color = "black") +
+#scale_y_continuous(expand = c(0,0), limits = c(0,60)) +
+  labs(title = "The Distribution of Error in Predicting\nPopulation Mean from Sample Means", 
+       x = "500 error values",
+       y = "Frequency",
+       caption = "Figure 3:The error mean is zero; each error was calculated by taking the population mean and subtracting it by the sample means.") +
+  theme_classic() +
+  theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0))
 
 
+```
+
+### Take away from the graphs
+
+Figure 1 represents the distribution of all possible scores that make up our population, which is IQ scores from 38,000 UH undergraduates. We see that the population mean is 100 and that 95% of all scores are between 70 and 115.
+
+Figure 2 is the sampling distribution of sample means (mean of IQ scores). These were calculated from 500 samples with each having an n of 40. The x-axis shows the same range as in Figure 1 to drive home the point that overall, from the 500 sample means we collected, 95% of them are all within 95 and 105, which is pretty good. 
+
+Figure 3 is sort of another way of visualizing Figure 2. Here we show the difference between the population mean (mu) and all the sample means. We can see that the mean for it is 0, indicating that most of the sample means were very close if not the population mean, and that most of the sample means were off by a range of -5 to 5, which again is what we concluded from Figure 2.
 
 
+### Standard error equal to the population SD divided by sqrt(n)
+
+\begin{align*}
+
+SE =\frac {\sigma} {\sqrt{n}}
+
+\end{align*}
+
+Again, I am not sure what this means, however, let's investigate to see if this statement is true. First, let's obtain the standard error (of means) by calculating the standard deviation of the sampling distribution of sample means.
+
+```{r calculating the SE}
+# Calculate standard error from the sampling distribution of sampling means
+SE <- sd(example.IQ.scores$x)
+
+```
+
+Next, let's calculate the standard deviation of the population, using the same formula as above.
+
+```{r calculating SD}
+# Calculate the standard deviation of the population 
+SD <- sd(population.IQ.scores$x)
+
+```
+
+We know that n is equal to 40. Let's see then if this checks out.
+
+```{r are they equivalent, echo = FALSE}
+paste("Is the standard error",round(SE,2),"equal or similar to sigma divided by sqrt of n?", round(SD/sqrt(40),2))
+paste("Yes they look similar.")
+```
+
+After reading the book some more, it seems that the reason why this is mentioned is first, the math does check out and we showed this and secondly, it shows the relationship between the standard deviations of both the population and the sampling distribution of sample means. In the population, the standard deviation is equal to 15. However, in our sampling distribution of sample means, its standard deviation (which is called the **standard error of sample means**) is equal to 2.5. It is substantially smaller, only when we take $\sigma$ and divide it by the square root of the sample sizes do the numbers match. 
 
 
+## I understand the Central Limit Theorem- now what?
 
+If you truly understand what was said above and feel like you can confidently explain it to someone else- then the next thing to do is build on these ideas with the introduction to confidence intervals. More on this in the Home page.
 
+## Central Theorem Practice Problems
 
-
-
-
-
-
+[[Click here for practice problems]](https://leoledesma237.github.io/LeoWebsite/Practice.Problems/Central.Limit.Theorem.html)
