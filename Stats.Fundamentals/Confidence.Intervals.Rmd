@@ -91,14 +91,171 @@ CI = 148 \pm 1.96 * 1.26 = c(145.5, 150.5)
 
 And there we go, we can now say the following: We are 95% confident that the true population mean is between 145.5 and 150.5. And in this cases, it just so happened to be true. However, it is very easy for some of you to say, well you chose the number 148 knowing in advance that it would produce a confidence interval between 145.5 and 150.5, which is happened to contain the true population mean of 150. This is not proof. And interestingly, you would be correct. So now the question is how can we prove this instead of taking this example at face value?
 
+### Universal block code settings
 
-### Confidence intervals with a known population standard deviation (Proof)
-
-The explanation from above utilized information about a population and a single sample. Fortunately, we can produce similar results by creating a population of scores with an established mean and standard deviation. Then we will take one hundred samples and see how well the confidence interval for each sample captures the population mean. 
-
-```{r creating a population}
-# Create a population
-
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
 
 ```
+
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(kableExtra)
+
+```
+
+
+### 95% Confidence Interval with a known population standard deviation (Proof)
+
+The explanation from above utilized information about a population and a single sample. Fortunately, we can produce similar results by creating a population of scores with an established mean and standard deviation. Then we will take one hundred samples and see how well the confidence interval for each sample captures the population mean. Let's do so using the same numbers as above. So we will create a population of scores with a mean score of 150 and a standard deviation of 8.5. Since this is a population of scores that is standardized, it will follow a z-distribution, aka a normal distribution curve.
+
+```{r creating a population}
+# Set a seed
+set.seed(123)
+
+# Create a population
+population.scores <- rnorm(n = 341574,
+                           mean = 150,
+                           sd = 8.5)
+
+```
+
+Now we will take 100 samples from our population. Each sample will have 45 scores. 
+
+```{r taking samples}
+# Taking samples
+samples.list <- list()
+
+for(ii in 1:100) {
+  
+ samples.list[[ii]] <- sample(x = population.scores,
+                              size = 45,
+                              replace = TRUE)
+   
+}
+
+# Obtain the means of each sample
+sample.means <- samples.list %>%
+  sapply(., function(x) mean(x))
+
+```
+
+Each mean will function as a point estimate. Since we know the standard deviation of the population, we will now calculate it using the formula from above.
+
+```{r calcualte standard error}
+# Calculating the standard error
+se = sd(population.scores)/sqrt(45)
+
+```
+
+The next step is to choose our z-value. Since we have information on the standard deviation of the population, then the standard error given is that of a normal distribution, which is the z-distribution. We know already that 95% of all scores are within 1.96 z-scores away from the mean. Thus, we will use this value since we want to calculate a 95% confidence interval. If we wanted to calculate a confidence interval that was not 95%, then we would use a different z-value.
+
+```{r setting our z score}
+# Setting our z score
+z.score <- 1.96
+```
+
+Now that we have all components needed to calculate a 95% confidence interval, we can use the equation from above. Again, we are trying to solve for two values around our point estimate. Now, we do not have one point estimate, but this time we have 100, because we took 100 samples of 45 scores and each one has a mean. Thus, each mean will have their own two values that represents the 95% confidence interval.
+
+```{r giving each sample mean a confidence interval}
+# Calculate the confidence intervals
+confidence.interval.values <- data.frame(sample.means = sample.means) %>%
+  mutate(lower.bound = sample.means - (z.score * se),
+         upper.bound = sample.means + (z.score * se))
+
+# View what the datafame looks like
+head(confidence.interval.values)
+```
+
+### Assessing the accuracy
+
+We know what the population mean is. It is 150, thus we can now verify for ourselves in the graph below the number of samples that were able to capture the true mean. 
+
+```{r creating a line plot}
+# Add the population mean into the 95% CF data frame
+confidence.interval.values <- confidence.interval.values %>%
+  mutate(sample = paste("Sample",1:nrow(confidence.interval.values)),
+         population.mean = 150,
+         population.mean.capture =  between(x = population.mean,
+                                            left = lower.bound,
+                                            right = upper.bound))
+
+# Plot the graph
+confidence.interval.values %>%
+  ggplot(aes(x = sample, y = sample.means, color = population.mean.capture)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower.bound, ymax = upper.bound)) +
+  coord_flip() +
+  geom_hline(yintercept = 150,
+             color = "blue") +
+  labs(title = "Samples that contained the population mean within a 95% confidence interval") +
+  theme_classic()
+```
+```{r pasting results fomr 95 confidence interval, echo = FALSE}
+paste("From our",nrow(confidence.interval.values),"sample means,",sum(confidence.interval.values$population.mean.capture),"captured the true population mean within their 95% confidence interval.")
+
+```
+
+### 99% Confidence Inteval with with a known population standard deviation (Proof)
+
+The next step is to show how results from above would change if we used a 99% confidence interval instead of 95%. To do this, the main thing we will need to change is the z-score. Since, again, we know the population standard deviation (8.5), we can calculate a standard error (1.23) that comes from a distribution that is normally distributed (z-distribution). It is common knowledge (please memorize this) that 99% of all scores are within z-values of 2.58. So the only thing we will be changing in the code below is our value for our z.value object. Additionally, this makes sense that since the equation for the confidence interval will be changed by adding and sibtracting a larger number to the point estimates, that there will be a higher chance that more samples will include the population mean in their confidence interval that those that used the interval of a 95% confidence interval. 
+
+```{r setting our new z score}
+# Setting our z score
+z.score <- 2.58
+```
+
+```{r giving each sample mean a confidence interval of 99}
+# Calculate the confidence intervals
+confidence.interval.values <- data.frame(sample.means = sample.means) %>%
+  mutate(lower.bound = sample.means - (z.score * se),
+         upper.bound = sample.means + (z.score * se))
+
+# View what the datafame looks like
+head(confidence.interval.values)
+```
+
+### Assessing the accuracy
+
+We know what the population mean is. It is 150, thus we can now verify for ourselves in the graph below the number of samples that were able to capture the true mean. 
+
+```{r creating a line plot for a 99 CI}
+# Add the population mean into the 95% CF data frame
+confidence.interval.values <- confidence.interval.values %>%
+  mutate(sample = paste("Sample",1:nrow(confidence.interval.values)),
+         population.mean = 150,
+         population.mean.capture =  between(x = population.mean,
+                                            left = lower.bound,
+                                            right = upper.bound))
+
+# Plot the graph
+confidence.interval.values %>%
+  ggplot(aes(x = sample, y = sample.means, color = population.mean.capture)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower.bound, ymax = upper.bound)) +
+  coord_flip() +
+  geom_hline(yintercept = 150,
+             color = "blue") +
+  labs(title = "Samples that contained the population mean within a 99% confidence interval") +
+  theme_classic()
+```
+
+```{r pasting results from 99 confidence interval, echo = FALSE}
+paste("From our",nrow(confidence.interval.values),"sample means,",sum(confidence.interval.values$population.mean.capture),"captured the true population mean within their 99% confidence interval.")
+
+```
+
+
+### Confidence Interval without a population standard deviation
+
+The examples from above are a good practice for most problems that you are likely to encounter in your homework since they follow the principles of normally distributed curves. However, in most cases, we will not have the luxury of using such techniques. This is because without the standard deviation of a population, we can only estimate a standard error that will come from a curve that is **NOT** normally distributed. 
+
+
+
 
