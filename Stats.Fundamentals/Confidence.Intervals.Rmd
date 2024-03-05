@@ -47,13 +47,13 @@ We will be focusing first on confidence intervals in relation to z-distributions
 
 When I first heard about this, I was very confused and you might be too. Why would we learn about confidence intervals that relate to a population with a known standard deviation. Wasn't the point of inferential statistics to infer about the population from a sample because we do not know anything about the population, including its standard deviation? Well yea, but most of the time not always. As mentioned in Statistics Unplugged 4th Edition (2013), there are cases where the standard deviation of a population is known and having a good concept of this type of confidence interval problem will make the others easier to understand. 
 
-So in what cases are the standard deviation of a population known? Well, in standardized tests, the standard deviation is already known. For example, in standardized tests like the GRE, the creators of these test have devised it to be at a certain difficulty where the average person who takes the test will score a 150. This average can be converted into a percentile of 50%, using the same principles of the z-distribution. Additionally the standard deviation is also known, which for the verbal subtest is 8.5. Now that we know the standard deviation (by using Google) from the population (all GRE verbal test takers), we can use it to calculate the standard error. The standard error is the measure that we use to construct our confidence interval, so calculating it is the first thing that we will always have to do.
+So in what cases are the standard deviation of a population known? Well, in standardized tests, the standard deviation is already known. For example, in standardized tests like the GRE, the creators of these test have devised it to be at a certain difficulty where the average person who takes the test will score a 150. This average can be converted into a percentile of 50%, using the same principles of the z-distribution. Additionally the standard deviation is also known, which for the verbal subtest is 8.5. Now that we know the standard deviation (by using Google) from the population (all GRE verbal test takers), we can use it to calculate the standard error. The standard error is the measure that we use to construct our confidence interval, so calculating it is the first thing that we will always have to do. All notation below is from Statistics Unplugged 4th Edition (2013).
 
 The formula below shows how to do that when the population standard deviation is known. 
 
 \begin{align*}
 
-se =\frac{\sigma}{\sqrt{n}}
+\sigma_{\overline{X}} =\frac{\sigma}{\sqrt{n}}
 
 \end{align*}
 
@@ -62,21 +62,21 @@ So then for our concrete example, let's say we got a sample of 45 test takers th
 
 \begin{align*}
 
-se =\frac{8.5}{\sqrt{45}} = 1.26
+\sigma_{\overline{X}} =\frac{8.5}{\sqrt{45}} = 1.26
 
 \end{align*}
 
 Now that we have the statistics that we need: 
 
-sample mean = 148
+sample mean ($\overline{X}$)= 148
 
-standard error = 1.26
+standard error ($\sigma_{\overline{X}}$)= 1.26
 
 We can start the calculation of the confidence interval which is the following:
 
 \begin{align*}
 
-CI = \overline{X} \pm Z*se
+CI = \overline{X} \pm Z*\sigma_{\overline{X}}
 
 \end{align*}
 
@@ -254,7 +254,98 @@ paste("From our",nrow(confidence.interval.values),"sample means,",sum(confidence
 
 ### Confidence Interval without a population standard deviation
 
-The examples from above are a good practice for most problems that you are likely to encounter in your homework since they follow the principles of normally distributed curves. However, in most cases, we will not have the luxury of using such techniques. This is because without the standard deviation of a population, we can only estimate a standard error that will come from a curve that is **NOT** normally distributed. 
+The examples from above are a good practice for most problems that you are likely to encounter in your homework since they follow the principles of normally distributed curves. However, in most cases, we will not have the luxury of using such techniques. This is because without the standard deviation of a population, we can only estimate a standard error that will come from a curve that is **NOT** normally distributed. In these cases, we essentially follow the same steps above, except we do not rely on the z-values when calculating our confidence intervals. Instead, we will need to used a special table with t-values. This is because the distribution that our estimated standard error is coming from will be flatter than that of a normal curve, and when a curve is flatter, the standard deviation values that contain 95% of the area under the curve become more spread out. Therefore, t-distribution curves take this into account. The way they work are pretty simple, we first look at our sample size, for our new example we will have a sample size of 30 and then subtract one from it (n-1). This represents our **degrees of freedom (df)**. To explain this concept briefly, anytime we have to estimate a value that is unknown, in this case we are estimating the standard deviation of the population from our sample, we have n-1 values that are free to vary. Thus, we need to use this rule to pick the proper row in the Family of t Distributions (two-tailed). Next are the columns. There are columns named Level of Significance that range from .20 - .001. Essentially, taking this value and subtracting it from 1 will give us information abut the confidence interval that we are interested in. We want to know what t-value to use for a 95% confidence interval, so the column with .05 (1-.95 = .05) will give us that information. The t-value that we get from our 29 df (30-1) row and .05 (95% confidence) column is 2.045. With this, let's recreate our example from above.
+
+Additionally the notation for the standard error also changes so please be mindful of this.
+
+
+\begin{align*}
+
+S_{\overline{X}} = \frac{s}{\sqrt{n}}
+
+\end{align*}
+
+
+
+Now we will take 100 samples from our population. Each sample will have 30 scores. 
+
+```{r taking samples of 30}
+# Taking samples
+samples.list <- list()
+
+for(ii in 1:100) {
+  
+ samples.list[[ii]] <- sample(x = population.scores,
+                              size = 30,
+                              replace = TRUE)
+   
+}
+
+# Obtain the means of each sample
+sample.means <- samples.list %>%
+  sapply(., function(x) mean(x))
+
+```
+
+Each mean will function as a point estimate. Since we know the standard deviation of the population, we will now calculate it using the formula from above. However, keep in mind this time the standard error is **NOT** coming from a normal distribution.
+
+```{r calcualte standard error for unknown standard deviation}
+# Calculating the standard error
+se = sd(population.scores)/sqrt(30)
+
+```
+
+The next step is to choose our t-value. We already mentioned that we do not have information about the standard deviation of the population. So we use the the t-value from the Family of t Distributions (two-tailed).
+
+```{r setting our t score}
+# Setting our z score
+t.score <- 2.045
+```
+
+Now that we have all components needed to calculate a 95% confidence interval, we can use the equation from above. Again, we are trying to solve for two values around our point estimate. Now, we do not have one point estimate, but this time we have 100, because we took 100 samples of 45 scores and each one has a mean. Thus, each mean will have their own two values that represents the 95% confidence interval.
+
+```{r giving each sample mean a confidence interval using the tscore}
+# Calculate the confidence intervals
+confidence.interval.values <- data.frame(sample.means = sample.means) %>%
+  mutate(lower.bound = sample.means - (t.score * se),
+         upper.bound = sample.means + (t.score * se))
+
+# View what the datafame looks like
+head(confidence.interval.values)
+```
+
+### Assessing the accuracy
+
+We know what the population mean is. It is 150, thus we can now verify for ourselves in the graph below the number of samples that were able to capture the true mean. 
+
+```{r creating a line plot for t distribution}
+# Add the population mean into the 95% CF data frame
+confidence.interval.values <- confidence.interval.values %>%
+  mutate(sample = paste("Sample",1:nrow(confidence.interval.values)),
+         population.mean = 150,
+         population.mean.capture =  between(x = population.mean,
+                                            left = lower.bound,
+                                            right = upper.bound))
+
+# Plot the graph
+confidence.interval.values %>%
+  ggplot(aes(x = sample, y = sample.means, color = population.mean.capture)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower.bound, ymax = upper.bound)) +
+  coord_flip() +
+  geom_hline(yintercept = 150,
+             color = "blue") +
+  labs(title = "Samples that contained the population mean within a 95% confidence interval") +
+  theme_classic()
+```
+
+```{r pasting results from 95 confidence interval with unknonw standard deviation, echo = FALSE}
+paste("From our",nrow(confidence.interval.values),"sample means,",sum(confidence.interval.values$population.mean.capture),"captured the true population mean within their 95% confidence interval.")
+
+```
+
+
+### Confidence Intervals in relation to proportions
 
 
 
