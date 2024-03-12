@@ -386,22 +386,316 @@ knitr::opts_chunk$set(comment = NULL)</code></pre>
 </div>
 <div id="load-in-the-data-manipulation-packages-first" class="section level3">
 <h3>Load in the data manipulation packages first</h3>
-<pre class="r"><code>library(tidyverse)
-library(ggplot2)
-library(ggpubr)
+<pre class="r"><code>require(tidyverse)
 library(readxl)
-library(kableExtra)
-library(fuzzyjoin)</code></pre>
+
+library(lme4)
+library(lmerTest) 
+library(lsr) # Shows the p values when you run the ANOVAS
+library(emmeans) # Lets you do follow up tests on the ANOVAs
+library(purrr)
+library(simr) # Post hoc tests on our linear mixed effects model
+library(ggplot2)</code></pre>
 </div>
 <div id="load-in-the-data" class="section level3">
 <h3>Load in the data</h3>
-<p>Download the data from Qualtrics using Choice NUMBERS or else it will
-break the code!</p>
+<p>The following dataset is somewhat independent of the other ONR data I
+load into my analysis. This is semi-processed data that needs a special
+script to be run to get the same results as when it was first run
+sometime late 2023. This is data that was analyzed and written for a
+manuscript that then needed a couple of revisions. Thus, we need to keep
+the same sample size to reduce the number of changes needed for
+revision.</p>
 <pre class="r"><code># Set working directory
-setwd(&quot;~/ONR/Qualtrics&quot;)
+setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data&quot;)
 
-# Load in the data
-Qualtrics &lt;- read.csv(&quot;ONR Questionnaires_February 15, 2024_14.35.csv&quot;)</code></pre>
+GnG &lt;- read_excel(&quot;GnG_Performance.xlsx&quot;)</code></pre>
+</div>
+<div id="data-cleaning" class="section level3">
+<h3>Data Cleaning</h3>
+<p>These data were already somewhat cleaned in a previous (no longer
+existing) script. Thus we will need to do a little extra cleaning to
+remove practice days and any days labeled incorrectly (‘error’) from the
+visitor log.</p>
+<p>Lastly, we only want to keep only data from VR Room 1.</p>
+<pre class="r"><code>GnG_VR_Room_one &lt;- GnG %&gt;%
+  filter(VR_Room == &quot;ONR&quot;)
+
+# GnG remove Day 0s
+GnG_removed_Day0 &lt;- GnG_VR_Room_one %&gt;%
+  filter(Day != &quot;Day0&quot;)
+
+# GnG remove Errors (Don&#39;t question this)
+GnG_removed_error &lt;- GnG_removed_Day0 %&gt;%
+  filter(Day != &quot;Error&quot;)
+
+Saber_Color &lt;- GnG_removed_error %&gt;%
+  filter(Day == &quot;Rest&quot; &amp; BlockName ==&#39;Saber Color Matching&#39;)</code></pre>
+</div>
+<div id="creating-some-new-variables" class="section level3">
+<h3>Creating some new variables</h3>
+<p>We are now going to create some variables (I don’t remember if they
+are any useful but we are not deviating from the original code).</p>
+<pre class="r"><code># Create a function that identifies the two different types of errors ONLY in GO Trials
+# Go Trial Error 1 = Miss
+# Go Trial Error 2 = Poor Arrow Accuracy
+
+Behavior_Type_fun &lt;- function(Trial_Type,Correct,Reacted) {
+  if(Trial_Type == &quot;G12&quot;) {
+    
+   if(Correct == &quot;1&quot; &amp; Reacted == &quot;1&quot;) {
+     return(&quot;Hit&quot;)
+     
+   } else if (Correct == &quot;0&quot; &amp; Reacted == &quot;1&quot;) {
+    return(&quot;Poor Accuracy&quot;)
+     
+   } else if (Correct == &quot;0&quot; &amp; Reacted == &quot;0&quot;) {
+    return(&quot;Miss&quot;)
+     
+   }
+    
+  } else if(Trial_Type == &quot;G11&quot;) {
+    
+    if(Correct == &quot;1&quot; &amp; Reacted == &quot;0&quot;) {
+      return(&quot;Inhibition&quot;)
+      
+    } else if (Correct == &quot;0&quot; &amp; Reacted == &quot;1&quot;) {
+      return(&quot;Failed Inhibition&quot;)
+    
+  }
+  
+}
+
+}
+
+# Run the function through a for loop
+Behavior_Type &lt;- list()
+
+for(ii in 1:nrow(Saber_Color)) {
+  
+  Trial_Type &lt;- Saber_Color$ItemID[[ii]]
+  Correct &lt;- Saber_Color$Correct[[ii]]
+  Reacted &lt;- Saber_Color$Reacted[[ii]]
+  
+  Behavior_Type[[ii]] &lt;- Behavior_Type_fun(Trial_Type,Correct,Reacted)
+  
+}
+
+Saber_Color$Behavior_Type &lt;- unlist(Behavior_Type)
+
+# Create a function that makes a numeric variable of our color
+
+color_fun &lt;- function(x) {
+  if(x == &quot;purple&quot;) {
+    return(407)
+  } else if (x == &quot;blue&quot;) {
+    return(478)
+  } else if (x ==&quot;green&quot;) {
+    return(507)
+  } else if (x ==&quot;yellow&quot;) {
+    return(612)
+  } else if (x ==&quot;red&quot;) {
+    return(679)
+  }
+  
+}
+
+Saber_Color$Color_num&lt;- sapply(Saber_Color$Color,color_fun )</code></pre>
+</div>
+<div id="extra-data-cleaning" class="section level3">
+<h3>Extra data cleaning</h3>
+<pre class="r"><code># Keep only the variables we are interested in 
+Final_saber_data &lt;- Saber_Color %&gt;%
+  select(UserID,ItemID, Color,Color_num, Correct, Reacted, TimeToImpact, Behavior_Type)
+
+# Change the values of the ItemID so it is easier to understand
+Final_saber_data &lt;- Final_saber_data %&gt;%
+  mutate(ItemID = ifelse(ItemID == &quot;G11&quot;,&quot;No-Go&quot;,&quot;Go&quot;))</code></pre>
+</div>
+<div id="loading-demographics-and-iq-data" class="section level3">
+<h3>Loading demographics and IQ data</h3>
+<pre class="r"><code># set the working directory for the demographic data
+setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/Demographics&quot;)
+
+# import demographic data
+demo &lt;- read_excel(&quot;Demographics.xlsx&quot;)
+
+# select the variables of interest
+demo_final &lt;- demo %&gt;%
+  select(UserID, AgeYears,Gender)
+
+demo_final$AgeYears &lt;- as.numeric(demo_final$AgeYears)
+
+# set the working directory for the IQ data
+setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/IQ_data&quot;)
+
+# Import IQ data
+IQ_data &lt;- read_excel(&quot;Subject_IQs.xlsx&quot;)</code></pre>
+</div>
+<div id="merge-the-datasets-into-one" class="section level3">
+<h3>Merge the datasets into one</h3>
+<pre class="r"><code># Merge the data into one
+Final_data &lt;- Final_saber_data %&gt;%
+  left_join(demo_final, by = &quot;UserID&quot;) %&gt;%
+  left_join(IQ_data, by = &quot;UserID&quot;)</code></pre>
+</div>
+<div id="reducing-data-dimensionality" class="section level3">
+<h3>Reducing data dimensionality</h3>
+<p>At this point we have 15960 rows, with 210 trials for each
+participant that show if a trial was correct by displaying a 1 or
+incorrect by displaying a 0. We are now going to obtain the proportion
+average for each person for all of their Go and No-Go trials. Thus, each
+subject should have 2 (trial type; Go vs NoGo) x color (5 wavelength
+colors) = 10 rows.</p>
+<p>Additionally, we will also do the same for a separate dataframe that
+represents reaction time. Except, this dataset will only contain Go
+trials that are correct (there is no reaction time for correct No-Go
+trials since they are not supposed to be hit). Thus, this dataset will
+have 5 rows (5 wavelength colors) per subject.</p>
+<pre class="r"><code># Current data dimension
+dim(Final_data)</code></pre>
+<pre><code>[1] 17220    13</code></pre>
+<pre class="r"><code># Creating a dataset for accuracy
+Analysis_data2 &lt;- Final_data %&gt;%
+  group_by(UserID, ItemID, Color_num,Raw_Score,Gender,AgeYears) %&gt;%
+  summarize(Performance = mean(Correct)) %&gt;%
+  ungroup()
+
+# The dimensions of the accuracy dataset
+dim(Analysis_data2)</code></pre>
+<pre><code>[1] 820   7</code></pre>
+<pre class="r"><code># Creating a dataset for reaction time
+Analysis_RT_data2 &lt;- Final_data %&gt;%
+  filter(Correct == 1) %&gt;%
+  group_by(UserID,Color_num,Raw_Score,Gender,AgeYears) %&gt;%
+  summarize(mean_RT = mean(TimeToImpact), median_RT = median(TimeToImpact)) %&gt;%
+  ungroup()
+
+# The dimensions of the reaction time dataset
+dim(Analysis_RT_data2)</code></pre>
+<pre><code>[1] 410   7</code></pre>
+</div>
+<div id="removing-potential-outlier" class="section level3">
+<h3>Removing potential outlier</h3>
+<pre class="r"><code>###### Identifying outliers for Go signals and No-Go signals
+####
+
+overall_performance_df &lt;- Analysis_data2 %&gt;%
+  filter(ItemID == &quot;Go&quot;) %&gt;%
+  group_by(UserID) %&gt;%
+  summarize(Overall_Performance = mean(Performance))
+
+overall_performance_df$Overall_Performance %&gt;% summary()</code></pre>
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.1165  0.7169  0.8223  0.7718  0.8715  0.9637 </code></pre>
+<pre class="r"><code>sd_overall_performance &lt;- overall_performance_df$Overall_Performance %&gt;% sd()
+mean_overall_performance &lt;-  overall_performance_df$Overall_Performance %&gt;% mean()
+
+outlier_IDs_Go_signals &lt;- overall_performance_df %&gt;%
+  filter(Overall_Performance &lt; mean_overall_performance - 2*sd_overall_performance) %&gt;%
+  select(UserID) %&gt;%
+  unlist() %&gt;% unname()
+
+
+#####
+############# Remove outlier IDs
+#####
+`%nin%` = Negate(`%in%`)
+
+Analysis_data2 &lt;- Analysis_data2 %&gt;%
+  filter(UserID %nin% outlier_IDs_Go_signals)
+
+Analysis_RT_data2 &lt;- Analysis_RT_data2 %&gt;%
+  filter(UserID %nin% outlier_IDs_Go_signals)</code></pre>
+</div>
+<div id="quality-control" class="section level3">
+<h3>Quality control</h3>
+<pre class="r"><code># Gender numbers
+Analysis_data2 %&gt;%
+  select(UserID, Gender) %&gt;%
+  unique() %&gt;%
+  count(Gender)</code></pre>
+<pre><code># A tibble: 3 × 2
+  Gender     n
+  &lt;chr&gt;  &lt;int&gt;
+1 F         33
+2 M         41
+3 &lt;NA&gt;       4</code></pre>
+<pre class="r"><code># Number of participants
+length(unique(Analysis_data2$UserID))</code></pre>
+<pre><code>[1] 78</code></pre>
+<pre class="r"><code># Other stuff
+Analysis_data2$AgeYears %&gt;% mean() %&gt;% round(2) # mean age= 22.38</code></pre>
+<pre><code>[1] NA</code></pre>
+<pre class="r"><code>Analysis_data2$AgeYears %&gt;% sd() %&gt;% round(2) # sd age = 3.52</code></pre>
+<pre><code>[1] NA</code></pre>
+<pre class="r"><code>Analysis_data2$Raw_Score %&gt;% mean() %&gt;% round(2) # mean raw IQ = 34.99</code></pre>
+<pre><code>[1] NA</code></pre>
+<pre class="r"><code>Analysis_data2$Raw_Score %&gt;% sd() %&gt;% round(2) # sd raw IQ = 4.9</code></pre>
+<pre><code>[1] NA</code></pre>
+<pre class="r"><code>Analysis_data2$Raw_Score %&gt;% summary()</code></pre>
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA&#39;s 
+  16.00   34.00   35.00   35.27   38.00   45.00      30 </code></pre>
+</div>
+<div id="analyzing-the-data" class="section level3">
+<h3>Analyzing the data</h3>
+<pre class="r"><code># Split data into Go and No-Go datasets
+Go_trials &lt;- Analysis_data2 %&gt;%
+  filter(ItemID == &quot;Go&quot;)
+
+No_Go_trials &lt;- Analysis_data2 %&gt;%
+  filter(ItemID == &quot;No-Go&quot;) 
+
+
+lmer(Performance~ Color_num + Raw_Score + Gender + AgeYears + (1|UserID), Go_trials) %&gt;%
+    anova() # Only color is significant; Gender and Age had no effect</code></pre>
+<pre><code>Type III Analysis of Variance Table with Satterthwaite&#39;s method
+            Sum Sq  Mean Sq NumDF DenDF F value    Pr(&gt;F)    
+Color_num 0.081689 0.081689     1   287 16.2306 7.187e-05 ***
+Raw_Score 0.003943 0.003943     1    68  0.7834    0.3792    
+Gender    0.001147 0.001147     1    68  0.2278    0.6347    
+AgeYears  0.007243 0.007243     1    68  1.4392    0.2344    
+---
+Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>Go_accuracy_model &lt;- lmer(Performance~ Color_num + Raw_Score + Gender + AgeYears + (1|UserID), Go_trials)
+
+lmer(Performance~Color_num*Gender + Raw_Score +  + AgeYears + (1|UserID), Go_trials) %&gt;%
+  anova() # No gender interaction effect with color wavelength</code></pre>
+<pre><code>Type III Analysis of Variance Table with Satterthwaite&#39;s method
+                   Sum Sq  Mean Sq NumDF  DenDF F value    Pr(&gt;F)    
+Color_num        0.085002 0.085002     1 286.00 16.8833 5.196e-05 ***
+Gender           0.001350 0.001350     1 321.46  0.2682    0.6049    
+Raw_Score        0.003944 0.003944     1  68.00  0.7834    0.3792    
+AgeYears         0.007246 0.007246     1  68.00  1.4392    0.2344    
+Color_num:Gender 0.004566 0.004566     1 286.00  0.9068    0.3418    
+---
+Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>Go_accuracy_model_interaction &lt;- lmer(Performance~Color_num*Gender + Raw_Score +  + AgeYears + (1|UserID), Go_trials)
+
+lmer(Performance~ Color_num + Raw_Score + Gender + AgeYears + (1|UserID), No_Go_trials) %&gt;%
+  anova() # Only color is significant; Gender and Age had no effect</code></pre>
+<pre><code>Type III Analysis of Variance Table with Satterthwaite&#39;s method
+            Sum Sq  Mean Sq NumDF DenDF F value    Pr(&gt;F)    
+Color_num 0.303403 0.303403     1   287 39.8232 1.051e-09 ***
+Raw_Score 0.002602 0.002602     1    68  0.3415    0.5609    
+Gender    0.001061 0.001061     1    68  0.1393    0.7102    
+AgeYears  0.008972 0.008972     1    68  1.1776    0.2817    
+---
+Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>No_Go_accuracy_model &lt;- lmer(Performance~ Color_num + Raw_Score + Gender + AgeYears + (1|UserID), No_Go_trials)
+
+lmer(Performance~Color_num*Gender + Raw_Score +  + AgeYears + (1|UserID), No_Go_trials) %&gt;%
+  anova() # No gender interaction effect with color wavelength</code></pre>
+<pre><code>Type III Analysis of Variance Table with Satterthwaite&#39;s method
+                   Sum Sq  Mean Sq NumDF  DenDF F value    Pr(&gt;F)    
+Color_num        0.301566 0.301566     1 286.00 39.4487 1.249e-09 ***
+Gender           0.000559 0.000559     1 322.17  0.0732    0.7869    
+Raw_Score        0.002610 0.002610     1  68.00  0.3415    0.5609    
+AgeYears         0.009002 0.009002     1  68.00  1.1776    0.2817    
+Color_num:Gender 0.000246 0.000246     1 286.00  0.0321    0.8579    
+---
+Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>No_Go_accuracy_model_interaction &lt;- lmer(Performance~Color_num*Gender + Raw_Score +  + AgeYears + (1|UserID), No_Go_trials) </code></pre>
 </div>
 
 

@@ -1,0 +1,41 @@
+---
+title: "Calculating Frequency Band Power"
+author: "Leandro Ledesma"
+date: "2024-03-12"
+output: html_document
+---
+
+# Read Cohen's book to remind myself what this all is
+
+
+
+### Universal block code settings
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+
+```
+
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(kableExtra)
+
+```
+
+### Load in the data
+
+```{r load in the data, warning = FALSE}
+# Set working directory
+setwd("~/ONR/IQ_data")
+
+# Load in the data
+CFIT <- read.csv("ONR CFIT_February 21, 2024_23.42.csv")
+
+```

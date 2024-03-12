@@ -22,24 +22,311 @@ knitr::opts_chunk$set(comment = NULL)
 ### Load in the data manipulation packages first
 
 ```{r loading in the packages, warning = FALSE}
-library(tidyverse)
-library(ggplot2)
-library(ggpubr)
+require(tidyverse)
 library(readxl)
-library(kableExtra)
-library(fuzzyjoin)
+
+library(lme4)
+library(lmerTest) 
+library(lsr) # Shows the p values when you run the ANOVAS
+library(emmeans) # Lets you do follow up tests on the ANOVAs
+library(purrr)
+library(simr) # Post hoc tests on our linear mixed effects model
+library(ggplot2)
 
 ```
 
 ### Load in the data
 
-Download the data from Qualtrics using Choice NUMBERS or else it will break the code!
+The following dataset is somewhat independent of the other ONR data I load into my analysis. This is semi-processed data that needs a special script to be run to get the same results as when it was first run sometime late 2023. This is data that was analyzed and written for a manuscript that then needed a couple of revisions. Thus, we need to keep the same sample size to reduce the number of changes needed for revision.
+
 
 ```{r load in the data, warning = FALSE}
 # Set working directory
-setwd("~/ONR/Qualtrics")
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
 
-# Load in the data
-Qualtrics <- read.csv("ONR Questionnaires_February 15, 2024_14.35.csv")
+GnG <- read_excel("GnG_Performance.xlsx")
+```
+
+### Data Cleaning
+
+These data were already somewhat cleaned in a previous (no longer existing) script. Thus we will need to do a little extra cleaning to remove practice days and any days labeled incorrectly ('error') from the visitor log.
+
+Lastly, we only want to keep only data from VR Room 1. 
+
+```{r data cleaning}
+GnG_VR_Room_one <- GnG %>%
+  filter(VR_Room == "ONR")
+
+# GnG remove Day 0s
+GnG_removed_Day0 <- GnG_VR_Room_one %>%
+  filter(Day != "Day0")
+
+# GnG remove Errors (Don't question this)
+GnG_removed_error <- GnG_removed_Day0 %>%
+  filter(Day != "Error")
+
+Saber_Color <- GnG_removed_error %>%
+  filter(Day == "Rest" & BlockName =='Saber Color Matching')
 
 ```
+
+
+### Creating some new variables
+
+We are now going to create some variables (I don't remember if they are any useful but we are not deviating from the original code).
+
+```{r creating some new variables}
+# Create a function that identifies the two different types of errors ONLY in GO Trials
+# Go Trial Error 1 = Miss
+# Go Trial Error 2 = Poor Arrow Accuracy
+
+Behavior_Type_fun <- function(Trial_Type,Correct,Reacted) {
+  if(Trial_Type == "G12") {
+    
+   if(Correct == "1" & Reacted == "1") {
+     return("Hit")
+     
+   } else if (Correct == "0" & Reacted == "1") {
+    return("Poor Accuracy")
+     
+   } else if (Correct == "0" & Reacted == "0") {
+    return("Miss")
+     
+   }
+    
+  } else if(Trial_Type == "G11") {
+    
+    if(Correct == "1" & Reacted == "0") {
+      return("Inhibition")
+      
+    } else if (Correct == "0" & Reacted == "1") {
+      return("Failed Inhibition")
+    
+  }
+  
+}
+
+}
+
+# Run the function through a for loop
+Behavior_Type <- list()
+
+for(ii in 1:nrow(Saber_Color)) {
+  
+  Trial_Type <- Saber_Color$ItemID[[ii]]
+  Correct <- Saber_Color$Correct[[ii]]
+  Reacted <- Saber_Color$Reacted[[ii]]
+  
+  Behavior_Type[[ii]] <- Behavior_Type_fun(Trial_Type,Correct,Reacted)
+  
+}
+
+Saber_Color$Behavior_Type <- unlist(Behavior_Type)
+
+# Create a function that makes a numeric variable of our color
+
+color_fun <- function(x) {
+  if(x == "purple") {
+    return(407)
+  } else if (x == "blue") {
+    return(478)
+  } else if (x =="green") {
+    return(507)
+  } else if (x =="yellow") {
+    return(612)
+  } else if (x =="red") {
+    return(679)
+  }
+  
+}
+
+Saber_Color$Color_num<- sapply(Saber_Color$Color,color_fun )
+
+```
+
+
+### Extra data cleaning
+
+```{r extra data cleaning}
+# Keep only the variables we are interested in 
+Final_saber_data <- Saber_Color %>%
+  select(UserID,ItemID, Color,Color_num, Correct, Reacted, TimeToImpact, Behavior_Type)
+
+# Change the values of the ItemID so it is easier to understand
+Final_saber_data <- Final_saber_data %>%
+  mutate(ItemID = ifelse(ItemID == "G11","No-Go","Go"))
+
+
+```
+
+
+### Loading demographics and IQ data
+
+```{r adding demographincs, warning= FALSE}
+# set the working directory for the demographic data
+setwd("Z:/Leo/Demographics")
+
+# import demographic data
+demo <- read.csv("complete.demographics.csv")
+
+# select the variables of interest
+demo_final <- demo %>%
+  select(UserID = ID, AgeYears = Age,Gender = Sex)
+
+demo_final$AgeYears <- as.numeric(demo_final$AgeYears)
+
+# set the working directory for the IQ data
+setwd("Z:/Leo/CFIT")
+
+# Import IQ data
+IQ_data <- read.csv("CFIT.raw.scores.csv")
+
+# Clean IQ data
+IQ_data <- IQ_data %>%
+  select(UserID = ID, Raw_Score = CFIT)
+```
+
+
+### Merge the datasets into one
+
+
+```{r adding IQ data}
+# Merge the data into one
+Final_data <- Final_saber_data %>%
+  mutate(UserID = as.numeric(UserID)) %>%
+  left_join(demo_final, by = "UserID") %>%
+  left_join(IQ_data, by = "UserID")
+
+```
+
+
+### Reducing data dimensionality
+
+At this point we have 15960 rows, with 210 trials for each participant that show if a trial was correct by displaying a 1 or incorrect by displaying a 0. We are now going to obtain the proportion average for each person for all of their Go and No-Go trials. Thus, each subject should have 2 (trial type; Go vs NoGo) x color (5 wavelength colors) = 10 rows. 
+
+Additionally, we will also do the same for a separate dataframe that represents reaction time. Except, this dataset will only contain Go trials that are correct (there is no reaction time for correct No-Go trials since they are not supposed to be hit). Thus, this dataset will have 5 rows (5 wavelength colors) per subject. 
+
+```{r reducing data dimensionality}
+# Current data dimension
+dim(Final_data)
+
+# Creating a dataset for accuracy
+Analysis_data2 <- Final_data %>%
+  group_by(UserID, ItemID, Color_num,Raw_Score,Gender,AgeYears) %>%
+  summarize(Performance = mean(Correct)) %>%
+  ungroup()
+
+# The dimensions of the accuracy dataset
+dim(Analysis_data2)
+
+# Creating a dataset for reaction time
+Analysis_RT_data2 <- Final_data %>%
+  filter(Correct == 1) %>%
+  group_by(UserID,Color_num,Raw_Score,Gender,AgeYears) %>%
+  summarize(mean_RT = mean(TimeToImpact), median_RT = median(TimeToImpact)) %>%
+  ungroup()
+
+# The dimensions of the reaction time dataset
+dim(Analysis_RT_data2)
+
+```
+### Removing outliers
+
+```{r removing potential outliers}
+###### Identifying outliers for Go signals and No-Go signals
+####
+
+overall_performance_df <- Analysis_data2 %>%
+  filter(ItemID == "Go") %>%
+  group_by(UserID) %>%
+  summarize(Overall_Performance = mean(Performance))
+
+overall_performance_df$Overall_Performance %>% summary()
+  
+sd_overall_performance <- overall_performance_df$Overall_Performance %>% sd()
+mean_overall_performance <-  overall_performance_df$Overall_Performance %>% mean()
+
+outlier_IDs_Go_signals <- overall_performance_df %>%
+  filter(Overall_Performance < mean_overall_performance - 2*sd_overall_performance) %>%
+  select(UserID) %>%
+  unlist() %>% unname()
+
+
+#####
+############# Remove outlier IDs
+#####
+`%nin%` = Negate(`%in%`)
+
+Analysis_data2 <- Analysis_data2 %>%
+  filter(UserID %nin% outlier_IDs_Go_signals)
+
+Analysis_RT_data2 <- Analysis_RT_data2 %>%
+  filter(UserID %nin% outlier_IDs_Go_signals)
+```
+
+### Quality control
+
+
+```{r quality control aka inspection}
+# Gender numbers
+Analysis_data2 %>%
+  select(UserID, Gender) %>%
+  unique() %>%
+  count(Gender)
+
+# Number of participants
+length(unique(Analysis_data2$UserID))
+
+# Other stuff
+Analysis_data2$AgeYears %>% mean() %>% round(2) # mean age= 22.38
+Analysis_data2$AgeYears %>% sd() %>% round(2) # sd age = 3.52
+Analysis_data2$Raw_Score %>% mean() %>% round(2) # mean raw IQ = 34.99
+Analysis_data2$Raw_Score %>% sd() %>% round(2) # sd raw IQ = 4.9
+Analysis_data2$Raw_Score %>% summary()
+```
+
+### Analyzing the data
+
+```{r analyzing the data}
+# Split data into Go and No-Go datasets
+Go_trials <- Analysis_data2 %>%
+  filter(ItemID == "Go")
+
+No_Go_trials <- Analysis_data2 %>%
+  filter(ItemID == "No-Go") 
+
+
+lmer(Performance~ Color_num + Raw_Score + Gender + AgeYears + (1|UserID), Go_trials) %>%
+    anova() # Only color is significant; Gender and Age had no effect
+
+Go_accuracy_model <- lmer(Performance~ Color_num + Raw_Score + Gender + AgeYears + (1|UserID), Go_trials)
+
+lmer(Performance~Color_num*Gender + Raw_Score +  + AgeYears + (1|UserID), Go_trials) %>%
+  anova() # No gender interaction effect with color wavelength
+
+Go_accuracy_model_interaction <- lmer(Performance~Color_num*Gender + Raw_Score +  + AgeYears + (1|UserID), Go_trials)
+
+lmer(Performance~ Color_num + Raw_Score + Gender + AgeYears + (1|UserID), No_Go_trials) %>%
+  anova() # Only color is significant; Gender and Age had no effect
+
+No_Go_accuracy_model <- lmer(Performance~ Color_num + Raw_Score + Gender + AgeYears + (1|UserID), No_Go_trials)
+
+lmer(Performance~Color_num*Gender + Raw_Score +  + AgeYears + (1|UserID), No_Go_trials) %>%
+  anova() # No gender interaction effect with color wavelength
+
+No_Go_accuracy_model_interaction <- lmer(Performance~Color_num*Gender + Raw_Score +  + AgeYears + (1|UserID), No_Go_trials) 
+
+
+```
+
+
+### Assumptions
+
+
+```{r showing our assumptions}
+
+
+
+
+
+````

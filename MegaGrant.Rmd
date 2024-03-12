@@ -22,4 +22,4 @@ For my master's thesis, I am curious to investigate if language related measures
 
 **Step 3**: As mentioned in step 2, even though we identified our ideal N for our analysis, this would only be possible if all rsEEG recordings had no issues throughout the preprocessing pipeline. From our initial 602 rsEEG files, 465 made it through the preprocessing stage. [[Click  here to view script]](https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/Verify.rsEEG.html)
 
-**Step 4**: Now that we have our cleaned rsEEG files, we need to process them using Fast Fourier transform to convert them into the frequency domain from the time domain.  
+**Step 4**: Now that we have our cleaned rsEEG files, we need to process them using Fast Fourier transform to convert them into the frequency domain from the time domain. This process was done using MATLAB scripts. This Rmarkdown will now be showing that process but instead cleaning the outputs created from FFT. [[Click here to view the script]](https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/Frequency.Band.Scoring.html)
