@@ -31,11 +31,81 @@ library(kableExtra)
 
 ### Load in the data
 
-```{r load in the data, warning = FALSE}
-# Set working directory
-setwd("~/ONR/IQ_data")
+First we will load in the ID's (including those discovered through fuzzy matching) of the rsEEG data that survived the preprocessing stage. There should 466 of them. 
 
-# Load in the data
-CFIT <- read.csv("ONR CFIT_February 21, 2024_23.42.csv")
+```{r load in the data, warning = FALSE}
+# set the working directory for rsEEG files that survived the preprocessing stage
+setwd("C:/Users/lledesma.TIMES/Documents/Masters Project")
+
+# Load in the ID's
+eeg.IDs.survived <- read.csv("Preprocessed.rsEEG.csv") %>% unlist()
+
+# Set the working directory
+setwd("Y:/STUDY 1/All EEG Files Organized/Preprocessed_RAW/RAW_eyes_open_and_eyes_closed_FFT")
+
+# list all of the rsEEG files that have FFT data
+all.FFT.files <- list.files()
+
+# Record all of the file names in this directory that contain the ID's from above that survived
+FFT.files.list <- list()
+
+for(ii in 1:length(eeg.IDs.survived)) {
+  
+  # Isolate the current EEG file you are trying to find 
+  current.pattern = eeg.IDs.survived[ii]
+  
+  # Use that current EEG file to find the proper name from all the FFT files
+  current.file <- all.FFT.files[grepl(pattern = current.pattern,
+                                      x = all.FFT.files)]
+
+  # Equaling the current.file to 1 prevents the following two errors
+  # a) loading in a file that survived preprocessing but was not present in FFT
+  # b) loading in two files that share the same ID because of tester error
+  if(length(current.file) == 1 ) {  
+
+  # Read that FFT file in and save it into the list
+  FFT.files.list[[ii]] <- read.csv(current.file)
+  
+  }
+}
+
+# Length of remaining files
+length(FFT.files.list)
+
+```
+
+### Explore the FFT data
+
+Each file has 180 variables and 62 rows. The rows represent the electrical activity from a channel, and there are 62 unique channels. We can group them later by topographical location. The variables, on the other hand, that have x followed by a number represent the power of that frequency band. It starts at .5 Hz and goes up by .25 Hz until it reaches 44.75Hz. The numbers in the cells represent power. 
+
+What we can do for a quick quality control check is to just pick a channel and then plot the values across the spectrum using ggplot. We will use Cz. 
+
+```{r explore the FFT data}
+# Save one of the FFT datasets from the list
+current.data <- FFT.files.list[[1]]
+
+# Obtain the dimensions
+dim(current.data)
+
+# view the first few rows and first 10 variables
+head(current.data)[1:10] %>%
+  kbl() %>%
+  kable_paper(bootstrap_options = "striped", full_width = F)
+
+# plot the power spectrum of a subject using channel 
+Cz.data <- current.data %>%
+  filter(Channels == "Cz")
+
+Cz.data.long <- Cz.data %>%
+  pivot_longer(cols = - Channels,
+               names_to = "Frequency_Band",
+               values_to = "Power")
+
+Cz.data.long %>%
+  ggplot(aes(x = Frequency_Band, y = Power, group = 1)) +
+  geom_point() +
+  geom_line() +
+  theme_classic() +
+  labs(title = "Power Spectrum across 0.5Hz - 44.75Hz for ID 10027")
 
 ```

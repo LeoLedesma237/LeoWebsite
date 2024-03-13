@@ -24,7 +24,7 @@ Several scripts of code were used to organize data on the MegaGrant server. This
 library(tidyverse)
 library(ggplot2)
 library(readxl)
-library(rio)
+library(writexl)
 library(kableExtra)
 library(fuzzyjoin)
 
@@ -376,27 +376,27 @@ masterData %>%
 
 
 
-### Remove ID's that have 16 missing data or more
+### Keeping real ID's
 
-The dimensions for the new dataset after removing ID's with more than 17 missing data are now 701 observations by 21 columns (variables). The variable number increased by one since we introduced a new variable that counts the number of missing data per row. 
+The dimensions for the new dataset after removing ID's with more than 17 missing data are now 701 observations by 21 columns (variables). The variable number increased by one since we introduced a new variable that counts the number of missing data per row. Below we are keeping subjects that have at most 15 missing data. These indicate that they are real IDs. 
 
 ```{r removing fake IDs}
-# Remove ID's that have more than 15 missing data
+# Keep ID's that have no more than 15 missing data
 masterData.remaining <- masterData %>%
-  filter(missing.num < 16)
+  filter(missing.num <= 15)
 
 # Dimensions of masterData after removing ID's
 dim(masterData.remaining)
 ```
 
-### Closer inspection of removed ID's
+### Closer inspection to ID's that were not kept (Typo ID's)
 
 It is good to manually check which ID's we are removing from our original dataset. On closer inspection this ID's are highly likely to be fake. There is no demographic information present, none were apart of the third Study, and surprisingly, most were from N400 or ASR data, indicating that this might be a result of a tester working in either of these data collection. 
 
 ```{r closer inspection on removed IDs}
 # The code to view this data frame manually
 masterData.removed <- masterData %>%
-  filter(missing.num > 15) 
+  filter(missing.num >= 16 ) 
 
 ```
 
@@ -406,8 +406,7 @@ From these ID's one of them contains an underscore in the name '8222_' thus this
 
 ```{r closer inspection on kept IDs}
 # The code to view this data frame manually
-masterData.kept <- masterData %>%
-  filter(missing.num < 18) %>%
+masterData.kept <- masterData.remaining %>%
   arrange(missing.num)
 
 masterData.kept <- masterData.kept %>%
@@ -427,8 +426,8 @@ The cleaned master excel sheet will should be saved to obtain accurate demograph
 setwd("C:/Users/lledesma.TIMES/Documents/Masters Project")
 
 # Save the data
-#export(masterData.kept, "MegaGrant_TBL_.xlsx")
-#export(masterData.removed, "MegaGrant_TBL_removed.xlsx")
+write_xlsx(masterData.kept, "MegaGrant_TBL_.xlsx")
+write_xlsx(masterData.removed, "MegaGrant_TBL_removed.xlsx")
 
 ```
 
