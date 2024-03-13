@@ -215,7 +215,7 @@ We will be saving these files as a CSV for later usage
 # Set the saving directory
 setwd("C:/Users/lledesma.TIMES/Documents/Masters Project")
 
-# Save the 406 IDs that intersected
+# Save the 466 IDs that intersected
 write_csv(data.frame(IDs = rsEEG.intersect), file = "Preprocessed.rsEEG.csv")
 
 ```

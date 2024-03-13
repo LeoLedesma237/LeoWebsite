@@ -300,13 +300,13 @@ here to view script]</a></p>
 investigate how many subjects contain data for the variables we are
 interested. Our predictor will be spelling capabilities (ARFA) and the
 our outcome is rsEEG. Additionally, we want to control for Sex, Age,
-Group, and IQ. From our 700 ID’s, 602 have these data present. <a
+Group, and IQ. From our 700 ID’s, 604 have these data present. <a
 href="https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/Ideal.data.html">[Click
 here to view script]</a></p>
 <p><strong>Step 3</strong>: As mentioned in step 2, even though we
 identified our ideal N for our analysis, this would only be possible if
 all rsEEG recordings had no issues throughout the preprocessing
-pipeline. From our initial 602 rsEEG files, 465 made it through the
+pipeline. From our initial 604 rsEEG files, 466 made it through the
 preprocessing stage. <a
 href="https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/Verify.rsEEG.html">[Click
 here to view script]</a></p>
@@ -314,7 +314,10 @@ here to view script]</a></p>
 need to process them using Fast Fourier transform to convert them into
 the frequency domain from the time domain. This process was done using
 MATLAB scripts. This Rmarkdown will now be showing that process but
-instead cleaning the outputs created from FFT. <a
+instead cleaning the outputs created from FFT. The outputs from this are
+two dataset. Both have the average power for the 5 frequency bands for
+each of the 462 subjects, however, one includes topographical
+information and the other does not. <a
 href="https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/Frequency.Band.Scoring.html">[Click
 here to view the script]</a></p>
 </div>

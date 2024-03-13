@@ -601,7 +601,9 @@ library(kableExtra)</code></pre>
 <h3>Load in the data</h3>
 <p>First we will load in the ID’s (including those discovered through
 fuzzy matching) of the rsEEG data that survived the preprocessing stage.
-There should 466 of them.</p>
+There should 466 of them. Each file read will have an ID variable added
+that comes from the name of the file. However, it seems only 462 make
+the final cut.</p>
 <pre class="r"><code># set the working directory for rsEEG files that survived the preprocessing stage
 setwd(&quot;C:/Users/lledesma.TIMES/Documents/Masters Project&quot;)
 
@@ -631,24 +633,38 @@ for(ii in 1:length(eeg.IDs.survived)) {
   # b) loading in two files that share the same ID because of tester error
   if(length(current.file) == 1 ) {  
 
+  # Read in the file and save it as an object
+  setwd(&quot;Y:/STUDY 1/All EEG Files Organized/Preprocessed_RAW/RAW_eyes_open_and_eyes_closed_FFT&quot;)
+  read.file &lt;-  read.csv(current.file)
+  
+  # Give this file an ID variable and place it in the front
+  read.file &lt;- read.file %&gt;%
+    mutate(ID = as.numeric(gsub(&quot;\\D&quot;, &quot;&quot;, current.file))) %&gt;%
+    select(ID, Channels, everything())
+    
   # Read that FFT file in and save it into the list
-  FFT.files.list[[ii]] &lt;- read.csv(current.file)
+  FFT.files.list[[ii]] &lt;- read.file
   
   }
-}
-
-# Length of remaining files
-length(FFT.files.list)</code></pre>
-<pre><code>[1] 466</code></pre>
+}</code></pre>
 </div>
 <div id="explore-the-fft-data" class="section level3">
 <h3>Explore the FFT data</h3>
+<p>Each file has 180 variables and 62 rows. The rows represent the
+electrical activity from a channel, and there are 62 unique channels. We
+can group them later by topographical location. The variables, on the
+other hand, that have x followed by a number represent the power of that
+frequency band. It starts at .5 Hz and goes up by .25 Hz until it
+reaches 45Hz. The numbers in the cells represent power.</p>
+<p>What we can do for a quick quality control check is to just pick a
+channel and then plot the values across the spectrum using ggplot. We
+will use Cz.</p>
 <pre class="r"><code># Save one of the FFT datasets from the list
-current.data &lt;- FFT.files.list[[1]]
+current.data &lt;- FFT.files.list[[3]]
 
 # Obtain the dimensions
 dim(current.data)</code></pre>
-<pre><code>[1]  62 180</code></pre>
+<pre><code>[1]  62 181</code></pre>
 <pre class="r"><code># view the first few rows and first 10 variables
 head(current.data)[1:10] %&gt;%
   kbl() %&gt;%
@@ -656,6 +672,9 @@ head(current.data)[1:10] %&gt;%
 <table class=" lightable-paper" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
+<th style="text-align:right;">
+ID
+</th>
 <th style="text-align:left;">
 Channels
 </th>
@@ -683,206 +702,388 @@ x2
 <th style="text-align:right;">
 x2.25
 </th>
-<th style="text-align:right;">
-x2.5
-</th>
 </tr>
 </thead>
 <tbody>
 <tr>
+<td style="text-align:right;">
+10510
+</td>
 <td style="text-align:left;">
 Fp1
 </td>
 <td style="text-align:right;">
-3.121887
+1.779144
 </td>
 <td style="text-align:right;">
-2.2223337
+1.828207
 </td>
 <td style="text-align:right;">
-1.909028
+1.393715
 </td>
 <td style="text-align:right;">
-1.6777988
+1.309518
 </td>
 <td style="text-align:right;">
-1.5582227
+1.0983058
 </td>
 <td style="text-align:right;">
-1.4679728
+1.1788034
 </td>
 <td style="text-align:right;">
-1.2408987
+0.9551549
 </td>
 <td style="text-align:right;">
-1.0697074
-</td>
-<td style="text-align:right;">
-1.1725782
+0.9024120
 </td>
 </tr>
 <tr>
+<td style="text-align:right;">
+10510
+</td>
 <td style="text-align:left;">
 Fz
 </td>
 <td style="text-align:right;">
-2.301974
+2.170027
 </td>
 <td style="text-align:right;">
-1.7313856
+1.893075
 </td>
 <td style="text-align:right;">
-1.764715
+1.726939
 </td>
 <td style="text-align:right;">
-1.5064595
+1.454525
 </td>
 <td style="text-align:right;">
-1.2055670
+1.2462342
 </td>
 <td style="text-align:right;">
-1.1514010
+1.2879235
 </td>
 <td style="text-align:right;">
-0.9467217
+1.0743211
 </td>
 <td style="text-align:right;">
-0.9386294
-</td>
-<td style="text-align:right;">
-0.8204762
+0.9659239
 </td>
 </tr>
 <tr>
+<td style="text-align:right;">
+10510
+</td>
 <td style="text-align:left;">
 F3
 </td>
 <td style="text-align:right;">
-2.093055
+2.013648
 </td>
 <td style="text-align:right;">
-1.4643529
+1.814194
 </td>
 <td style="text-align:right;">
-1.500201
+1.533448
 </td>
 <td style="text-align:right;">
-1.2284686
+1.392845
 </td>
 <td style="text-align:right;">
-1.1204874
+1.1476202
 </td>
 <td style="text-align:right;">
-1.0107098
+1.2846761
 </td>
 <td style="text-align:right;">
-0.7825515
+1.1282533
 </td>
 <td style="text-align:right;">
-0.7015145
-</td>
-<td style="text-align:right;">
-0.7758524
+0.9182845
 </td>
 </tr>
 <tr>
+<td style="text-align:right;">
+10510
+</td>
 <td style="text-align:left;">
 F7
 </td>
 <td style="text-align:right;">
-2.522229
+1.763305
 </td>
 <td style="text-align:right;">
-1.7507305
+1.827630
 </td>
 <td style="text-align:right;">
-1.517059
+1.396151
 </td>
 <td style="text-align:right;">
-1.3283167
+1.307186
 </td>
 <td style="text-align:right;">
-1.1553511
+1.1504424
 </td>
 <td style="text-align:right;">
-1.1409750
+1.2797549
 </td>
 <td style="text-align:right;">
-1.0968253
+0.9461670
 </td>
 <td style="text-align:right;">
-0.9408392
-</td>
-<td style="text-align:right;">
-1.0133094
+0.8514588
 </td>
 </tr>
 <tr>
+<td style="text-align:right;">
+10510
+</td>
 <td style="text-align:left;">
 FT9
 </td>
 <td style="text-align:right;">
-2.362965
+2.150545
 </td>
 <td style="text-align:right;">
-1.8281805
+2.148193
 </td>
 <td style="text-align:right;">
-1.730461
+1.732414
 </td>
 <td style="text-align:right;">
-1.4782979
+1.449547
 </td>
 <td style="text-align:right;">
-1.1054712
+1.4247275
 </td>
 <td style="text-align:right;">
-1.2579447
+1.4465467
 </td>
 <td style="text-align:right;">
-1.2497784
+1.0922184
 </td>
 <td style="text-align:right;">
-1.1015285
-</td>
-<td style="text-align:right;">
-0.8986025
+1.0785405
 </td>
 </tr>
 <tr>
+<td style="text-align:right;">
+10510
+</td>
 <td style="text-align:left;">
 FC5
 </td>
 <td style="text-align:right;">
-1.364006
+1.285501
 </td>
 <td style="text-align:right;">
-0.9320972
+1.362907
 </td>
 <td style="text-align:right;">
-1.021764
+1.107197
 </td>
 <td style="text-align:right;">
-0.8120798
+0.892248
 </td>
 <td style="text-align:right;">
-0.7675722
+0.8063708
 </td>
 <td style="text-align:right;">
-0.6928109
+0.9355177
 </td>
 <td style="text-align:right;">
-0.6441022
+0.7641644
 </td>
 <td style="text-align:right;">
-0.5121091
-</td>
-<td style="text-align:right;">
-0.5559967
+0.6074506
 </td>
 </tr>
 </tbody>
 </table>
+<pre class="r"><code># plot the power spectrum of a subject using channel 
+Cz.data &lt;- current.data %&gt;%
+  filter(Channels == &quot;Cz&quot;)
+
+Cz.data.long &lt;- Cz.data %&gt;%
+  pivot_longer(cols = - c(ID,Channels),
+               names_to = &quot;Frequency_Band_Num&quot;,
+               values_to = &quot;Power&quot;) %&gt;%
+  mutate(Frequency_Band_Num = gsub(pattern = &quot;x&quot;,
+                               x = Frequency_Band_Num,
+                               replacement = &#39;&#39;),
+         Frequency_Band_Num = as.numeric(Frequency_Band_Num))
+
+Cz.data.long %&gt;%
+  ggplot(aes(x = Frequency_Band_Num, y = Power, group = 1)) +
+  geom_point() +
+  geom_line() +
+  theme_classic() +
+  labs(title = &quot;Power Spectrum across 0.5Hz - 44.75Hz for ID 10510&quot;)</code></pre>
+<p><img src="data:image/png;base64,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" width="672" /></p>
+</div>
+<div id="reducing-data-dimensionality-frequency-bands" class="section level3">
+<h3>Reducing data dimensionality (Frequency Bands)</h3>
+<p>Our next step is to take every FFT file and average the power for
+each frequency band. Doing this will turn our number of variables from
+180 to 6, which include the following:</p>
+<ul>
+<li>Channels</li>
+<li>Delta (0.5-4Hz)</li>
+<li>Theta (4-8Hz)</li>
+<li>Alpha (8-12Hz)</li>
+<li>Beta (12-30Hz)</li>
+<li>Gamma (30-45Hz)</li>
+</ul>
+<p>This is how we will write it up by every frequency band ends at .75
+of the previous whole number. Before we start, we will take our list of
+subjects and combine them into one major list</p>
+<pre class="r"><code># Take all of the FFT files in the list and convert them into one
+FFT.files &lt;- FFT.files.list %&gt;%
+  do.call(rbind,.)
+
+# Quality check to see what ID&#39;s are present
+length(unique(FFT.files$ID))</code></pre>
+<pre><code>[1] 462</code></pre>
+<pre class="r"><code># Convert the data into long format
+FFT.files.long &lt;- FFT.files %&gt;%
+  pivot_longer(cols = - c(ID, Channels),
+               names_to = &quot;Frequency_Band_Num&quot;,
+               values_to = &quot;Power&quot;) %&gt;%
+  mutate(Frequency_Band_Num = gsub(pattern = &quot;x&quot;,
+                               x = Frequency_Band_Num,
+                               replacement = &#39;&#39;),
+         Frequency_Band_Num = as.numeric(Frequency_Band_Num))
+
+# Create a variable that categorizes the frequency band num into one of the typical bands seen in the literature
+FFT.files.averged.frequency.band &lt;- FFT.files.long %&gt;%
+  mutate(Frequency_Band = case_when(
+    
+    between(FFT.files.long$Frequency_Band_Num, 0, 3.75) ~ &#39;delta&#39;,
+    between(FFT.files.long$Frequency_Band_Num, 4, 7.75) ~ &#39;theta&#39;,
+    between(FFT.files.long$Frequency_Band_Num, 8, 11.75) ~ &#39;alpha&#39;,
+    between(FFT.files.long$Frequency_Band_Num, 12, 29.75) ~ &#39;beta&#39;,
+    TRUE ~ &#39;gamma&#39;
+  
+    ))
+
+# Group the data by ID, and channels and by frequency band, then get the averaged power for each of these groupings
+averaged.ID.frequency.band.power &lt;- FFT.files.averged.frequency.band %&gt;%
+  group_by(ID, Channels, Frequency_Band) %&gt;%
+  summarize(avg_power = mean(Power))
+
+# Let&#39;s get the new dimensions
+dim(averaged.ID.frequency.band.power)</code></pre>
+<pre><code>[1] 143220      4</code></pre>
+<p>The dataset we created above has the power for each person (462) for
+each channel (62) and for each frequency band (5), which is equal to 462
+x 62 x 5 = 134,220.</p>
+</div>
+<div id="reducing-data-dimensionality-channels" class="section level3">
+<h3>Reducing data dimensionality (Channels)</h3>
+<p>The next thing we want to do is to group up the channels based on
+topographical location. We will transform our 62 channels into the
+following 5 categorical values:</p>
+<ul>
+<li>frontal:</li>
+<li>central:</li>
+<li>temporal:</li>
+<li>parietal:</li>
+<li>occipital:</li>
+</ul>
+<pre class="r"><code># Create vectors that correspond to the channels topographical location
+frontal &lt;- c(&quot;AF3&quot;, &quot;AF4&quot;, &quot;AF7&quot;, &quot;AF8&quot;, &quot;AFz&quot;, &quot;F1&quot;, &quot;F2&quot;, &quot;F3&quot;, &quot;F4&quot;, &quot;F5&quot;, &quot;F6&quot;, &quot;F7&quot;, &quot;F8&quot;, &quot;Fz&quot;, &quot;Fp1&quot;, &quot;Fp2&quot;)
+central &lt;- c(&quot;FC1&quot;, &quot;FC2&quot;, &quot;FC3&quot;, &quot;FC4&quot;, &quot;FC5&quot;, &quot;FC6&quot;, &quot;FCz&quot;, &quot;C1&quot;,   &quot;C2&quot;, &quot;C3&quot;, &quot;C4&quot;, &quot;C5&quot;, &quot;C6&quot;, &quot;Cz&quot;,&quot;CP1&quot;, &quot;CP2&quot;, &quot;CP3&quot;, &quot;CP4&quot;, &quot;CP5&quot;, &quot;CP6&quot;, &quot;CPz&quot;)
+temporal &lt;- c(&quot;FT10&quot;, &quot;FT7&quot;,  &quot;FT8&quot;,  &quot;FT9&quot;, &quot;T7&quot;, &quot;T8&quot;,  &quot;TP7&quot;, &quot;TP8&quot;)
+parietal &lt;- c(&quot;P1&quot;, &quot;P2&quot;, &quot;P3&quot;,  &quot;P4&quot;,  &quot;P5&quot;,  &quot;P6&quot;,  &quot;P7&quot;,  &quot;P8&quot;, &quot;Pz&quot;)
+occipital &lt;- c(&quot;O1&quot;, &quot;O2&quot;, &quot;Oz&quot;, &quot;PO3&quot;, &quot;PO4&quot;, &quot;PO7&quot;, &quot;PO8&quot;, &quot;POz&quot;)
+
+# Create a variable that categorizes the frequency band num into one of the typical bands seen in the literature
+final.data.long &lt;- averaged.ID.frequency.band.power %&gt;%
+  mutate(Topography = case_when(
+    
+    Channels %in% frontal ~ &#39;frontal&#39;,
+    Channels %in% central ~ &#39;central&#39;,
+    Channels %in% temporal ~ &#39;temporal&#39;,
+    Channels %in% parietal ~ &#39;parietal&#39;,
+    Channels %in% occipital ~ &#39;occipital&#39;,
+    TRUE ~ &#39;Not Used&#39;
+  
+    ))
+
+# Quality check to see if any channels were not assigned to a topographical group
+final.data.long %&gt;%
+  filter(Topography == &quot;Not Used&quot;) %&gt;%
+  ungroup() %&gt;%
+  select(Channels) %&gt;%
+  unique()</code></pre>
+<pre><code># A tibble: 0 × 1
+# … with 1 variable: Channels &lt;chr&gt;</code></pre>
+<pre class="r"><code># Group the data by ID, topography and by frequency band, then get the averaged power for each of these groupings
+final.data &lt;- final.data.long %&gt;%
+  group_by(ID, Topography, Frequency_Band) %&gt;%
+  summarize(avg_power = mean(avg_power))
+
+# Let&#39;s get the new dimensions
+dim(final.data)</code></pre>
+<pre><code>[1] 11550     4</code></pre>
+<p>For every person (462) there is the averaged power for frequency
+bands (5) and topographical location (5), which equals to 462 x 5 x 5 =
+11550 rows.</p>
+</div>
+<div id="quality-control" class="section level3">
+<h3>Quality Control</h3>
+<p>Now that we have gotten our final data, let’s do some quality control
+before saving it. We need to figure out how many subjects we have and
+how many unique topographies are present.</p>
+<pre class="r"><code># Check the number of ID&#39;s present on our final dataset
+length(unique(final.data$ID))</code></pre>
+<pre><code>[1] 462</code></pre>
+<pre class="r"><code># Check the proportions of topographical locations- they should all be the same
+prop.table(table(final.data$Topography))</code></pre>
+<pre><code>
+  central   frontal occipital  parietal  temporal 
+      0.2       0.2       0.2       0.2       0.2 </code></pre>
+<pre class="r"><code># Lastly, check the proportions of frequency bands- they should also all be the same
+prop.table(table(final.data$Frequency_Band))</code></pre>
+<pre><code>
+alpha  beta delta gamma theta 
+  0.2   0.2   0.2   0.2   0.2 </code></pre>
+</div>
+<div id="last-data-transformation" class="section level3">
+<h3>Last data transformation</h3>
+<p>For our dependent variables, which are the information in this data
+frame, to be used by a statistical code, they need to be in wide format
+and not long. Thus we will now transfer our data back into a wide format
+and later deside which rows and columns we want to keep for our final
+analysis.</p>
+<p>Additionally, if we end up not needing to analyze topography, we have
+also create a data transformation that just averages power across the
+whole scalp.</p>
+<pre class="r"><code># Covert the data into wide
+final.data.wide.topography &lt;- final.data %&gt;%
+  pivot_wider(names_from = Frequency_Band,
+              values_from = avg_power) %&gt;%
+  select(ID, Topography, delta, theta, alpha, beta, gamma)
+
+final.data.wide.no.topography &lt;- final.data.wide.topography %&gt;%
+  group_by(ID) %&gt;%
+  summarize(delta = mean(delta),
+            theta = mean(theta),
+            alpha = mean(alpha),
+            beta = mean(beta),
+            gamma = mean(gamma))</code></pre>
+</div>
+<div id="saving-files" class="section level3">
+<h3>Saving files</h3>
+<p>We will be saving this data set as one large CSV file to be joined
+with our predictor variables in the next code.</p>
+<pre class="r"><code># Set the saving directory
+setwd(&quot;~/Masters Project/cleaned_dependent_variable&quot;)
+
+# Save the 462 files with topography
+write_csv(final.data.wide.topography, file = &quot;Frequency.Bands.Topography.csv&quot;)
+
+# Save the 462 files without topography
+write_csv(final.data.wide.no.topography, file = &quot;Frequency.Bands.No.Topography.csv&quot;)</code></pre>
 </div>
 </div>
 

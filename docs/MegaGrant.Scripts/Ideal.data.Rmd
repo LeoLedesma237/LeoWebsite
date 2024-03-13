@@ -86,11 +86,11 @@ finalData <- masterData %>%
 
 ### Ideally our final data
 
-If all data quality from the CFIT, ARFA and RAW for all rows is adequate, then this is what we would expect for our final analysis. To have 602 participants with the following descriptive statistics.
+If all data quality from the CFIT, ARFA and RAW for all rows is adequate, then this is what we would expect for our final analysis. To have 604 participants with the following descriptive statistics.
 
-Sex: There are 261 Males out of our 602 sample (43%).
+Sex: There are 261 Males out of our 604 sample (43%).
 Age: A histogram shows that most of participants are between 15-25 years old, but there are still participants that are older, up to around 40, which skews the distribution to the right.
-Group: Group indicates how the participant was reared, either by their biological family (BF) or they were institutionalized (IC)- meaning orphanage or similar environment. There are 317 BF out of our 602 sample (53%).
+Group: Group indicates how the participant was reared, either by their biological family (BF) or they were institutionalized (IC)- meaning orphanage or similar environment. There are 317 BF out of our 604 sample (53%).
 
 
 ```{r exploring our ideal finaly data}

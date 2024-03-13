@@ -373,7 +373,7 @@ library(gt)</code></pre>
 <div id="load-in-the-data" class="section level3">
 <h3>Load in the data</h3>
 <p>We will do the same transformation to our excel file to obtain the
-same 602 ID’s.</p>
+same 604 ID’s.</p>
 <pre class="r"><code># The cleaned master excel file is saved locally on my times computer
 # In my documents &gt; Master&#39;s Project
 
@@ -391,19 +391,22 @@ finalData &lt;- masterData %&gt;%
 
 # Check the dimension of our final data
 dim(finalData)</code></pre>
-<pre><code>[1] 602   7</code></pre>
+<pre><code>[1] 604   7</code></pre>
 </div>
 <div id="verifying-number-of-rseeg-files" class="section level3">
 <h3>Verifying number of rsEEG files</h3>
 <p>We need to verify how many number of resting-state EEG files are
 present in our database. According to our previous RMarkdown document
-(Step 2) and our output from the code above, we should have 602 unique
+(Step 2) and our output from the code above, we should have 604 unique
 ID’s that have the following data: Sex, Age, Group, CFIT, ARFA, and
-rsEEG. Let’s verify if this is the case by comparing how many of our 602
+rsEEG. Let’s verify if this is the case by comparing how many of our 604
 IDs have resting state EEG on the server.</p>
 <p>To do this, we will record all of the file names from the rsEEG on
 the server, extract the ID number from the file names then compare them
-to our 602 IDs.</p>
+to NOT to our 604 IDs, but to the transformed <strong>RAW</strong>
+variable that contains names of files that are identical to the real ID
+or have a typo name of the rsEEG file that was discovered through fuzzy
+matching.</p>
 <pre class="r"><code># Set the working directory 
 setwd(&quot;Y:/STUDY 1/All EEG Files Organized/RAW&quot;)
 
@@ -420,11 +423,11 @@ rsEEG.IDs &lt;- as.numeric(gsub(&quot;.*?([0-9]+).*&quot;, &quot;\\1&quot;, file
 length(rsEEG.IDs)</code></pre>
 <pre><code>[1] 640</code></pre>
 <pre class="r"><code># Obtain the ID&#39;s that match in both vectors
-intersect.IDs &lt;- intersect(rsEEG.IDs, finalData$ID)
+intersect.IDs &lt;- intersect(rsEEG.IDs, finalData$RAW)
 
 # Let&#39;s get the length of the IDs that matched
 length(intersect.IDs)</code></pre>
-<pre><code>[1] 602</code></pre>
+<pre><code>[1] 604</code></pre>
 <p>We see that the ouput returned from matching the IDs in our master
 excel sheet and from all the rsEEG file names matched. Thus we can
 continue since there are no discrepancies.</p>
@@ -459,7 +462,7 @@ interested in how many files made it to the end of the preprocessing
 script that also have data for our predictors and variables we are
 trying to control.</p>
 <p>Thus, now we will go to each folder that contains the output of all
-the scripts and determine how many of our 602 ID’s made it to the
+the scripts and determine how many of our 604 ID’s made it to the
 end.</p>
 <pre class="r"><code># Create a vector with the names of all the pathways for each preprocessed EEG data
 working.directories &lt;- c(&quot;Y:/STUDY 1/All EEG Files Organized/Preprocessed_RAW/RAW_eyes_open_and_eyes_closed&quot;,
@@ -477,7 +480,7 @@ list.names &lt;- c(&quot;Remaining rsEEG: Contained Eyes Open Marker&quot;,
 remaining.rsEEG &lt;- list()
 
 # Create a for loop that will check how many files made it through each preprocessing stage
-# We are only interested in the ID&#39;s that match our 602 sample
+# We are only interested in the ID&#39;s that match our 604 sample
 for(ii in 1:length(working.directories)) {
   
   # set working directory
@@ -492,8 +495,8 @@ for(ii in 1:length(working.directories)) {
   # extract the IDs from the file names
   rsEEG.IDs &lt;- as.numeric(gsub(&quot;.*?([0-9]+).*&quot;, &quot;\\1&quot;, eyes.open.files))   
 
-  # Intersect with our 602 IDs of interest
-  remaining.IDs &lt;- intersect(rsEEG.IDs, finalData$ID)
+  # Intersect with our 604 IDs of interest
+  remaining.IDs &lt;- intersect(rsEEG.IDs, finalData$RAW)
 
   # Save the  intersected ID&#39;s into a list
   remaining.rsEEG[[ii]] &lt;- remaining.IDs
@@ -506,22 +509,22 @@ for(ii in 1:length(working.directories)) {
 remaining.rsEEG %&gt;%
   lapply(., function(x) length(x))</code></pre>
 <pre><code>$`Remaining rsEEG: Contained Eyes Open Marker`
-[1] 519
+[1] 521
 
 $`Remaining rsEEG: Survived Main Preprocessing`
-[1] 517
+[1] 519
 
 $`Remaining rsEEG: No problems with ICA`
-[1] 517
+[1] 519
 
 $`Remaining rsEEG: No problems with MARA`
-[1] 517</code></pre>
+[1] 519</code></pre>
 <p>From our output, we see that we lost a majority of ID’s after the
-first preprocessing step 602 - 519 = 83 because they had no eyes-open
+first preprocessing step 604 - 521 = 83 because they had no eyes-open
 marker. Additionally, 2 files did not make it passed the main
 preprocessing script (script 2) and as expected, there were no issues
 with the following two scripts. Thus, our final usable rsEEG recordings
-are 517.</p>
+are 519.</p>
 </div>
 <div id="investigating-segmentation-length" class="section level3">
 <h3>Investigating segmentation length</h3>
@@ -582,8 +585,8 @@ rsEEG.intersect &lt;- intersect(eligible.csv$IDs, remaining.rsEEG[[4]])
 
 # Remaining subjects
 length(rsEEG.intersect)</code></pre>
-<pre><code>[1] 465</code></pre>
-<p>After checking the lengths of each recording, 465 rsEEG files made
+<pre><code>[1] 466</code></pre>
+<p>After checking the lengths of each recording, 466 rsEEG files made
 the cut. This will be our final sample size for rsEEG.</p>
 </div>
 <div id="saving-files" class="section level3">
@@ -593,7 +596,7 @@ the cut. This will be our final sample size for rsEEG.</p>
 setwd(&quot;C:/Users/lledesma.TIMES/Documents/Masters Project&quot;)
 
 # Save the 406 IDs that intersected
-write.csv(data.frame(IDs = rsEEG.intersect), file = &quot;Preprocessed.rsEEG.csv&quot;)</code></pre>
+write_csv(data.frame(IDs = rsEEG.intersect), file = &quot;Preprocessed.rsEEG.csv&quot;)</code></pre>
 </div>
 
 
