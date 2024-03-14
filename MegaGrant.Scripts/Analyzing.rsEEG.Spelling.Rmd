@@ -425,3 +425,16 @@ ggarrange(residual.plot3, residual.plot4)
 It seems that the residuals of our multiple regression are not normally distributed. This violation makes it difficult to generalize our findings. Additionally, it looks like our residuals are skewed/curved. Does this mean that we should use something else instead of a regression since there is a curvature? 
 
 
+### What to do next
+
+Aside from figuring out what I should do in terms of a robust approach since assumptions were violated- I also need to do the following:
+
+- read more on what people are doing in adults studies that investigate this (ik ML is involved)
+- read more on how topography might be invovled and why!
+- keep an eye out for other theories- as in I used brain maturation but there could be other explanations
+- read up on brain maturation? What is it? How can it be measured? What about other neuroimaging techniques?
+- read up more on what rsEEG is, as in the values of FFT aka power (Mike cohen's book)
+- start writing up a paper or a power point presentation with all of this information
+- spend time reviewing the methods, like the assessments used, and the cleaning process of the EEG.
+
+
