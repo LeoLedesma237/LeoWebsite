@@ -266,6 +266,30 @@ final.data.wide.no.topography <- final.data.wide.topography %>%
 ```
 
 
+### Checking the assumptions 
+
+Before we are finished- it is good practice for us to know what our data look like (for dependent variables). If they do not look normally distributed, then that would influence which statistical approach we can use. Let's just look at the histograms for the frequency bands in the non-topographical data. We can graph the others once we figure out what approach we want to take. 
+
+```{r checking the assumptions}
+# Graph the power for delta
+hist(final.data.wide.no.topography$delta)
+
+# Graph the power for theta
+hist(final.data.wide.no.topography$theta)
+
+# Graph the power for alpha
+hist(final.data.wide.no.topography$alpha)
+
+# Graph the power for beta
+hist(final.data.wide.no.topography$beta)
+
+# Graph the power for gamma
+hist(final.data.wide.no.topography$gamma)
+
+```
+
+
+
 ### Saving files
 
 We will be saving this data set as one large CSV file to be joined with our predictor variables in the next code. 

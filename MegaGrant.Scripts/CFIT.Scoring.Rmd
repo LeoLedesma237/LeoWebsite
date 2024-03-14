@@ -1,0 +1,194 @@
+---
+title: "Scoring the CFIT for MegaGrant"
+author: "Leandro Ledesma"
+date: "2024-03-14"
+output: html_document
+---
+
+The CFIT stands for the Culturally Fair Intelligence Tests developed by Raymond Cattell. This assessment contains four types of non-verbal IQ tests. We are interested in Scale 2 of this test, which is the medium difficulty version. Additionally Scale 2 contains Form A and Form B, both forms contain items that correspond to one of the four tests. We collected data strictly from Form B. Unfortunately, there is no standardized way to obtain IQ scores from performance on the CFIT Scale 2 Form B, thus we will only be reporting raw scores for each subject below. 
+
+Raw scores are calculated by taking the sum of correct responses from the four subtests. Meaning there will be one overall score. 
+
+### Universal block code settings
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+
+```
+
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(kableExtra)
+
+```
+
+### Load in the data
+
+```{r load in the data, warning = FALSE}
+# Set working directory
+setwd("~/ONR/IQ_data")
+
+# Load in the data
+CFIT <- read.csv("ONR CFIT_February 21, 2024_23.42.csv")
+
+```
+
+### Data cleaning
+
+```{r data cleaining}
+# Remove unnecessary rows 
+# Remove the first seven rows they are meaningless
+CFIT <- CFIT[8:nrow(CFIT),]
+
+# Keep variables that we are interested in
+CFIT.names <- names(CFIT)
+series.names <- CFIT.names[grepl(pattern = "T1Q" , x = CFIT.names)]
+classification.names <- CFIT.names[grepl(pattern = "T2Q" , x = CFIT.names)]
+matrices.names <- CFIT.names[grepl(pattern = "T3Q" , x = CFIT.names)]
+condition.names <- CFIT.names[grepl(pattern = "T4Q" , x = CFIT.names)]
+
+# The number of items in order should be 12, 14, 12, and 8
+length(series.names)
+length(classification.names)
+length(matrices.names)
+length(condition.names)
+
+# Extract these variable names from our original CFIT
+variables <- c("ID", series.names, classification.names, matrices.names, condition.names)
+
+# Save this new cleaned data set
+CFIT <- CFIT[,variables]
+
+
+```
+
+
+
+### Quality control
+
+First let's remove any NA's from our ID column since this is meaningless information. Then let's check for any duplicates in our data which is from tester error. Below are some ID's that have more than two scores for IQ. To fix these scores, we would have to look at the dates of completion between these ID's and neighboring ID's, which may take a while. For now these ID's will be removed from the analysis. 
+
+```{r quality control}
+# Convert any blank information in the cells into NA
+CFIT[CFIT == ""] <- NA
+
+# Dropping NA's in the ID column
+CFIT <- CFIT %>%
+  drop_na(ID)
+
+# Look for duplicates in the data
+CFIT %>%
+  group_by(ID) %>%
+  count() %>%
+  filter(n > 1) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+# Duplicate IDs
+duplicate.IDs <- CFIT %>%
+  group_by(ID) %>%
+  count() %>%
+  filter(n > 1) %>%
+  select(ID) %>%
+  unlist()
+
+# Mentioned how many ID's will be removed
+paste("We will be dropping",length(duplicate.IDs),"IDs from our analysis.")
+
+# Drop duplicate IDs
+CFIT <- CFIT %>%
+  filter(!(ID %in% duplicate.IDs))
+
+# Check for any remaining duplicate IDs
+CFIT %>%
+  group_by(ID) %>%
+  count() %>%
+  filter(n > 1) %>%
+  kbl() %>%
+  kable_paper(full_width = F)
+
+# Additional data cleaning- changing n126 to 126
+CFIT <- CFIT %>%
+  mutate(ID = ifelse(ID == "n126", "126", ID))
+
+# Changing ID's to numeric
+CFIT$ID <- as.numeric(CFIT$ID)
+
+```
+
+
+
+### CFIT Scoring
+
+We are interested in obtain one raw score per person, thus we will be matching every response to that of the response key. Trials where the answer and response key match will be given a score of 1 and non-matching trials will be given a 0. All points will then be added together to produce our raw score. 
+
+```{r CFIT scoring, warning = FALSE}
+# Convert the data to long
+CFIT.long <- CFIT %>%
+  pivot_longer(-ID)
+
+# Set working directory
+setwd("~/ONR/IQ_data")
+
+# Load in the answer key 
+answer.key <- read_excel("CFIT Raw Score Key.xlsx")
+
+# Create a for loop to score each participant's performance on the CFIT
+Raw.score <- list()
+IDs.num <- unique(CFIT.long$ID)
+
+for(ii in 1:length(IDs.num)) {
+  
+  # Extract the data for the current ID
+  current.ID.df <- CFIT.long %>%
+    filter(ID == IDs.num[ii])
+  
+  # Add the scoring key variable to this data frame (46 values)
+  current.ID.df$scoring.key <- answer.key$Correct_Answers
+  
+  # Score the responses for the current data frame
+  current.ID.df <- current.ID.df %>%
+    mutate(Correct = ifelse(value == scoring.key, 1, 0))
+  
+  # Save the ID and the sum of all correct responses
+  Raw.score[[ii]] <- data.frame(ID = unique(current.ID.df$ID),
+                                CFIT = sum(current.ID.df$Correct, na.rm = TRUE))
+}
+
+# Save the Raw scores for each person
+Raw.score <- Raw.score %>%
+  do.call(rbind,.)
+
+
+# Check for any missing data
+Raw.score %>%
+  filter(!complete.cases(.))
+
+```
+
+### Current CFIT numbers
+
+```{r current CFIT numbers}
+# Paste the following
+paste("We have CFIT raw scores for",length(unique(Raw.score$ID)),"subjects")
+
+```
+
+### Save the data
+
+```{r save the data}
+# Set a save directory
+setwd("~/ONR/IQ_data/Processed Data")
+
+# Save the data
+write.csv(x = Raw.score, file = "CFIT.raw.scores.csv")
+
+
+```

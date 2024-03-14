@@ -1,0 +1,200 @@
+---
+title: "Analyzing resting-state EEG and Spelling Performance in Young Adults"
+author: "Leandro Ledesma"
+date: "2024-03-13"
+output: html_document
+---
+
+### Universal block code settings
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+
+```
+
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(kableExtra)
+library(stringdist)
+
+```
+
+### Load in our predictor variable
+
+We will be loading in the un-scored version of the ARFA- specifically the spelling portion of it. 
+
+```{r load in predictor variable, warning= FALSE}
+# Set the working directory
+setwd("~/Masters Project/cleaned_predictor_covariates")
+
+# Load in the ARFA performance measures
+ARFA1 <- read.csv("ARFA.Spelling.Original.Scored.csv")
+
+ARFA2 <- read.csv("ARFA.Spelling.Levenshtein.Scored.csv")
+
+```
+
+
+### Load in our dependent variable
+
+```{r load in dependent variable, warning = FALSE}
+# Set the working directory
+setwd("~/Masters Project/cleaned_dependent_variable")
+
+# Load in the rsEEG datasets
+rsEEG1 <- read.csv("Frequency.Bands.No.Topography.csv")
+
+rsEEG2 <- read.csv("Frequency.Bands.Topography.csv")
+
+```
+
+## Picking the best combination of variables
+
+The variables we have selected to analyze, both the predictor and outcome variable, can be scored or represented in many different ways. 
+
+In terms of our **predictor variable**- the ARFA, there were two different approaches taken to measure Spelling Performance. The first was to take the recommendations of the ARFA instructions by giving all subjects a 2, 1, or 0 for each question and then adding them all up to get a raw score. The second was using an approach to investigate spelling errors, which was operationalized by Levenshtein Distance. This output was highly skewed so a log transformation was used. 
+
+For our **outcome variable**, which is the power of different frequency bands calculated from fast Fourier transform. We have a lot of data, too much so and we have to decide which portion of the data makes up the brain activity we are interested in. We can incorporate power averaged across the scalp or we can add topographical locations of interest and look at power as the average of electrode clusters in a certain region. Additionally, we have power for delta, theta, alpha, beta, and gamma- thus we also need to decide which of these frequency bands we are interested in analyzing and which one we are not. Also, different combinations of these can looked at as well. For example: Alpha in one topographical location and Theta in another topographical location. This is where the help from the literature should come in to help us get an idea of what we should investigate vs what should be ignored.
+
+
+## What does the literature say?
+
+A detailed explanation is currently being written on my [Wiki Page](https://github.com/LeoLedesma237/LeoWebsite/wiki/My-Master's). It is nothing too fancy- just briefly summarizes findings of several different studies. Many studies have investigated rsEEG biomarkers in children that are poor spellers or have dyslexia. While there is some overlap, both are different populations. While there are some inconsistencies in the literature, which many are nicely explained in Lui and colleagues (2021) study. For the most part, it seems that children who are poor spellers and children with dyslexia tend to have lower delta and theta power than children who are good spellers/do not have dyslexia. With this in mind- this will temporarily be used to develop our hypothesis as a start step. (At least this should be enough for Brown Bag). Will eventually go back to further investigate the literature more thoroughly.  
+
+
+### Hypothesis
+
+1. Spelling performance is associated with delta power.
+
+2. Spelling performance is associated with theta power.
+
+
+### Data set 1: Original ARFA Spelling Performance vs rsEEG with no topography information
+
+We see that we have 430 unique ID's in this dataset. 
+
+```{r combine the datasets 1, out.width= "90%"}
+# Combine the the datasets by using the left_join function
+data1 <- ARFA1 %>%
+  left_join(rsEEG1, by = "ID") %>%
+  filter(complete.cases(.))
+
+# Get the dimensions of the dataset
+dim(data1)
+
+# How many unique ID's are present
+length(unique(data1$ID))
+
+# Visualize the data
+plot1 <- data1 %>%
+  ggplot(aes(x = Spelling_Performance, y = delta)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "ARFA Spelling Performance and\nDelta Power") +
+  theme_classic()
+
+plot2 <- data1 %>%
+  ggplot(aes(x = Spelling_Performance, y = theta)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "ARFA Spelling Performance and\nTheta Power") +
+  theme_classic()
+
+ggarrange(plot1, plot2)
+
+```
+
+
+### Data set 2: Levenshtein ARFA Spelling Errors vs rsEEG with no topography information
+
+We see that we have 451 unique ID's in this dataset. 
+
+
+```{r combine the datasets 2, out.width= "90%"}
+# Combine the the datasets by using the left_join function
+data2 <- ARFA2 %>%
+  left_join(rsEEG1, by = "ID") %>%
+  filter(complete.cases(.))
+
+# Get the dimensions of the dataset
+dim(data2)
+
+# How many unique ID's are present
+length(unique(data2$ID))
+
+# Visualize the data
+plot3 <- data2 %>%
+  ggplot(aes(x = Spelling_Error_Log, y = delta)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "ARFA Spelling Error Log and\nDelta Power") +
+  theme_classic()
+
+plot4 <- data2 %>%
+  ggplot(aes(x = Spelling_Error_Log, y = theta)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "ARFA Spelling Error Log and\nTheta Power") +
+  theme_classic()
+
+
+ggarrange(plot3, plot4)
+```
+
+### Data Analysis (Simple Regression)
+
+Let's start by running a simple regression to see how well the model perform. We will construct four models. These models will not make up our final results. It is more for us to understand our data better. There will be different n sizes depending on the Predictor variable type chosen (Spelling performance vs Spelling Errors). 
+
+model1: Delta ~ ARFA Spelling Performance
+model2: Theta ~ ARFA Spelling Performance
+model3: Delta ~ ARFA Spelling Errors
+model4: Theta ~ ARFA Spelling Errors
+
+It seems that the log transformation of the Spelling Errors explained slightly more of the variance (but like by barely) than the Original way of scoring it. 
+
+
+```{r running a simple regression}
+# Create the first two simple regressions using the Spelling Performance predictor
+simple.regression1 <- lm(delta~Spelling_Performance, data1)
+simple.regression2 <- lm(theta~Spelling_Performance, data1)
+
+# Create the next two simple regressions using the Spelling errors predictor
+simple.regression3 <- lm(delta~Spelling_Error_Log, data2)
+simple.regression4 <- lm(theta~Spelling_Error_Log, data2)
+
+# Check their performance
+summary(simple.regression1)
+summary(simple.regression2)
+summary(simple.regression3)
+summary(simple.regression4)
+
+```
+
+### Adding covariates
+
+Now that our predictor variables look promising- we need to add in several covariates that are also likely to influence our outcome variable (rsEEG power for delta and theta). From my experience as a researcher, it is very common and expected to introduce age and gender as covariates into the analysis. I don't think that it will personally do anything, but it is still good to investigate. Then, we will need to add two additional covariates that are likely to play a role. The first is a measure of non-verbal IQ from the Cultural Fair Intelligence Test (CFIT) and the second is a categorical variable that describes the upbringing of the subject, either as raised in an orphange (institutition) or by their biological family.
+
+Thus, our potential final models will include our predictor variable, four covariates and our outcome variable. 
+
+```{r loading in covariates, warning = FALSE}
+# Set working directory for demographic and group data
+setwd("~/Masters Project")
+
+# load in demographic information
+demo <- read_excel("MegaGrant_TBL_removed.xlsx")
+
+# Set working directory for CFIT data
+
+```
+
+
+
+
+

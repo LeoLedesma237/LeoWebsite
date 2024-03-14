@@ -25,3 +25,12 @@ For my master's thesis, I am curious to investigate if language related measures
 **Step 4**: Now that we have our cleaned rsEEG files, we need to process them using Fast Fourier transform to convert them into the frequency domain from the time domain. This process was done using MATLAB scripts. This Rmarkdown will now be showing that process but instead cleaning the outputs created from FFT. The outputs from this are two dataset. Both have the average power for the 5 frequency bands for each of the 462 subjects, however, one includes topographical information and the other does not. [[Click here to view the script]](https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/Frequency.Band.Scoring.html)
 
 **Step 5**: Now we need to walk through the process of cleaning and scoring our main predictor variable, which is spelling performance. [[Click here to view script]](https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/ARFA.Scoring.html) 
+
+**Step 6**: Scoring CFIT data. Initially we were given IQ scores from the CFIT Scale 2 Form-B that was used in this study. Unfortunately, this version of the CFIT cannot be used to get an IQ score, because there is no way to standardized the scores. Thus, we will need to take the raw data and calculate a raw score for each subject. [[Click here to view script]](https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/CFIT.Scoring.html)
+
+
+### Data Analysis
+
+**rsEEG and Spelling Performance Analysis** <add description here> (https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/Analyzing.rsEEG.Spelling.html)
+
+
