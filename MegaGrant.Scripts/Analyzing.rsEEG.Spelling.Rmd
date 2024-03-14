@@ -28,7 +28,7 @@ library(stringdist)
 
 ### Load in our predictor variable
 
-We will be loading in the un-scored version of the ARFA- specifically the spelling portion of it. 
+We will be loading in the scored version of the ARFA- specifically the spelling portion of it. However, two different approaches were used for the scoring of spelling performance- that is why two datasets are being imported. 
 
 ```{r load in predictor variable, warning= FALSE}
 # Set the working directory
@@ -43,6 +43,8 @@ ARFA2 <- read.csv("ARFA.Spelling.Levenshtein.Scored.csv")
 
 
 ### Load in our dependent variable
+
+We have the power of 5 frequency bands for each subject that were averaged across the scalp (No.Topography) and for each topographical domain (Topography). The analysis below will choose the former as the dependent variable since each subject potentially has a single score for a dependent variable instead of 5. However for future analysis- I may create another analysis that takes topography into account. 
 
 ```{r load in dependent variable, warning = FALSE}
 # Set the working directory
@@ -59,26 +61,32 @@ rsEEG2 <- read.csv("Frequency.Bands.Topography.csv")
 
 The variables we have selected to analyze, both the predictor and outcome variable, can be scored or represented in many different ways. 
 
-In terms of our **predictor variable**- the ARFA, there were two different approaches taken to measure Spelling Performance. The first was to take the recommendations of the ARFA instructions by giving all subjects a 2, 1, or 0 for each question and then adding them all up to get a raw score. The second was using an approach to investigate spelling errors, which was operationalized by Levenshtein Distance. This output was highly skewed so a log transformation was used. 
+In terms of our **predictor variable**- the ARFA, there were two different approaches taken to measure Spelling Performance. The first was to take the recommendations of the ARFA instructions by giving all subjects a 2, 1, or 0 for each item and then adding them all up to get a raw score. The second was using an approach to investigate spelling errors, which was operationalized with Levenshtein Distance. This output was highly skewed so a log transformation was used. 
 
-For our **outcome variable**, which is the power of different frequency bands calculated from fast Fourier transform. We have a lot of data, too much so and we have to decide which portion of the data makes up the brain activity we are interested in. We can incorporate power averaged across the scalp or we can add topographical locations of interest and look at power as the average of electrode clusters in a certain region. Additionally, we have power for delta, theta, alpha, beta, and gamma- thus we also need to decide which of these frequency bands we are interested in analyzing and which one we are not. Also, different combinations of these can looked at as well. For example: Alpha in one topographical location and Theta in another topographical location. This is where the help from the literature should come in to help us get an idea of what we should investigate vs what should be ignored.
-
+For our **outcome variable**, which is the power of different frequency bands calculated from fast Fourier transform, we have decided for now to use data that was averaged across the scalp. This was done to make the analysis more simpler but this can be changed later in future analysis. Additionally, we are restricting our analysis to delta and theta frequency bands (slower frequency bands), since this is what the literature tends to report on.
 
 ## What does the literature say?
 
-A detailed explanation is currently being written on my [Wiki Page](https://github.com/LeoLedesma237/LeoWebsite/wiki/My-Master's). It is nothing too fancy- just briefly summarizes findings of several different studies. Many studies have investigated rsEEG biomarkers in children that are poor spellers or have dyslexia. While there is some overlap, both are different populations. While there are some inconsistencies in the literature, which many are nicely explained in Lui and colleagues (2021) study. For the most part, it seems that children who are poor spellers and children with dyslexia tend to have lower delta and theta power than children who are good spellers/do not have dyslexia. With this in mind- this will temporarily be used to develop our hypothesis as a start step. (At least this should be enough for Brown Bag). Will eventually go back to further investigate the literature more thoroughly.  
+A detailed explanation is currently being written on my [Wiki Page](https://github.com/LeoLedesma237/LeoWebsite/wiki/My-Master's). It is nothing too fancy- just briefly summarizes findings of several different studies. Many studies have investigated rsEEG biomarkers in children that are poor spellers or have dyslexia. While there is some overlap between children with dyslexia and poor spellers, both are different populations. Thus results from both groups needs to be carefully considered instead of being lumped together. While there are some inconsistencies in the literature, which many are nicely explained in Lui and colleagues (2021) study, for the most part, it seems that children who are poor spellers and children with dyslexia tend to have higher delta and theta power than children who are good spellers/do not have dyslexia. With this in mind- this will temporarily be used to develop our hypotheses as a starting step. (At least this should be enough for Brown Bag). Will eventually go back to further investigate the literature more thoroughly.  
+
+### Hypotheses
+
+1. Poorer spelling performance is associated with higher delta power.
+
+2. Poorer spelling performance is associated with higher theta power.
 
 
-### Hypothesis
+The logic behind this is that poor spelling might be a sign of a less mature brain, which is represented by higher power of slower frequency bands (delta and theta). With this in mind, it is crucial then to introduce Age as a covariate into our analysis. 
 
-1. Spelling performance is associated with delta power.
 
-2. Spelling performance is associated with theta power.
+### What is the novelty in this?
+
+I mentioned above the results I found from papers that investigate this in children. Most of which have small sample sizes (I think- I need to recheck this to confirm). However, we have a sample of mostly young adults. It ranges from 15 to 25 years. Also, we have data from more than 400 subjects. These types of EEG studies are rarely reported, so it is nice that we have such a large sample size. 
 
 
 ### Data set 1: Original ARFA Spelling Performance vs rsEEG with no topography information
 
-We see that we have 430 unique ID's in this dataset. 
+We see that we have 430 unique ID's in this dataset. Let's also visualize our predictor and outcome variable through a scatterplot to see if we see any type of linear relationship. 
 
 ```{r combine the datasets 1, out.width= "90%"}
 # Combine the the datasets by using the left_join function
@@ -114,7 +122,7 @@ ggarrange(plot1, plot2)
 
 ### Data set 2: Levenshtein ARFA Spelling Errors vs rsEEG with no topography information
 
-We see that we have 451 unique ID's in this dataset. 
+We see that we have 451 unique ID's in this dataset. We have more ID's in this dataset than the former, which might give us a little more power. Let's also visualize our predictor and outcome variable through a scatterplot to see if we see any type of linear relationship. 
 
 
 ```{r combine the datasets 2, out.width= "90%"}
@@ -147,18 +155,29 @@ plot4 <- data2 %>%
 
 ggarrange(plot3, plot4)
 ```
+.
+
+
+### Conclusions from data visualizations
+
+What we found is consistent with the logic we developed from reports in the literature that investigate this in children (what a relief). As mentioned, we are predicting that poorer performers in a spelling task will have higher power for slower frequency bands (delta and theta). As we can see from the first two graphs, the worse a subject performed on the spelling task the higher the power they tended to have for both delta and theta frequency bands. Additionally, when looking at the log of spelling errors, we see that this looks positively associated with delta and theta power, which also makes sense with the findings in the literature.
+
+Knowing that we are probably on the right track- let's continue with the analysis. 
+
 
 ### Data Analysis (Simple Regression)
 
-Let's start by running a simple regression to see how well the model perform. We will construct four models. These models will not make up our final results. It is more for us to understand our data better. There will be different n sizes depending on the Predictor variable type chosen (Spelling performance vs Spelling Errors). 
+Let's start by running a simple regression to see how well the models perform. We will construct four models. These models will not make up our final results. It is more for us to understand our data better. There will be different n sizes depending on the Predictor variable type chosen (Spelling performance vs Spelling Errors). 
 
 model1: Delta ~ ARFA Spelling Performance
+
 model2: Theta ~ ARFA Spelling Performance
+
 model3: Delta ~ ARFA Spelling Errors
+
 model4: Theta ~ ARFA Spelling Errors
 
-It seems that the log transformation of the Spelling Errors explained slightly more of the variance (but like by barely) than the Original way of scoring it. 
-
+It seems that the log transformation of the Spelling Errors (model 3 and model 4) explained slightly more of the variance (but like by barely) than the Original way of scoring it (model 1 and model 2). 
 
 ```{r running a simple regression}
 # Create the first two simple regressions using the Spelling Performance predictor
@@ -179,22 +198,230 @@ summary(simple.regression4)
 
 ### Adding covariates
 
-Now that our predictor variables look promising- we need to add in several covariates that are also likely to influence our outcome variable (rsEEG power for delta and theta). From my experience as a researcher, it is very common and expected to introduce age and gender as covariates into the analysis. I don't think that it will personally do anything, but it is still good to investigate. Then, we will need to add two additional covariates that are likely to play a role. The first is a measure of non-verbal IQ from the Cultural Fair Intelligence Test (CFIT) and the second is a categorical variable that describes the upbringing of the subject, either as raised in an orphange (institutition) or by their biological family.
+Now that our predictor variables look somewhat promising- we need to add in several covariates that are also likely to influence our outcome variable (rsEEG power for delta and theta). From my experience as a researcher, it is very common and expected to introduce age and sex as covariates into the analysis. I don't think that sex will lead to anything, but it is still worth introducing. Age on the otherhand is crucial since it is likely to play a significant in explaining the variance of delta and theta power. Again this would go back to the idea of brain maturation.  
 
-Thus, our potential final models will include our predictor variable, four covariates and our outcome variable. 
+We will also introduce two additional covariates that are likely to play a role. The first is a measure of non-verbal IQ from the Cultural Fair Intelligence Test (CFIT). There are papers showing that power in resting-state EEG is related to IQ. I don't think it applies to slower frequency bands like delta and theta but it is still worth looking into. We do not have the IQ scores per se, but instead their raw scores of correct responses, so this is what we will be using. The second covariate is a measure of the person's upbringing. In the initial grant of the MegaGrant study, the research question was based on investigating differences between subjects (that are now adults) that were raised in orphanages vs those raised by biological families. This dichotomous grouping variable is called group and will be introduced into our analysis. 
+
+Thus, our potential final models will include our predictor variable, four covariates and our outcome variable (delta and theta separetly).
 
 ```{r loading in covariates, warning = FALSE}
 # Set working directory for demographic and group data
 setwd("~/Masters Project")
 
 # load in demographic information
-demo <- read_excel("MegaGrant_TBL_removed.xlsx")
+demo <- read_excel("MegaGrant_TBL_.xlsx")
+
+# data cleaning
+demo <- demo %>%
+  select(ID, Sex, Age, Group) %>%
+  mutate(ID = as.numeric(ID),
+         Age = as.numeric(Age))
 
 # Set working directory for CFIT data
+setwd("~/Masters Project/cleaned_predictor_covariates")
+
+# Load in the CFIT data
+CFIT <- read.csv("CFIT.scores.csv")
+```
+
+
+### Introduce covariates into our data frames
+
+```{r introduce the covaraites}
+# Introduce the covariates for data1
+final.data1 <- data1 %>%
+  left_join(demo, by ="ID") %>%
+  left_join(CFIT, by = "ID")
+
+
+# Introduce the covariates for data2
+final.data2 <- data2 %>%
+  left_join(demo, by ="ID") %>%
+  left_join(CFIT, by = "ID")
+
+# Remove any subjects with missing data
+final.data1 <- final.data1 %>%
+  filter(complete.cases(.))
+
+final.data2 <- final.data2 %>%
+  filter(complete.cases(.))
 
 ```
 
 
 
+### Run a multiple regression
+
+It seems that the model that used Levenshtein distance as a measure of Spelling Performance (model2; it calculated spelling errors and was log transformed) slightly outperformed the model that used the original/intended way of scoring Spelling Performance (model 1). Thus we will be using model 2 for post assumption tests and data visualization (this will also keep the document less cluttered with information). In all honestly it doesn't matter cause in neither model was our predictor significant. 
+
+The results from model 2 show that the log of spelling error was not significantly related to delta nor theta power. However, the covariate age and sex was significant. 
+
+```{r run a multiple regression}
+# Create the models
+model1.delta <- lm(delta ~ Spelling_Performance + Sex + Age + Group + Raw.Score, data = final.data1)
+model1.theta <- lm(theta ~ Spelling_Performance + Sex + Age + Group + Raw.Score, data = final.data1)
+
+model2.delta <- lm(delta ~ Spelling_Error_Log + Sex + Age + Group + Raw.Score, data = final.data2)
+model2.theta <- lm(theta ~ Spelling_Error_Log + Sex + Age + Group + Raw.Score, data = final.data2)
+
+# Obtain the summaries of model 1
+summary(model1.delta)
+summary(model1.theta)
+
+# obtain the summaries of model 2
+summary(model2.delta)
+summary(model2.theta)
+
+```
+
+### Visualizing significant covariates effect on rsEEG power
+
+It looks like age is negatively correlated with theta power. Showing that as someone's brain matures there is lower production of theta power. This aligns with what some studies have reported in the literature. Additionally, graphed gender since it was shown to be significant but visually it doesn't really look like it is. 
+
+```{r investigate Age}
+# Save Age effect on delta from model 2
+covariat.plot1 <- final.data2 %>%
+  ggplot(aes(x = Age, y = delta)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_classic()
+
+# Save Age effect on theta from model 2
+covariat.plot2 <- final.data2 %>%
+  ggplot(aes(x = Age, y = theta)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_classic()
+
+ggarrange(covariat.plot1, covariat.plot2)
+
+# Plotting Sex effect on delta from model 2
+covariat.plot3 <- final.data2 %>%
+  ggplot(aes(x = Sex, y = delta)) +
+  stat_summary(fun = "mean",
+               geom = "bar",
+               fill = "white",
+               color = "black",
+               width = .45) +
+  stat_summary(fun.data = mean_cl_normal,
+               geom = "errorbar",
+               width = .2) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,1.5)) +
+  theme_classic()
+
+# Plotting Sex effect on theta from model 2 
+covariat.plot4 <- final.data2 %>%
+  ggplot(aes(x = Sex, y = theta)) +
+  stat_summary(fun = "mean",
+               geom = "bar",
+               fill = "white",
+               color = "black",
+               width = .45) +
+  stat_summary(fun.data = mean_cl_normal,
+               geom = "errorbar",
+               width = .2) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,1.5)) +
+  theme_classic()
+
+
+ggarrange(covariat.plot3, covariat.plot4)
+
+
+```
+
+
+### Residual distribution in the models (Post-estimation technique)
+
+We need to plot the residuals for model2 (there are two of them) to see if they are normally distributed. It seems like it is skewed for both models. The first two plots are from the model predicting delta. The bottom two plots are from the model predicting theta. 
+
+```{r plot the residuals for both models}
+# introduce the residuals into the datasets
+final.data2$studentized.residuals.delta <- rstudent(model2.delta)
+final.data2$studentized.residuals.theta <- rstudent(model2.theta)
+
+# Create a histogram of the outcome variable
+residual.plot1 <- final.data2 %>%
+  ggplot(aes(x = studentized.residuals.delta)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 15) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,120)) + 
+  theme_classic() +
+  labs(title = "A histogram of Studentized Residuals",
+       x = "Studentized Residuals",
+       y = "Frequency",
+       caption = bquote(bold("Figure 1:") ~ "A histogram of Studentized Residuals.")) +
+  theme(plot.title = element_text(size = 11,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 10, face = "bold"),
+        axis.text = element_text(size = 10),
+        plot.caption = element_text(size = 8,
+                                    hjust = 0))
+
+# Create a QQ plot
+residual.plot2 <- final.data2 %>%
+  ggplot(aes(sample= studentized.residuals.delta)) +
+  geom_qq() +
+  stat_qq_line() +
+  theme_classic() +
+  labs(title = "QQ Plot for model 2 predicting delta",
+       x = "Theoretical Quantiles",
+       y = "Frequency",
+       caption = bquote(bold("Figure 2:") ~ "A QQ Plot of studentized residuals and theoretical quantiles.")) +
+  theme(plot.title = element_text(size = 11,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 10, face = "bold"),
+        axis.text = element_text(size = 10),
+        plot.caption = element_text(size = 8,
+                                    hjust = 0))
+
+# Plot the graphs
+ggarrange(residual.plot1, residual.plot2)
+
+
+# Create a histogram of the outcome variable
+residual.plot3 <- final.data2 %>%
+  ggplot(aes(x = studentized.residuals.theta)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 15) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,120)) + 
+  theme_classic() +
+  labs(title = "A histogram of Studentized Residuals",
+       x = "Studentized Residuals",
+       y = "Frequency",
+       caption = bquote(bold("Figure 1:") ~ "A histogram of Studentized Residuals.")) +
+  theme(plot.title = element_text(size = 11,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 10, face = "bold"),
+        axis.text = element_text(size = 10),
+        plot.caption = element_text(size = 8,
+                                    hjust = 0))
+
+# Create a QQ plot
+residual.plot4 <- final.data2 %>%
+  ggplot(aes(sample= studentized.residuals.theta)) +
+  geom_qq() +
+  stat_qq_line() +
+  theme_classic() +
+  labs(title = "QQ Plot for model 2 predicting theta",
+       x = "Theoretical Quantiles",
+       y = "Frequency",
+       caption = bquote(bold("Figure 2:") ~ "A QQ Plot of studentized residuals and theoretical quantiles.")) +
+  theme(plot.title = element_text(size = 11,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 10, face = "bold"),
+        axis.text = element_text(size = 10),
+        plot.caption = element_text(size = 8,
+                                    hjust = 0))
+
+# Plot the graphs
+ggarrange(residual.plot3, residual.plot4)
+
+```
+
+### Conclusion
+
+It seems that the residuals of our multiple regression are not normally distributed. This violation makes it difficult to generalize our findings. Additionally, it looks like our residuals are skewed/curved. Does this mean that we should use something else instead of a regression since there is a curvature? 
 
 

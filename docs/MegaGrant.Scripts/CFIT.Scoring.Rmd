@@ -5,6 +5,11 @@ date: "2024-03-14"
 output: html_document
 ---
 
+### Reusing ONR CFIT scoring code
+
+We are going to be reusing most of the code that I have developed to score the CFIT for the ONR study. So if you happened to read over that document, a lot of what is present below was copied and pasted over. Some modifications were made to the excel file with the CFIT data for MegaGrant since it is a bit different, but not all that different. 
+
+
 The CFIT stands for the Culturally Fair Intelligence Tests developed by Raymond Cattell. This assessment contains four types of non-verbal IQ tests. We are interested in Scale 2 of this test, which is the medium difficulty version. Additionally Scale 2 contains Form A and Form B, both forms contain items that correspond to one of the four tests. We collected data strictly from Form B. Unfortunately, there is no standardized way to obtain IQ scores from performance on the CFIT Scale 2 Form B, thus we will only be reporting raw scores for each subject below. 
 
 Raw scores are calculated by taking the sum of correct responses from the four subtests. Meaning there will be one overall score. 
@@ -33,93 +38,64 @@ library(kableExtra)
 
 ```{r load in the data, warning = FALSE}
 # Set working directory
-setwd("~/ONR/IQ_data")
+setwd("Y:/STUDY 1/All Behavioral Data Organized/Usable CFIT Excels")
 
 # Load in the data
-CFIT <- read.csv("ONR CFIT_February 21, 2024_23.42.csv")
+CFIT <- read_excel("CFIT.xlsx")
 
 ```
 
-### Data cleaning
+### Picking variables of interest
+
+We are interested in the ID information and their responses for each item. So we will be keeping only those variables. 
 
 ```{r data cleaining}
-# Remove unnecessary rows 
-# Remove the first seven rows they are meaningless
-CFIT <- CFIT[8:nrow(CFIT),]
+# Keeping relevant variables
+CFIT <- CFIT %>%
+  select(ID, starts_with("CFITSub"))
 
-# Keep variables that we are interested in
-CFIT.names <- names(CFIT)
-series.names <- CFIT.names[grepl(pattern = "T1Q" , x = CFIT.names)]
-classification.names <- CFIT.names[grepl(pattern = "T2Q" , x = CFIT.names)]
-matrices.names <- CFIT.names[grepl(pattern = "T3Q" , x = CFIT.names)]
-condition.names <- CFIT.names[grepl(pattern = "T4Q" , x = CFIT.names)]
-
-# The number of items in order should be 12, 14, 12, and 8
-length(series.names)
-length(classification.names)
-length(matrices.names)
-length(condition.names)
-
-# Extract these variable names from our original CFIT
-variables <- c("ID", series.names, classification.names, matrices.names, condition.names)
-
-# Save this new cleaned data set
-CFIT <- CFIT[,variables]
-
+# There should be 1 variable for ID and 46 variables that indicate CFIT items for a total of 47 variables
+dim(CFIT)
 
 ```
 
+### Data Cleaning
 
-
-### Quality control
-
-First let's remove any NA's from our ID column since this is meaningless information. Then let's check for any duplicates in our data which is from tester error. Below are some ID's that have more than two scores for IQ. To fix these scores, we would have to look at the dates of completion between these ID's and neighboring ID's, which may take a while. For now these ID's will be removed from the analysis. 
+There are some NA's present in the data- let's just replace those with 0. Additionally, not all the values for each variable are the same. Some have values of 1-4 but others have letters in the values such as A1 or A4. We will take all variables and remove any letters from those values- then coercing all the variables to be numerical. There seem to be 636 unique IDs in the data, which correspond to the number of rows in the dataset- thus there are no duplicates in our data.
 
 ```{r quality control}
-# Convert any blank information in the cells into NA
-CFIT[CFIT == ""] <- NA
+# Total number of subjects in our data
+length(unique(CFIT$ID))
 
-# Dropping NA's in the ID column
-CFIT <- CFIT %>%
-  drop_na(ID)
+# View the structure of our data
+str(CFIT)
 
-# Look for duplicates in the data
-CFIT %>%
-  group_by(ID) %>%
-  count() %>%
-  filter(n > 1) %>%
-  kbl() %>%
-  kable_paper(full_width = F)
+# Extract all variables that
+CFIT.items <- CFIT %>%
+  select_if(is.character) 
 
-# Duplicate IDs
-duplicate.IDs <- CFIT %>%
-  group_by(ID) %>%
-  count() %>%
-  filter(n > 1) %>%
-  select(ID) %>%
-  unlist()
+# Extract only the numbers for each response
+responses.numeric.list <- list()
 
-# Mentioned how many ID's will be removed
-paste("We will be dropping",length(duplicate.IDs),"IDs from our analysis.")
+for(ii in 1:length(CFIT.items)) {
 
-# Drop duplicate IDs
-CFIT <- CFIT %>%
-  filter(!(ID %in% duplicate.IDs))
+  # Extract the current variable and transform it into a vector
+  current.item <- unlist(CFIT.items[ii])
+  
+  # Transform this item by extracting only numbers and save it into a list
+  responses.numeric.list[[ii]] <- as.numeric(gsub("\\D", "", current.item))
 
-# Check for any remaining duplicate IDs
-CFIT %>%
-  group_by(ID) %>%
-  count() %>%
-  filter(n > 1) %>%
-  kbl() %>%
-  kable_paper(full_width = F)
+}
 
-# Additional data cleaning- changing n126 to 126
-CFIT <- CFIT %>%
-  mutate(ID = ifelse(ID == "n126", "126", ID))
+# Merge the items back into a dataframe with IDs included
+CFIT.numeric <- responses.numeric.list %>%
+  do.call(cbind,.) %>%
+  cbind(ID = CFIT$ID) %>%
+  data.frame()
+  
 
-# Changing ID's to numeric
-CFIT$ID <- as.numeric(CFIT$ID)
+# Convert any NA's in the data into 0's
+CFIT.numeric[is.na(CFIT.numeric)] <- 0
 
 ```
 
@@ -131,7 +107,7 @@ We are interested in obtain one raw score per person, thus we will be matching e
 
 ```{r CFIT scoring, warning = FALSE}
 # Convert the data to long
-CFIT.long <- CFIT %>%
+CFIT.long <- CFIT.numeric %>%
   pivot_longer(-ID)
 
 # Set working directory
@@ -173,22 +149,35 @@ Raw.score %>%
 
 ```
 
-### Current CFIT numbers
 
-```{r current CFIT numbers}
-# Paste the following
-paste("We have CFIT raw scores for",length(unique(Raw.score$ID)),"subjects")
+### An Issue
+
+It seems that the responses on the raw data for the CFIT do not make any sense and that something we wrong with the scoring because of the values reported for each item. Fortunatelty, there are four columns where someone already has summed the number of correct items for each person. Thus, we will be using those numbers instead. It would have been nicer to do this by code- but I am short on time so I will trust their work instead.
+
+```{r using provided scores}
+# Set the working directory
+setwd("Y:/STUDY 1/All Behavioral Data Organized/Usable CFIT Excels")
+
+# Load in the data
+CFIT2 <- read_excel("CFIT.xlsx")
+
+# Save the columns with the sum of correct items for each of the four CFIT sub-tests. Also save the ID
+CFIT.final <- CFIT2 %>%
+  select(ID, Sub1Sum, Sub2Sum, Sub3Sum, Sub4Sum) %>%
+  transmute(ID,
+            Raw.Score = Sub1Sum + Sub2Sum + Sub3Sum + Sub4Sum)
 
 ```
+
 
 ### Save the data
 
 ```{r save the data}
 # Set a save directory
-setwd("~/ONR/IQ_data/Processed Data")
+setwd("C:/Users/lledesma.TIMES/Documents/Masters Project/cleaned_predictor_covariates")
 
 # Save the data
-write.csv(x = Raw.score, file = "CFIT.raw.scores.csv")
+write_csv(x = CFIT.final, file = "CFIT.scores.csv")
 
 
 ```
