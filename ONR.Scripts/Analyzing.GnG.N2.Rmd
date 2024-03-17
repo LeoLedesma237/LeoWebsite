@@ -10,7 +10,6 @@ output: html_document
 
 
 
-
 ### Universal block code settings
 
 ```{r setup}

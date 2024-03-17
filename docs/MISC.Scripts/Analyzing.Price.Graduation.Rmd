@@ -1,0 +1,348 @@
+---
+title: "Analyzing Price and Graduation"
+author: "Leandro Ledesma"
+date: "2024-03-17"
+output: html_document
+---
+
+
+The function of this document is to go through the process of multiple regression based on the teachings of my ELCS 8330 class. The goal is to take some data that we downloaded from the Integrated Postsecondary Education Data System (IPEDS) and to investigate the relationship between the price of attending an institution and its relationship to graduation rate.  
+
+The following document is going to go over the cleaning process of the data, checking of pre-estimation assumptions, the analysis process (including refinements), and then the post-estimation assumptions.
+
+
+
+### Universal block code settings
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+
+```
+
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+library(rempsyc) # Create APA tables with nice_table()
+library(flextable) # Adds aesthetic functions to the table from above
+library(kableExtra) # Extra table formatting type
+
+```
+
+
+### Load in the data
+
+```{r load in the data, warning = FALSE}
+# set working directory
+setwd("C:/Users/lledesma.TIMES/Documents/MISC/ELCS 8330")
+
+# load in the data
+data.uncleaned <- read.csv("MidTermData.csv")
+```
+
+### Data cleaning
+
+Let's rename some of the variables to make them easier to understand. With the variable 'Institution' as an exemption, we see that all of our variables are being interpreted as integers. This however, is incorrect. Some of these variables have numeric values that function as labels. Thus the variables HBCU, Tribal, Carnegie and Land.Grant need to be changed to categorical. 
+
+Our dimensions show that we have 814 rows and 23 variables. 
+
+```{r renamimg variables}
+# Renaming our predictor and dependent variables
+data <- data.uncleaned %>%
+  rename(Institution.ID = UnitID, 
+         Institution = Institution.Name,
+         Institution.Sector = Sector.of.institution..HD2022.,
+         Federal = Federal.operating.grants.and.contracts..F2122_F1A.,
+         State = State.operating.grants.and.contracts..F2122_F1A.,
+         `American Indian(%)` = Percent.of.total.enrollment.that.are.American.Indian.or.Alaska.Native..DRVEF2022.,
+         `Asian(%)` = Percent.of.total.enrollment.that.are.Asian..DRVEF2022.,
+         `Hawaii(%)` = Percent.of.total.enrollment.that.are.Native.Hawaiian.or.Other.Pacific.Islander..DRVEF2022.,
+         `Black(%)` = Percent.of.total.enrollment.that.are.Black.or.African.American..DRVEF2022.,
+         `Hispanic(%)` = Percent.of.total.enrollment.that.are.Hispanic.Latino..DRVEF2022.,
+         `White(%)` = Percent.of.total.enrollment.that.are.White..DRVEF2022.,
+         `Unknown Ethnicity(%)` = Percent.of.total.enrollment.that.are.Race.ethnicity.unknown..DRVEF2022.,
+         `Non-Resident(%)` = Percent.of.total.enrollment.that.are.U.S..Nonresident..DRVEF2022.,
+         `Two or more race(%)` = Percent.of.total.enrollment.that.are.two.or.more.races..DRVEF2022.,
+         `Women(%)` = Percent.of.total.enrollment.that.are.women..DRVEF2022.,
+         `Total Enrollment` = Total..enrollment..DRVEF2022.,
+         Graduation.Rate = Graduation.rate..total.cohort..DRVGR2022.,
+         HBCU = Historically.Black.College.or.University..HD2021.,
+         Tribal = Tribal.college..HD2021.,
+         Carnegie = Carnegie.Classification.2021..Basic..HD2021.,
+         Land.Grant = Land.Grant.Institution..HD2021.,
+         Price = Total.price.for.in.district.students.living.on.campus..2021.22..DRVIC2021.,
+         `Admitted(%)` = Percent.admitted...total..DRVADM2021_RV.)
+
+# View the data
+str(data)
+
+# Changing variables to categorical
+data$HBCU <- as.character(data$HBCU)
+data$Tribal <- as.character(data$Tribal)
+data$Carnegie <- as.character(data$Carnegie)
+data$Land.Grant <- as.character(data$Land.Grant)
+
+# View the dimensions of our data
+dim(data)
+```
+
+### Missing data
+
+Let's check for missing data in our dataset. If present, let's drop those rows. After dropping for any NA's in our dataset, our dimensions changed from 814 x 23 to 472 x 23. This means that our number of institutions, aka our n has dropped to 472. This will be our final sample size. 
+
+```{r investigating missing data}
+# Check for missing data by variable
+# find location of missing values
+print("The number of missing data for each variable is:")
+colSums(is.na(data))
+
+# As of right now we will be dropping any row that has any NA's, this is because rows with NA's are automatically dropped during the analysis anyway- which is proven by a mismatched between the original dataset with NA's and the created vector of residuals.
+data <- data %>%
+  filter(complete.cases(.))
+
+
+# Dimensions of new dataset
+dim(data)
+
+# Are there any more NA's present?
+print("The number of missing data for each variable is:")
+colSums(is.na(data))
+```
+
+
+### Descriptive statistics of our predictor and outcome variable
+
+```{r descriptive statistics of our predictor and outcome variable}
+# Print out the descriptive statistics using the summary function
+# Main predictor variable
+summary(data$Price)
+sd(data$Price)
+max(data$Price)
+min(data$Price)
+
+# Main outcome variable
+summary(data$Graduation.Rate)
+sd(data$Graduation.Rate)
+max(data$Graduation.Rate)
+min(data$Graduation.Rate)
+```
+
+
+### Visulize the outcome variable
+
+Let's create histograms of our outcome variable
+
+```{r creating histograms, out.width= "90%"}
+# Create a histogram of the outcome variable
+data %>%
+  ggplot(aes(x = Graduation.Rate)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 15) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,80)) + 
+  theme_classic() +
+  labs(title = "A Histogram of Graduation Rates for 2022",
+       x = "Graduation Rate",
+       y = "Frequency",
+       #caption = "Figure 1: A histogram of graduation rates",
+       caption = bquote(bold("Figure 1:") ~ "A histogram of graduation rates.")) +
+  theme(plot.title = element_text(size = 14,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, 
+                                  face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0))
+
+```
+
+
+
+
+### Demographic descriptive statistics
+
+```{r demographic descriptive statistics}
+# Show the demographic descriptive statistics in a table 
+demo <- data %>%
+  select(`American Indian(%)`,
+         `Asian(%)`,
+         `Hawaii(%)`,
+         `Black(%)`,
+         `Hispanic(%)`,
+         `White(%)`,
+         `Unknown Ethnicity(%)`,
+         `Non-Resident(%)`,
+         `Two or more race(%)`,
+         `Women(%)`)
+
+# We nee to have our demographic variables in one column, let's make the data longer to do this
+demo.long <- demo %>%
+  stack() %>%
+  select(Characteristics = ind,
+         Percentage = values)
+
+# Obtain the descriptive statistics from the long format demographic sheet
+demo.summarize <- demo.long %>%
+  group_by(Characteristics) %>%
+  summarize(Mean = round(mean(Percentage),2),
+            Med. = round(median(Percentage),2),
+            SD = round(sd(Percentage),2),
+            Min. = min(Percentage),
+            Max. = max(Percentage),
+            N = nrow(demo))
+
+# Create an APA style table with the results
+demo.summarize %>%
+  nice_table(title = "Table 1: Descriptive Statistics of Demographic Charactersitics") %>%
+  bold(part = "header")
+
+```
+
+
+### Demographic outliers
+
+```{r demographic outliers}
+# Using the dataframe created from above, graph box plots to determine outliers by demographics
+demo.long %>%
+  ggplot(aes(x = Characteristics, y = Percentage)) +
+  stat_boxplot(geom = "errorbar", width = 0.2) + 
+  labs(title = "Box Plots of Demographic Characteristics",
+        caption = bquote(bold("Figure 2:") ~ "Box plots of demographic variables.")) +
+  geom_boxplot() +
+  coord_flip() +
+  theme_classic() +
+  theme(plot.title = element_text(size = 14,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, 
+                                  face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0))
+
+```
+
+
+### Print out table indicate what the number labels represent
+
+There are two unique carnegie classifications in this dataset. 
+
+```{r Carnegie classification, warning = FALSE}
+# Set working directory
+setwd("~/MISC/ELCS 8330")
+
+# Load in the data labels 
+data.labels <- read.csv("mid term data labels.csv")
+
+# Keep only the data labels that are in our study (aka applies to Carnegie)
+data.carnegie.labels <- as.numeric(unique(data$Carnegie))
+
+
+# Print the labels 
+Carnegie.labels <- data.labels %>%
+  filter(VariableName == "Carnegie Classification 2021: Basic (HD2021)") %>%
+  filter(Value %in% data.carnegie.labels) %>%
+  select(-VariableName, Carnegie = Value) %>%
+  mutate(Carnegie = as.character(Carnegie))
+  
+
+# Print the table
+Carnegie.labels %>%
+  kbl() %>%
+  kable_paper(bootstrap_options = "striped", full_width = F)
+
+
+```
+
+
+### Create a table for the proportion of Carnegie in our sample
+
+
+```{r create a table for our institution variables}
+# Introduce the Carnegie levels to our original dataset
+data.Carnegie <- data %>%
+  left_join(Carnegie.labels, by = "Carnegie")
+
+
+# Let's take some descriptive statistics on our new Value Label
+Carnegie.descriptives <- data.Carnegie %>%
+  group_by(ValueLabel) %>%
+  count() %>%
+  rename(`Carnegie Classification` = ValueLabel,
+         Count = n) %>%
+  mutate(Percentage = round(Count/nrow(data.Carnegie),3)*100)
+
+# Print the table
+Carnegie.descriptives %>%
+  nice_table(title = "Table 2: Descriptive Statistics of Carnegie Classifications") %>%
+  bold(part = "header")
+
+
+# The number of unique Classifications in our sample
+unique(data.uncleaned$Carnegie.Classification.2021..Basic..HD2021.)
+unique(Carnegie.descriptives$`Carnegie Classification`)
+
+```
+
+
+### Create a table for our dichotomous variables (Institution variables: HBCU, Land Grant and Tribal)
+
+```{r descriptive statistics on HBCU}
+# Add labels to HBCU
+data.Institution <- data.Carnegie %>%
+  transmute(HBCU = factor(HBCU,
+                       levels = c(1,2),
+                       labels =c("Yes","No")),
+         Tribal = factor(Tribal,
+                         levels = c(1,2),
+                         labels =c("Yes","No")),
+         Land.Grant = factor(Land.Grant,
+                             levels = c(1,2),
+                             labels =c("Land Grant Institution",
+                                       "Not Land Grant Institution")))
+
+Institutional.tibble <- tibble(HBUC = table(data.Institution$HBCU)) %>%
+  cbind(tibble(Tribal = table(data.Institution$Tribal))) %>%
+  cbind(tibble(Land.Grant = table(data.Institution$Land.Grant)))
+
+Institutional.tibble$Status <- c("Yes", "No")
+
+Institutional.tibble %>%
+  pivot_longer(-Status, names_to = "Institutional Variables",
+               values_to = "Count") %>%
+  select(`Institutional Variables`, Status, Count) %>%
+  arrange(`Institutional Variables`) %>%
+  group_by(`Institutional Variables`) %>%
+  mutate(Percentage = round(Count/sum(Count),3)*100) %>%
+  nice_table(title = "Table 3: Counts and Percentage of Institutional Variables ") %>%
+  bold(part = "header")
+
+
+```
+
+### Descriptives of our last few covariates
+
+```{r descriptives of our last few covariates}
+options(scipen=999) # Remove significant numbers
+
+# Use the summary function for these last variables
+summary(data$Federal)
+hist(data$Federal)
+
+summary(data$State)
+hist(data$State)
+
+# Now enrollment
+summary(data$`Total Enrollment`)
+hist(data$`Total Enrollment`)
+
+# Lastly percentage of admitted
+summary(data$`Admitted(%)`)
+hist(data$`Admitted(%)`)
+
+````
+
+# Homework 2

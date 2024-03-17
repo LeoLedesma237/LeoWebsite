@@ -264,6 +264,8 @@ model1.theta <- lm(theta ~ Spelling_Performance + Sex + Age + Group + Raw.Score,
 model2.delta <- lm(delta ~ Spelling_Error_Log + Sex + Age + Group + Raw.Score, data = final.data2)
 model2.theta <- lm(theta ~ Spelling_Error_Log + Sex + Age + Group + Raw.Score, data = final.data2)
 
+model3.delta <- lm(delta~ Spelling_Error_Log + Age + Spelling_Error_Log*Age , data = final.data2)
+
 # Obtain the summaries of model 1
 summary(model1.delta)
 summary(model1.theta)
@@ -271,6 +273,8 @@ summary(model1.theta)
 # obtain the summaries of model 2
 summary(model2.delta)
 summary(model2.theta)
+
+summary(model3.delta)
 
 ```
 

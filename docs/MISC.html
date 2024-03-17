@@ -11,7 +11,7 @@
 
 
 
-<title>MegaGrant Data Overview</title>
+<title>MISC Projects</title>
 
 <script src="site_libs/header-attrs-2.19/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
@@ -275,73 +275,32 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">MegaGrant Data Overview</h1>
+<h1 class="title toc-ignore">MISC Projects</h1>
 
 </div>
 
 
-<p>This document serves to track data cleaning for MegaGrant data. For
-context, this was a study that took place in Russia that investigated
-how rearing in an institutionalized environment reflected behaviorally
-and neurophysiolologically in adulthood. Several different measures were
-collected from participants including: demographic information, medical
-records, IQ, executive function, quality of life, delinquency, language
-abilities, and EEG data.</p>
-<p>For my master’s thesis, I am curious to investigate if language
-related measures are associated with neurophysiological measures,
-specifically with power of certain frequency bands in resting-state EEG
-(rsEEG).</p>
-<div id="data-cleaning" class="section level3">
-<h3>Data Cleaning</h3>
-<p><strong>Step 1</strong>: The Master Excel sheet that contained all of
-the ID’s from the study and the data that was associated to it needed to
-be cleaned. After cleaning the final likely ID number for this study is
-700. <a
-href="https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/ID.Cleaning.html">[Click
-here to view script]</a></p>
-<p><strong>Step 2</strong>: Now that we know our sample size, we need to
-investigate how many subjects contain data for the variables we are
-interested. Our predictor will be spelling capabilities (ARFA) and the
-our outcome is rsEEG. Additionally, we want to control for Sex, Age,
-Group, and IQ. From our 700 ID’s, 604 have these data present. <a
-href="https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/Ideal.data.html">[Click
-here to view script]</a></p>
-<p><strong>Step 3</strong>: As mentioned in step 2, even though we
-identified our ideal N for our analysis, this would only be possible if
-all rsEEG recordings had no issues throughout the preprocessing
-pipeline. From our initial 604 rsEEG files, 466 made it through the
-preprocessing stage. <a
-href="https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/Verify.rsEEG.html">[Click
-here to view script]</a></p>
-<p><strong>Step 4</strong>: Now that we have our cleaned rsEEG files, we
-need to process them using Fast Fourier transform to convert them into
-the frequency domain from the time domain. This process was done using
-MATLAB scripts. This Rmarkdown will now be showing that process but
-instead cleaning the outputs created from FFT. The outputs from this are
-two dataset. Both have the average power for the 5 frequency bands for
-each of the 462 subjects, however, one includes topographical
-information and the other does not. <a
-href="https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/Frequency.Band.Scoring.html">[Click
-here to view the script]</a></p>
-<p><strong>Step 5</strong>: Now we need to walk through the process of
-cleaning and scoring our main predictor variable, which is spelling
-performance. <a
-href="https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/ARFA.Scoring.html">[Click
-here to view script]</a></p>
-<p><strong>Step 6</strong>: Scoring CFIT data. Initially we were given
-IQ scores from the CFIT Scale 2 Form-B that was used in this study.
-Unfortunately, this version of the CFIT cannot be used to get an IQ
-score, because there is no way to standardized the scores. Thus, we will
-need to take the raw data and calculate a raw score for each subject. <a
-href="https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/CFIT.Scoring.html">[Click
-here to view script]</a></p>
-</div>
+<p>This document contains other projects or analysis that are much
+smaller than the projects on the tab pages. These will be projects
+related to class assignments.</p>
 <div id="data-analysis" class="section level3">
 <h3>Data Analysis</h3>
-<p><strong>rsEEG and Spelling Performance Analysis</strong>
-<add description here> (<a
-href="https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/Analyzing.rsEEG.Spelling.html"
-class="uri">https://leoledesma237.github.io/LeoWebsite/MegaGrant.Scripts/Analyzing.rsEEG.Spelling.html</a>)</p>
+<p><strong>ELCS 8330: Multiple Regression</strong> This analysis
+outlines a multiple regression that is investigating the relationship
+between the tuition of an educational institution (Price) and that
+institution’s graduation rate. This method follows a pipeline that is
+used in the field of education. We first formulate our research
+question, which is: Does this predictor variable that is a continuous
+variable explain some of the variance of this continuous outcome
+variable. Once those variables have been established, we introduce
+several additional variables that function as predictors (called
+covariates) and see if by controlling for their influence on the outcome
+variable, if we still have a significant effect from our predictor
+variable of interest. Additionally, we will cover assumptions related to
+multiple regression. We will not touch on interaction effects in this
+analysis. <a
+href="https://leoledesma237.github.io/LeoWebsite/MISC.Scripts/Analyzing.Price.Graduation.html">[Click
+here to view script]</a></p>
 </div>
 
 

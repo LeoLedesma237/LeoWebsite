@@ -1,0 +1,18 @@
+---
+title: "MISC Projects"
+output:
+  html_document
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE,warning=FALSE, cache=TRUE)
+```
+
+
+This document contains other projects or analysis that are much smaller than the projects on the tab pages. These will be projects related to class assignments. 
+
+
+### Data Analysis
+
+**ELCS 8330: Multiple Regression** This analysis outlines a multiple regression that is investigating the relationship between the tuition of an educational institution (Price) and that institution's graduation rate. This method follows a pipeline that is used in the field of education. We first formulate our research question, which is: Does this predictor variable that is a continuous variable explain some of the variance of this continuous outcome variable. Once those variables have been established, we introduce several additional variables that function as predictors (called covariates) and see if by controlling for their influence on the outcome variable, if we still have a significant effect from our predictor variable of interest. Additionally, we will cover assumptions related to multiple regression. We will not touch on interaction effects in this analysis. [[Click here to view script]](https://leoledesma237.github.io/LeoWebsite/MISC.Scripts/Analyzing.Price.Graduation.html)

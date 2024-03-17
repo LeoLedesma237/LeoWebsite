@@ -12,6 +12,8 @@ navbar:
       href: KBB.html
     - text: "OVC"
       href: OVC.html
+    - text: "MISC"
+      href: MISC.html
     - text: "Links"
       href: Links.html
 output_dir: "docs"

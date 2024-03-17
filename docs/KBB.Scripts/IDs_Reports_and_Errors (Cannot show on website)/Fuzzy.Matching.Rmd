@@ -74,6 +74,7 @@ paste("From the Fuzzy Matching code, there are potentially",nrow(fuzzy.matching)
 
 # Print out the options
 unique(fuzzy.matching) %>%
+  arrange(desc(Date_of_Evaluation.x)) %>%
   kbl() %>%
     kable_paper(bootstrap_options = "striped", full_width = F)
 
@@ -125,6 +126,7 @@ fuzzy.matching2 <- potential.matches.list %>%
   do.call(rbind,.)
   
 fuzzy.matching2 %>%
+    arrange(desc(Date_of_Evaluation.x)) %>%
     kbl() %>%
     kable_paper(bootstrap_options = "striped", full_width = F)
 
@@ -151,6 +153,7 @@ The ID's down below could not be matched to any existing HOH_ID's nor to each ot
 ```{r IDs that could not be matched at all}
 potential.HOH_ID.errors3 %>%
   unique() %>%
+  arrange(desc(Date_of_Evaluation)) %>%
   kbl() %>%
     kable_paper(bootstrap_options = "striped", full_width = F)
 

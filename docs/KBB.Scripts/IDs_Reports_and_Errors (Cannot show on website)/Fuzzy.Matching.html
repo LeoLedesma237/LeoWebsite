@@ -642,16 +642,15 @@ fuzzy.matching &lt;- stringdist_join(potential.HOH_ID.errors, correct.HOH_IDs,
 
 
 paste(&quot;From the Fuzzy Matching code, there are potentially&quot;,nrow(fuzzy.matching),&quot;typo IDs that were matched to real HOH_IDs&quot;)</code></pre>
-<pre><code>[1] &quot;From the Fuzzy Matching code, there are potentially 14 typo IDs that were matched to real HOH_IDs&quot;</code></pre>
+<pre><code>[1] &quot;From the Fuzzy Matching code, there are potentially 18 typo IDs that were matched to real HOH_IDs&quot;</code></pre>
 <pre class="r"><code># Print out the options
 unique(fuzzy.matching) %&gt;%
+  arrange(desc(Date_of_Evaluation.x)) %&gt;%
   kbl() %&gt;%
     kable_paper(bootstrap_options = &quot;striped&quot;, full_width = F)</code></pre>
 <table class=" lightable-paper" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
-<th style="text-align:left;">
-</th>
 <th style="text-align:left;">
 Typo HOH_ID
 </th>
@@ -684,8 +683,121 @@ dist
 <tbody>
 <tr>
 <td style="text-align:left;">
+Agness Siyumba 1973-12-25
+</td>
+<td style="text-align:left;">
+2024-03-06
+</td>
+<td style="text-align:left;">
+Chiyoba
+</td>
+<td style="text-align:right;">
+104
+</td>
+<td style="text-align:left;">
+Agness Sibayumba 1973-12-25
+</td>
+<td style="text-align:left;">
+2024-03-06
+</td>
+<td style="text-align:left;">
+Chiyoba
+</td>
+<td style="text-align:right;">
+104
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Cornwell Chilala 1993-01-01
+</td>
+<td style="text-align:left;">
+2024-03-06
+</td>
+<td style="text-align:left;">
+Hamuzwazwa
+</td>
+<td style="text-align:right;">
+103
+</td>
+<td style="text-align:left;">
+Cornwell Chilala 1968-01-01
+</td>
+<td style="text-align:left;">
+2024-03-06
+</td>
+<td style="text-align:left;">
+Hamuzwazwa
+</td>
+<td style="text-align:right;">
+103
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Emelda Ngomusi 1988-05-16
+</td>
+<td style="text-align:left;">
+2024-03-05
+</td>
+<td style="text-align:left;">
+Chiyoba
+</td>
+<td style="text-align:right;">
+103
+</td>
+<td style="text-align:left;">
+Emelda Ngomusi 1988-07-16
+</td>
+<td style="text-align:left;">
+2024-03-05
+</td>
+<td style="text-align:left;">
+Chiyoba
+</td>
+<td style="text-align:right;">
+103
+</td>
+<td style="text-align:right;">
 1
 </td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Vincent gomoosi 1990-03-05
+</td>
+<td style="text-align:left;">
+2024-03-05
+</td>
+<td style="text-align:left;">
+Chiyoba
+</td>
+<td style="text-align:right;">
+110
+</td>
+<td style="text-align:left;">
+Vincent Gomoosi 1990-03-05
+</td>
+<td style="text-align:left;">
+2024-03-05
+</td>
+<td style="text-align:left;">
+Chiyoba
+</td>
+<td style="text-align:right;">
+110
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
 <td style="text-align:left;">
 Edward Keeme 1979-01-01
 </td>
@@ -716,9 +828,6 @@ Madubansi
 </tr>
 <tr>
 <td style="text-align:left;">
-2
-</td>
-<td style="text-align:left;">
 Edward Keeme 1979-01-01
 </td>
 <td style="text-align:left;">
@@ -747,233 +856,6 @@ Madubansi
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
-5
-</td>
-<td style="text-align:left;">
-Ement Chibele 1964-01-01
-</td>
-<td style="text-align:left;">
-2023-11-06
-</td>
-<td style="text-align:left;">
-Munasinyungwe
-</td>
-<td style="text-align:right;">
-102
-</td>
-<td style="text-align:left;">
-Ement Chibele 1963-01-01
-</td>
-<td style="text-align:left;">
-2023-11-06
-</td>
-<td style="text-align:left;">
-Munasinyungwe
-</td>
-<td style="text-align:right;">
-102
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-8
-</td>
-<td style="text-align:left;">
-Kennedy Simuunza 1971-05-25
-</td>
-<td style="text-align:left;">
-2023-11-27
-</td>
-<td style="text-align:left;">
-Simalawo
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:left;">
-Kennedy Simuunza 1971-05-24
-</td>
-<td style="text-align:left;">
-2023-11-27
-</td>
-<td style="text-align:left;">
-Simalawo
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-9
-</td>
-<td style="text-align:left;">
-Kennedy Simuunza 1971-05-25
-</td>
-<td style="text-align:left;">
-2023-11-27
-</td>
-<td style="text-align:left;">
-Simalawo
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:left;">
-Kennedy Simuunza 1971-05-24
-</td>
-<td style="text-align:left;">
-2023-11-27
-</td>
-<td style="text-align:left;">
-Simalawo
-</td>
-<td style="text-align:right;">
-104
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-11
-</td>
-<td style="text-align:left;">
-Nathan Changwamachila 1985-04-16
-</td>
-<td style="text-align:left;">
-2023-11-07
-</td>
-<td style="text-align:left;">
-Simbuta
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:left;">
-Nathan Changwamachila 1984-04-16
-</td>
-<td style="text-align:left;">
-2023-11-07
-</td>
-<td style="text-align:left;">
-Simbuta
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-13
-</td>
-<td style="text-align:left;">
-Bright Simankobela 1993-10-01
-</td>
-<td style="text-align:left;">
-2023-11-07
-</td>
-<td style="text-align:left;">
-Chazangwe
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:left;">
-Bright Simankobela 1993-09-01
-</td>
-<td style="text-align:left;">
-2023-11-07
-</td>
-<td style="text-align:left;">
-Chazangwe
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:right;">
-2
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-15
-</td>
-<td style="text-align:left;">
-Evason Nabeene 1978-11-07
-</td>
-<td style="text-align:left;">
-2023-11-07
-</td>
-<td style="text-align:left;">
-Chazangwe
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:left;">
-Evason Nabeene 1978-06-07
-</td>
-<td style="text-align:left;">
-2023-11-07
-</td>
-<td style="text-align:left;">
-Chazangwe
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:right;">
-2
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-20
-</td>
-<td style="text-align:left;">
-Pathias Chibambo 1999-03-21
-</td>
-<td style="text-align:left;">
-2023-08-24
-</td>
-<td style="text-align:left;">
-Kabeta
-</td>
-<td style="text-align:right;">
-103
-</td>
-<td style="text-align:left;">
-Pathias Chibambo 1999-03-21
-</td>
-<td style="text-align:left;">
-2023-08-24
-</td>
-<td style="text-align:left;">
-Kabeta
-</td>
-<td style="text-align:right;">
-103
-</td>
-<td style="text-align:right;">
-2
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-23
-</td>
 <td style="text-align:left;">
 Tryford Apuleni 1983-07-07
 </td>
@@ -1004,9 +886,6 @@ Halumba Jalabani
 </tr>
 <tr>
 <td style="text-align:left;">
-24
-</td>
-<td style="text-align:left;">
 Tryford Apuleni 1983-07-07
 </td>
 <td style="text-align:left;">
@@ -1035,9 +914,6 @@ Halumba jalabani
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
-25
-</td>
 <td style="text-align:left;">
 Edward Keembe 1979-11-30
 </td>
@@ -1068,9 +944,6 @@ Madubansi
 </tr>
 <tr>
 <td style="text-align:left;">
-26
-</td>
-<td style="text-align:left;">
 Edward Keembe 1979-11-30
 </td>
 <td style="text-align:left;">
@@ -1100,8 +973,208 @@ Madubansi
 </tr>
 <tr>
 <td style="text-align:left;">
-29
+Kennedy Simuunza 1971-05-25
 </td>
+<td style="text-align:left;">
+2023-11-27
+</td>
+<td style="text-align:left;">
+Simalawo
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:left;">
+Kennedy Simuunza 1971-05-24
+</td>
+<td style="text-align:left;">
+2023-11-27
+</td>
+<td style="text-align:left;">
+Simalawo
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Kennedy Simuunza 1971-05-25
+</td>
+<td style="text-align:left;">
+2023-11-27
+</td>
+<td style="text-align:left;">
+Simalawo
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:left;">
+Kennedy Simuunza 1971-05-24
+</td>
+<td style="text-align:left;">
+2023-11-27
+</td>
+<td style="text-align:left;">
+Simalawo
+</td>
+<td style="text-align:right;">
+104
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Nathan Changwamachila 1985-04-16
+</td>
+<td style="text-align:left;">
+2023-11-07
+</td>
+<td style="text-align:left;">
+Simbuta
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:left;">
+Nathan Changwamachila 1984-04-16
+</td>
+<td style="text-align:left;">
+2023-11-07
+</td>
+<td style="text-align:left;">
+Simbuta
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Bright Simankobela 1993-10-01
+</td>
+<td style="text-align:left;">
+2023-11-07
+</td>
+<td style="text-align:left;">
+Chazangwe
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:left;">
+Bright Simankobela 1993-09-01
+</td>
+<td style="text-align:left;">
+2023-11-07
+</td>
+<td style="text-align:left;">
+Chazangwe
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Evason Nabeene 1978-11-07
+</td>
+<td style="text-align:left;">
+2023-11-07
+</td>
+<td style="text-align:left;">
+Chazangwe
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:left;">
+Evason Nabeene 1978-06-07
+</td>
+<td style="text-align:left;">
+2023-11-07
+</td>
+<td style="text-align:left;">
+Chazangwe
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Ement Chibele 1964-01-01
+</td>
+<td style="text-align:left;">
+2023-11-06
+</td>
+<td style="text-align:left;">
+Munasinyungwe
+</td>
+<td style="text-align:right;">
+102
+</td>
+<td style="text-align:left;">
+Ement Chibele 1963-01-01
+</td>
+<td style="text-align:left;">
+2023-11-06
+</td>
+<td style="text-align:left;">
+Munasinyungwe
+</td>
+<td style="text-align:right;">
+102
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Pathias Chibambo 1999-03-21
+</td>
+<td style="text-align:left;">
+2023-08-24
+</td>
+<td style="text-align:left;">
+Kabeta
+</td>
+<td style="text-align:right;">
+103
+</td>
+<td style="text-align:left;">
+Pathias Chibambo 1999-03-21
+</td>
+<td style="text-align:left;">
+2023-08-24
+</td>
+<td style="text-align:left;">
+Kabeta
+</td>
+<td style="text-align:right;">
+103
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
 <td style="text-align:left;">
 Pricad Mulya 1969-10-10
 </td>
@@ -1144,7 +1217,7 @@ these cases, we need to one by one match a typo HOH_ID to the rest of
 the typo HOH_IDs and see if we can potentially find some matches
 here.</p>
 <pre class="r"><code>paste(&quot;There are&quot;,nrow(potential.HOH_ID.errors2),&quot;typo HOH_IDs that still need to be matched&quot;)</code></pre>
-<pre><code>[1] &quot;There are 48 typo HOH_IDs that still need to be matched&quot;</code></pre>
+<pre><code>[1] &quot;There are 54 typo HOH_IDs that still need to be matched&quot;</code></pre>
 <pre class="r"><code># Create a function to take on HOH_ID by one and then match to the rest in the data frame
 potential.matches.list &lt;- list()
 
@@ -1177,6 +1250,7 @@ fuzzy.matching2 &lt;- potential.matches.list %&gt;%
   do.call(rbind,.)
   
 fuzzy.matching2 %&gt;%
+    arrange(desc(Date_of_Evaluation.x)) %&gt;%
     kbl() %&gt;%
     kable_paper(bootstrap_options = &quot;striped&quot;, full_width = F)</code></pre>
 <table class=" lightable-paper" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto;">
@@ -1243,354 +1317,6 @@ Chiyaya
 </tr>
 <tr>
 <td style="text-align:left;">
-Andrew Lisonde 1982-01-01
-</td>
-<td style="text-align:left;">
-2023-11-16
-</td>
-<td style="text-align:left;">
-Hatumpota
-</td>
-<td style="text-align:right;">
-104
-</td>
-<td style="text-align:left;">
-Andrew Lusonde 1982-01-01
-</td>
-<td style="text-align:left;">
-2023-11-16
-</td>
-<td style="text-align:left;">
-Hatumpota
-</td>
-<td style="text-align:right;">
-104
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Andrew Lusonde 1982-01-01
-</td>
-<td style="text-align:left;">
-2023-11-16
-</td>
-<td style="text-align:left;">
-Hatumpota
-</td>
-<td style="text-align:right;">
-104
-</td>
-<td style="text-align:left;">
-Andrew Lisonde 1982-01-01
-</td>
-<td style="text-align:left;">
-2023-11-16
-</td>
-<td style="text-align:left;">
-Hatumpota
-</td>
-<td style="text-align:right;">
-104
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Francis Chiyanika 1988-10-03
-</td>
-<td style="text-align:left;">
-2023-11-30
-</td>
-<td style="text-align:left;">
-Simalawo
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:left;">
-Francis Chyanika 1988-10-03
-</td>
-<td style="text-align:left;">
-2023-11-30
-</td>
-<td style="text-align:left;">
-Simalawo
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Francis Chyanika 1988-10-03
-</td>
-<td style="text-align:left;">
-2023-11-30
-</td>
-<td style="text-align:left;">
-Simalawo
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:left;">
-Francis Chiyanika 1988-10-03
-</td>
-<td style="text-align:left;">
-2023-11-30
-</td>
-<td style="text-align:left;">
-Simalawo
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Gladys Chitiku 1974-12-25
-</td>
-<td style="text-align:left;">
-2023-11-30
-</td>
-<td style="text-align:left;">
-Madubansi
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:left;">
-Gladys Hitiku 1974-12-25
-</td>
-<td style="text-align:left;">
-2023-11-30
-</td>
-<td style="text-align:left;">
-Madubansi
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:right;">
-2
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Gladys Hitiku 1974-12-25
-</td>
-<td style="text-align:left;">
-2023-11-30
-</td>
-<td style="text-align:left;">
-Madubansi
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:left;">
-Gladys Chitiku 1974-12-25
-</td>
-<td style="text-align:left;">
-2023-11-30
-</td>
-<td style="text-align:left;">
-Madubansi
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:right;">
-2
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Jackson Silimboyi 1986-11-01
-</td>
-<td style="text-align:left;">
-2023-11-14
-</td>
-<td style="text-align:left;">
-Hatupota
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:left;">
-Jackson Silimboyi 1986-12-01
-</td>
-<td style="text-align:left;">
-2023-11-14
-</td>
-<td style="text-align:left;">
-Hatupota
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Jackson Silimboyi 1986-12-01
-</td>
-<td style="text-align:left;">
-2023-11-14
-</td>
-<td style="text-align:left;">
-Hatupota
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:left;">
-Jackson Silimboyi 1986-11-01
-</td>
-<td style="text-align:left;">
-2023-11-14
-</td>
-<td style="text-align:left;">
-Hatupota
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-John Mulube 1978-04-17
-</td>
-<td style="text-align:left;">
-2023-11-29
-</td>
-<td style="text-align:left;">
-Simalawo
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:left;">
-John Mulube 1978-07-17
-</td>
-<td style="text-align:left;">
-2023-11-29
-</td>
-<td style="text-align:left;">
-Simalawo
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-John Mulube 1978-07-17
-</td>
-<td style="text-align:left;">
-2023-11-29
-</td>
-<td style="text-align:left;">
-Simalawo
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:left;">
-John Mulube 1978-04-17
-</td>
-<td style="text-align:left;">
-2023-11-29
-</td>
-<td style="text-align:left;">
-Simalawo
-</td>
-<td style="text-align:right;">
-107
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Julias Namaundu 1993-05-26
-</td>
-<td style="text-align:left;">
-2023-11-14
-</td>
-<td style="text-align:left;">
-Hatumpota
-</td>
-<td style="text-align:right;">
-104
-</td>
-<td style="text-align:left;">
-Juliias Namaundu 1993-05-26
-</td>
-<td style="text-align:left;">
-2023-11-14
-</td>
-<td style="text-align:left;">
-Hatumpota
-</td>
-<td style="text-align:right;">
-104
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Juliias Namaundu 1993-05-26
-</td>
-<td style="text-align:left;">
-2023-11-14
-</td>
-<td style="text-align:left;">
-Hatumpota
-</td>
-<td style="text-align:right;">
-104
-</td>
-<td style="text-align:left;">
-Julias Namaundu 1993-05-26
-</td>
-<td style="text-align:left;">
-2023-11-14
-</td>
-<td style="text-align:left;">
-Hatumpota
-</td>
-<td style="text-align:right;">
-104
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
 Oliver Hantukumane 1991-02-26
 </td>
 <td style="text-align:left;">
@@ -1620,6 +1346,180 @@ Chiyaya
 </tr>
 <tr>
 <td style="text-align:left;">
+Francis Chiyanika 1988-10-03
+</td>
+<td style="text-align:left;">
+2023-11-30
+</td>
+<td style="text-align:left;">
+Simalawo
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:left;">
+Francis Chyanika 1988-10-03
+</td>
+<td style="text-align:left;">
+2023-11-30
+</td>
+<td style="text-align:left;">
+Simalawo
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Francis Chyanika 1988-10-03
+</td>
+<td style="text-align:left;">
+2023-11-30
+</td>
+<td style="text-align:left;">
+Simalawo
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:left;">
+Francis Chiyanika 1988-10-03
+</td>
+<td style="text-align:left;">
+2023-11-30
+</td>
+<td style="text-align:left;">
+Simalawo
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Gladys Chitiku 1974-12-25
+</td>
+<td style="text-align:left;">
+2023-11-30
+</td>
+<td style="text-align:left;">
+Madubansi
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:left;">
+Gladys Hitiku 1974-12-25
+</td>
+<td style="text-align:left;">
+2023-11-30
+</td>
+<td style="text-align:left;">
+Madubansi
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Gladys Hitiku 1974-12-25
+</td>
+<td style="text-align:left;">
+2023-11-30
+</td>
+<td style="text-align:left;">
+Madubansi
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:left;">
+Gladys Chitiku 1974-12-25
+</td>
+<td style="text-align:left;">
+2023-11-30
+</td>
+<td style="text-align:left;">
+Madubansi
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+John Mulube 1978-04-17
+</td>
+<td style="text-align:left;">
+2023-11-29
+</td>
+<td style="text-align:left;">
+Simalawo
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:left;">
+John Mulube 1978-07-17
+</td>
+<td style="text-align:left;">
+2023-11-29
+</td>
+<td style="text-align:left;">
+Simalawo
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+John Mulube 1978-07-17
+</td>
+<td style="text-align:left;">
+2023-11-29
+</td>
+<td style="text-align:left;">
+Simalawo
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:left;">
+John Mulube 1978-04-17
+</td>
+<td style="text-align:left;">
+2023-11-29
+</td>
+<td style="text-align:left;">
+Simalawo
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
 Passmore Hasanda 1986-04-16
 </td>
 <td style="text-align:left;">
@@ -1671,6 +1571,180 @@ Simalawo
 </td>
 <td style="text-align:right;">
 108
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Andrew Lisonde 1982-01-01
+</td>
+<td style="text-align:left;">
+2023-11-16
+</td>
+<td style="text-align:left;">
+Hatumpota
+</td>
+<td style="text-align:right;">
+104
+</td>
+<td style="text-align:left;">
+Andrew Lusonde 1982-01-01
+</td>
+<td style="text-align:left;">
+2023-11-16
+</td>
+<td style="text-align:left;">
+Hatumpota
+</td>
+<td style="text-align:right;">
+104
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Andrew Lusonde 1982-01-01
+</td>
+<td style="text-align:left;">
+2023-11-16
+</td>
+<td style="text-align:left;">
+Hatumpota
+</td>
+<td style="text-align:right;">
+104
+</td>
+<td style="text-align:left;">
+Andrew Lisonde 1982-01-01
+</td>
+<td style="text-align:left;">
+2023-11-16
+</td>
+<td style="text-align:left;">
+Hatumpota
+</td>
+<td style="text-align:right;">
+104
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Jackson Silimboyi 1986-11-01
+</td>
+<td style="text-align:left;">
+2023-11-14
+</td>
+<td style="text-align:left;">
+Hatupota
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:left;">
+Jackson Silimboyi 1986-12-01
+</td>
+<td style="text-align:left;">
+2023-11-14
+</td>
+<td style="text-align:left;">
+Hatupota
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Jackson Silimboyi 1986-12-01
+</td>
+<td style="text-align:left;">
+2023-11-14
+</td>
+<td style="text-align:left;">
+Hatupota
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:left;">
+Jackson Silimboyi 1986-11-01
+</td>
+<td style="text-align:left;">
+2023-11-14
+</td>
+<td style="text-align:left;">
+Hatupota
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Julias Namaundu 1993-05-26
+</td>
+<td style="text-align:left;">
+2023-11-14
+</td>
+<td style="text-align:left;">
+Hatumpota
+</td>
+<td style="text-align:right;">
+104
+</td>
+<td style="text-align:left;">
+Juliias Namaundu 1993-05-26
+</td>
+<td style="text-align:left;">
+2023-11-14
+</td>
+<td style="text-align:left;">
+Hatumpota
+</td>
+<td style="text-align:right;">
+104
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Juliias Namaundu 1993-05-26
+</td>
+<td style="text-align:left;">
+2023-11-14
+</td>
+<td style="text-align:left;">
+Hatumpota
+</td>
+<td style="text-align:right;">
+104
+</td>
+<td style="text-align:left;">
+Julias Namaundu 1993-05-26
+</td>
+<td style="text-align:left;">
+2023-11-14
+</td>
+<td style="text-align:left;">
+Hatumpota
+</td>
+<td style="text-align:right;">
+104
 </td>
 <td style="text-align:right;">
 1
@@ -1698,6 +1772,7 @@ KoboToolBox website yet.</p></li>
 </ol>
 <pre class="r"><code>potential.HOH_ID.errors3 %&gt;%
   unique() %&gt;%
+  arrange(desc(Date_of_Evaluation)) %&gt;%
   kbl() %&gt;%
     kable_paper(bootstrap_options = &quot;striped&quot;, full_width = F)</code></pre>
 <table class=" lightable-paper" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto;">
@@ -1720,16 +1795,198 @@ Evaluator_ID
 <tbody>
 <tr>
 <td style="text-align:left;">
-Alvin Habanji 1995-01-01
+Mutinta Hanzila 1990-09-21
 </td>
 <td style="text-align:left;">
-2023-11-08
+2024-03-13
 </td>
 <td style="text-align:left;">
-Simbuta
+Lweendo
+</td>
+<td style="text-align:right;">
+110
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Bridget Chiinganya 2024-03-05
+</td>
+<td style="text-align:left;">
+2024-03-05
+</td>
+<td style="text-align:left;">
+Chiyoba
+</td>
+<td style="text-align:right;">
+103
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Melia Muchimba 1942-01-01
+</td>
+<td style="text-align:left;">
+2024-03-05
+</td>
+<td style="text-align:left;">
+Siloozi
+</td>
+<td style="text-align:right;">
+106
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Obrain Phiri 1994-10-15
+</td>
+<td style="text-align:left;">
+2024-03-05
+</td>
+<td style="text-align:left;">
+Halandwe
+</td>
+<td style="text-align:right;">
+106
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Obrain Phiri 2024-03-05
+</td>
+<td style="text-align:left;">
+2024-03-05
+</td>
+<td style="text-align:left;">
+Halandwe
+</td>
+<td style="text-align:right;">
+106
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Twelo Hampooma 1958-01-01
+</td>
+<td style="text-align:left;">
+2024-03-05
+</td>
+<td style="text-align:left;">
+Chiboba
+</td>
+<td style="text-align:right;">
+102
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Evans Simuchila 1970-01-13
+</td>
+<td style="text-align:left;">
+2024-03-04
+</td>
+<td style="text-align:left;">
+Halandwe
+</td>
+<td style="text-align:right;">
+106
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Clifford Simafutu 1987-03-24
+</td>
+<td style="text-align:left;">
+2024-02-26
+</td>
+<td style="text-align:left;">
+Halandwe
+</td>
+<td style="text-align:right;">
+102
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Raymond Nampaka 1978-01-01
+</td>
+<td style="text-align:left;">
+2023-12-06
+</td>
+<td style="text-align:left;">
+Halumba jalabani
+</td>
+<td style="text-align:right;">
+102
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Dyford Desya 1973-01-01
+</td>
+<td style="text-align:left;">
+2023-12-05
+</td>
+<td style="text-align:left;">
+Halumba Jalabani
+</td>
+<td style="text-align:right;">
+109
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Lonias Hachibwaza 1965-01-01
+</td>
+<td style="text-align:left;">
+2023-12-05
+</td>
+<td style="text-align:left;">
+Simalawo
+</td>
+<td style="text-align:right;">
+102
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Philmon Mweetwa 1958-10-19
+</td>
+<td style="text-align:left;">
+2023-11-30
+</td>
+<td style="text-align:left;">
+Halumba jalabani
 </td>
 <td style="text-align:right;">
 107
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Philmon Mweetwa 1974-12-25
+</td>
+<td style="text-align:left;">
+2023-11-30
+</td>
+<td style="text-align:left;">
+Halumba jalabani
+</td>
+<td style="text-align:right;">
+107
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Samuel Ng’andu 1992-03-27
+</td>
+<td style="text-align:left;">
+2023-11-28
+</td>
+<td style="text-align:left;">
+Simalawo
+</td>
+<td style="text-align:right;">
+102
 </td>
 </tr>
 <tr>
@@ -1748,13 +2005,41 @@ Simalawo
 </tr>
 <tr>
 <td style="text-align:left;">
-Bornwell Muchimba 1973-01-01
+Evans Silimboyi 1996-01-01
 </td>
 <td style="text-align:left;">
-2023-10-25
+2023-11-14
 </td>
 <td style="text-align:left;">
-Mizinga
+Hatupota
+</td>
+<td style="text-align:right;">
+107
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Nickolas Hamakando 1969-01-01
+</td>
+<td style="text-align:left;">
+2023-11-09
+</td>
+<td style="text-align:left;">
+Lunamba
+</td>
+<td style="text-align:right;">
+103
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Alvin Habanji 1995-01-01
+</td>
+<td style="text-align:left;">
+2023-11-08
+</td>
+<td style="text-align:left;">
+Simbuta
 </td>
 <td style="text-align:right;">
 107
@@ -1776,6 +2061,104 @@ Simbuta
 </tr>
 <tr>
 <td style="text-align:left;">
+Frezer Chakamba 1990-01-01
+</td>
+<td style="text-align:left;">
+2023-11-07
+</td>
+<td style="text-align:left;">
+Munasinyungwe
+</td>
+<td style="text-align:right;">
+102
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Passmore Chibele 1966-01-01
+</td>
+<td style="text-align:left;">
+2023-11-07
+</td>
+<td style="text-align:left;">
+Munasinyungwe
+</td>
+<td style="text-align:right;">
+109
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Lauren Zumbi 1997-02-14
+</td>
+<td style="text-align:left;">
+2023-11-06
+</td>
+<td style="text-align:left;">
+Chazangwe
+</td>
+<td style="text-align:right;">
+107
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Francisca Mweene 1958-01-01
+</td>
+<td style="text-align:left;">
+2023-11-02
+</td>
+<td style="text-align:left;">
+Chazaangwe
+</td>
+<td style="text-align:right;">
+103
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Zulu Chazaangwe 1973-06-04
+</td>
+<td style="text-align:left;">
+2023-11-02
+</td>
+<td style="text-align:left;">
+Chazaangwe
+</td>
+<td style="text-align:right;">
+103
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Gilbert Chiinga 1993-03-03
+</td>
+<td style="text-align:left;">
+2023-11-01
+</td>
+<td style="text-align:left;">
+Mafwuwa
+</td>
+<td style="text-align:right;">
+109
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Bornwell Muchimba 1973-01-01
+</td>
+<td style="text-align:left;">
+2023-10-25
+</td>
+<td style="text-align:left;">
+Mizinga
+</td>
+<td style="text-align:right;">
+107
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
 Clement Chiponde 1983-12-17
 </td>
 <td style="text-align:left;">
@@ -1790,30 +2173,16 @@ Hankanga
 </tr>
 <tr>
 <td style="text-align:left;">
-Clement Sizambwe 1981-03-01
+Reyman Mateketa 1990-01-01
 </td>
 <td style="text-align:left;">
-2023-09-06
+2023-10-19
 </td>
 <td style="text-align:left;">
-Chinene
+Mizinga
 </td>
 <td style="text-align:right;">
-101
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Clifford Simafutu 1987-03-24
-</td>
-<td style="text-align:left;">
-2024-02-26
-</td>
-<td style="text-align:left;">
-Halandwe
-</td>
-<td style="text-align:right;">
-102
+103
 </td>
 </tr>
 <tr>
@@ -1847,6 +2216,62 @@ Mutongwa
 </tr>
 <tr>
 <td style="text-align:left;">
+Clement Sizambwe 1981-03-01
+</td>
+<td style="text-align:left;">
+2023-09-06
+</td>
+<td style="text-align:left;">
+Chinene
+</td>
+<td style="text-align:right;">
+101
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Nelson Kajebwe 1974-11-06
+</td>
+<td style="text-align:left;">
+2023-09-06
+</td>
+<td style="text-align:left;">
+Sizambwe
+</td>
+<td style="text-align:right;">
+101
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Kenneth Hansingo 1974-01-01
+</td>
+<td style="text-align:left;">
+2023-09-04
+</td>
+<td style="text-align:left;">
+Hansingo
+</td>
+<td style="text-align:right;">
+102
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Kaffbelt Kaanda 1990-01-01
+</td>
+<td style="text-align:left;">
+2023-08-31
+</td>
+<td style="text-align:left;">
+Sizambwe
+</td>
+<td style="text-align:right;">
+101
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
 Derek Habongo 1994-08-11
 </td>
 <td style="text-align:left;">
@@ -1875,230 +2300,6 @@ Kabeta
 </tr>
 <tr>
 <td style="text-align:left;">
-Dyford Desya 1973-01-01
-</td>
-<td style="text-align:left;">
-2023-12-05
-</td>
-<td style="text-align:left;">
-Halumba Jalabani
-</td>
-<td style="text-align:right;">
-109
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Evans Silimboyi 1996-01-01
-</td>
-<td style="text-align:left;">
-2023-11-14
-</td>
-<td style="text-align:left;">
-Hatupota
-</td>
-<td style="text-align:right;">
-107
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Evans Simuchila 1970-01-13
-</td>
-<td style="text-align:left;">
-2024-03-04
-</td>
-<td style="text-align:left;">
-Halandwe
-</td>
-<td style="text-align:right;">
-106
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Francisca Mweene 1958-01-01
-</td>
-<td style="text-align:left;">
-2023-11-02
-</td>
-<td style="text-align:left;">
-Chazaangwe
-</td>
-<td style="text-align:right;">
-103
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Frank Mudenda 1994-01-05
-</td>
-<td style="text-align:left;">
-2023-08-21
-</td>
-<td style="text-align:left;">
-Mwaaba
-</td>
-<td style="text-align:right;">
-103
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Frezer Chakamba 1990-01-01
-</td>
-<td style="text-align:left;">
-2023-11-07
-</td>
-<td style="text-align:left;">
-Munasinyungwe
-</td>
-<td style="text-align:right;">
-102
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Gilbert Chiinga 1993-03-03
-</td>
-<td style="text-align:left;">
-2023-11-01
-</td>
-<td style="text-align:left;">
-Mafwuwa
-</td>
-<td style="text-align:right;">
-109
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Kaffbelt Kaanda 1990-01-01
-</td>
-<td style="text-align:left;">
-2023-08-31
-</td>
-<td style="text-align:left;">
-Sizambwe
-</td>
-<td style="text-align:right;">
-101
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Kenneth Hansingo 1974-01-01
-</td>
-<td style="text-align:left;">
-2023-09-04
-</td>
-<td style="text-align:left;">
-Hansingo
-</td>
-<td style="text-align:right;">
-102
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Lauren Zumbi 1997-02-14
-</td>
-<td style="text-align:left;">
-2023-11-06
-</td>
-<td style="text-align:left;">
-Chazangwe
-</td>
-<td style="text-align:right;">
-107
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Lonias Hachibwaza 1965-01-01
-</td>
-<td style="text-align:left;">
-2023-12-05
-</td>
-<td style="text-align:left;">
-Simalawo
-</td>
-<td style="text-align:right;">
-102
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Nelson Kajebwe 1974-11-06
-</td>
-<td style="text-align:left;">
-2023-09-06
-</td>
-<td style="text-align:left;">
-Sizambwe
-</td>
-<td style="text-align:right;">
-101
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Nickolas Hamakando 1969-01-01
-</td>
-<td style="text-align:left;">
-2023-11-09
-</td>
-<td style="text-align:left;">
-Lunamba
-</td>
-<td style="text-align:right;">
-103
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Passmore Chibele 1966-01-01
-</td>
-<td style="text-align:left;">
-2023-11-07
-</td>
-<td style="text-align:left;">
-Munasinyungwe
-</td>
-<td style="text-align:right;">
-109
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Philmon Mweetwa 1958-10-19
-</td>
-<td style="text-align:left;">
-2023-11-30
-</td>
-<td style="text-align:left;">
-Halumba jalabani
-</td>
-<td style="text-align:right;">
-107
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Philmon Mweetwa 1974-12-25
-</td>
-<td style="text-align:left;">
-2023-11-30
-</td>
-<td style="text-align:left;">
-Halumba jalabani
-</td>
-<td style="text-align:right;">
-107
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
 Pricad Mu 1969-10-10
 </td>
 <td style="text-align:left;">
@@ -2113,55 +2314,13 @@ Kabeta
 </tr>
 <tr>
 <td style="text-align:left;">
-Raymond Nampaka 1978-01-01
+Frank Mudenda 1994-01-05
 </td>
 <td style="text-align:left;">
-2023-12-06
+2023-08-21
 </td>
 <td style="text-align:left;">
-Halumba jalabani
-</td>
-<td style="text-align:right;">
-102
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Reyman Mateketa 1990-01-01
-</td>
-<td style="text-align:left;">
-2023-10-19
-</td>
-<td style="text-align:left;">
-Mizinga
-</td>
-<td style="text-align:right;">
-103
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Samuel Ng’andu 1992-03-27
-</td>
-<td style="text-align:left;">
-2023-11-28
-</td>
-<td style="text-align:left;">
-Simalawo
-</td>
-<td style="text-align:right;">
-102
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Zulu Chazaangwe 1973-06-04
-</td>
-<td style="text-align:left;">
-2023-11-02
-</td>
-<td style="text-align:left;">
-Chazaangwe
+Mwaaba
 </td>
 <td style="text-align:right;">
 103
