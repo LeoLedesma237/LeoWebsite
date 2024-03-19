@@ -30,6 +30,11 @@ library(readxl)
 library(rempsyc) # Create APA tables with nice_table()
 library(flextable) # Adds aesthetic functions to the table from above
 library(kableExtra) # Extra table formatting type
+library(corrtable) # Potential correlation matrix code
+library(broom) # Converts regression outputs into dataframes using the tidy() function
+library(car) # To calcualte vif
+
+
 
 ```
 
@@ -205,7 +210,7 @@ demo.summarize %>%
 
 ### Demographic outliers
 
-```{r demographic outliers}
+```{r demographic outliers, out.width="90%"}
 # Using the dataframe created from above, graph box plots to determine outliers by demographics
 demo.long %>%
   ggplot(aes(x = Characteristics, y = Percentage)) +
@@ -330,19 +335,764 @@ options(scipen=999) # Remove significant numbers
 
 # Use the summary function for these last variables
 summary(data$Federal)
-hist(data$Federal)
+#hist(data$Federal)
 
 summary(data$State)
-hist(data$State)
+#hist(data$State)
 
 # Now enrollment
 summary(data$`Total Enrollment`)
-hist(data$`Total Enrollment`)
+#hist(data$`Total Enrollment`)
 
 # Lastly percentage of admitted
 summary(data$`Admitted(%)`)
-hist(data$`Admitted(%)`)
+#hist(data$`Admitted(%)`)
 
-````
+```
 
-# Homework 2
+
+# HW2: Assumptions
+
+
+### Assummption 1: Normality
+
+### Viewing our data
+
+Let's create histograms of our outcome variable
+
+```{r creating histogram again our outcome variable, out.width= "90%"}
+# Create a histogram of the outcome variable
+plot1 <- data %>%
+  ggplot(aes(x = Graduation.Rate)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 15) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,100)) + 
+  theme_classic() +
+  labs(title = "A histogram of graduation rate",
+       x = "Graduation Rate",
+       y = "Frequency",
+       caption = bquote(bold("Figure 1:") ~ "A histogram of graduation rates.")) +
+  theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 15,
+                                    hjust = 0))
+
+
+```
+
+### Shapiro Wilk Test
+
+The null hypothesis of Shapiro-Wilk test is that the sample comes from the population distribution thus it will be normaly distributed. If our Shapiro-Wilk test is significant then that means we reject the null hypothesis- this we violate the assumotion of normality. That is what occurs in our data for our outcome variable. 
+
+```{r graduation rate shapiro wilk test}
+# Use a Shapiro Wilk's test on graduation rates. 
+shapiro.test(data$Graduation.Rate)
+
+```
+
+
+### Assumption 2: Linearity
+
+Does our predictor and outcome variable when place in a scatter plot look linearly? Looking at our scatterplot- we see a line form nicely. 
+
+```{r create a scatter plot}
+# Create a scatterplot between the predictor and outcome variable
+data %>%
+  ggplot(aes(x = Price, y = Graduation.Rate)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Scatterplot of Price and Graduation Rate",
+       x = "Price",
+       y = "Graduation Rate",
+  caption = bquote(bold("Figure 3:") ~ "A scatterplot of university price and graduation rates.")) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 15,
+                                    hjust = 0))
+
+
+```
+
+
+
+### Assumption 3: Homescedasticity
+
+This assumption measures whether the variance of the outcome variable is similar accross different levels of the predictor variable. We can graph this in two ways- one as the way we did above with a scatterplot (which we will do again) and grouping variance into boxplots created by grouping quntiles of the predictor variable
+
+### Visualizing the data
+
+```{r viewing homoscedasticity}
+# Graph the scatterplot and save it into an object
+plot1 <- data %>%
+  ggplot(aes(x = Price, y = Graduation.Rate)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_bw() +
+  labs(x = "Price",
+       y = "Graduation Rate")
+
+# Create the boxplots from perdictor quintiles
+# Part 1: Obtain the quintiles of price and save it as a dataframe
+quantile.df <- quantile(data$Price, probs = seq(0, 1, .2)) %>%
+  data.frame(cut.off =.)
+
+# Part 2: Create a new categorical variable defining which quintile the data belongs to
+data.quant <- data %>%
+  select(x = Price,
+         y = Graduation.Rate) %>%
+  arrange(x) %>%
+  mutate(quant.x = ifelse(x < quantile.df$cut.off[2], "Q1",
+                          ifelse(x < quantile.df$cut.off[3], "Q2",
+                                 ifelse(x < quantile.df$cut.off[4], "Q3",
+                                        ifelse(x < quantile.df$cut.off[5], "Q4", "Q5")))))
+
+# Plot the quintiles of x as boxplots + jitter for our y
+plot2 <- data.quant %>%
+  ggplot(aes(x = quant.x, y = y)) +
+  geom_boxplot() +
+  theme_classic() +
+  labs(title = "Graduation Rate Scores Grouped by Price Quintiles",
+       x = "Price Quintiles",
+       y = "Graduation Rate",
+       caption = bquote(bold("Figure 4:") ~ "Box plots of graduation rate by price quintiles.")) +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 15,
+                                    hjust = 0))
+
+
+# Plot the graphs
+#ggarrange(plot1, plot2)
+
+plot1
+
+plot2
+```
+
+
+### Assumption 4: Independence
+
+There are two types of independence assumptions we need to investigate. The first one is to assess that all of the scores from our predictor and outcome variable each come from one unique institution- there is no repeated measures. The second assumption is looking at the correlation of covariates and making sure there is no multicolinearity- if so that needs to be corrected by dropping covariates.
+
+### Are all scores independent
+
+```{r assumption 1 independence}
+# Let's investigate the first type of independence assumption
+# There are 578 observations in our data
+nrow(data)
+
+# We can verify that our scores all come from one unique institution by using the unique function on our institution IDs
+length(unique(data$Institution.ID))
+
+# They are both 578 so this is met
+```
+
+### Checking for Multicollinearity
+
+```{r assumption 2 independence}
+# This only applies to our covariates
+# Additionally, we cannot include covariates that are NOT continuous
+# Thus all of those need to be removed plus the predictor and outcome variable
+covariates <- data %>%
+  select(-c(Price, 
+            Graduation.Rate, 
+            HBCU, 
+            Tribal, 
+            Carnegie, 
+            Land.Grant, 
+            Institution.ID, 
+            Institution, 
+            Institution.Sector)) 
+
+# dimensions of covariates
+dim(covariates)
+
+# Remove any missing data in our covariates
+covariates <- drop_na(covariates)
+
+# dimensions of covariates (Dropped 15 rows)
+dim(covariates)
+
+# Run a correlation matrix, but it is difficult to see- so let's change it a bit
+# 1. convert the correlation matrix into a data.frame
+cor.df <- cor(covariates) %>%
+  data.frame() 
+
+# 2. convert it to long then return only the correlations larger than .6 (Not including 1.00)
+cor.df %>%
+  mutate(variables = row.names(cor.df)) %>%
+  pivot_longer(-variables) %>%
+  filter(value > .6 & value != 1) %>%
+  arrange(value) %>%
+  mutate(value = round(value,2)) %>%
+  kbl() %>%
+  kable_paper(bootstrap_options = "striped", full_width = F)
+
+```
+
+### Obtaining significance for our highly correlated variables
+
+```{r obtaining significance of high correlations}
+# Obtain p-values
+cor.test(covariates$Federal, covariates$State)
+
+# Obtain p-values
+cor.test(covariates$Federal, covariates$`Total Enrollment`)
+```
+
+
+
+### Creating a correlation Matrix of our Covariates
+
+In publications, it will likely that they will want to see a nicely printed correlation matrix rather than a sentence indicating it was done correctly. Let's attempt to create one now with the covariates from above
+
+```{r covariate matrix }
+# Create a correlation matrix
+correlation.matrix.df <- correlation_matrix(covariates) %>%
+  data.frame()
+
+# Reintroduce names to the correlation matrix dataframe
+names(correlation.matrix.df) <- names(covariates)
+
+# Print our APA correlation matrix
+correlation.matrix.df %>%
+  kbl(caption = "Table 4: Correlation matrix of our continuous covariates") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  footnote(general = c("*** indicates p <.001", "** indicates p <.01 ","* indicates p <.05 "))
+
+
+```
+
+# HW 3
+
+### Which variables correlate with our outcome variable?
+
+This is similar to the steps that we did above when checking for multicollinearity. In this case, we are taking all of our covariates, our predictor variable and our outcome variable and putting them into a correlation matrix. The goal is to identify variables that are significantly associated with the outcome variable. We will have two versions. The first will have all of the variables and the second will include only the variables that made it into the model. This means, that it will include only variables that are significantly correlated to the outcome variable AND are not highly correlated with another variable (r > 0.6). 
+
+It seems from below, graduation rate and total enrollment are highly correlated but we do not care about that. Aside from that, the table reports the same as our previous one, that Federal and State are highly related. Additionally, Total enrollment and Federal are highly related as well. Thus we will have to remove some of these variables to not violate the assumption of multicollinearity. 
+
+```{r identifying variables that are related to our outcome variable}
+# This time we will do it for all 
+exhaustive.continuous.predictors <- data %>%
+  select(-c(HBCU, 
+            Tribal, 
+            Carnegie, 
+            Land.Grant, 
+            Institution.ID, 
+            Institution, 
+            Institution.Sector)) 
+
+# dimensions of covariates
+dim(exhaustive.continuous.predictors)
+
+# Remove any missing data in our covariates
+exhaustive.continuous.predictors <- drop_na(exhaustive.continuous.predictors)
+
+dim(exhaustive.continuous.predictors)
+
+# Data cleaning, have Graduation rate and Price as the first two variables in the dataframe
+exhaustive.continuous.predictors <- exhaustive.continuous.predictors %>%
+  select(Graduation.Rate, Price, everything())
+
+# Run a correlation matrix, but it is difficult to see- so let's change it a bit
+# 1. convert the correlation matrix into a data.frame
+cor.df <- cor(exhaustive.continuous.predictors) %>%
+  data.frame() 
+
+# 2. convert it to long then return only the correlations larger than .6 (Not including 1.00)
+cor.df %>%
+  mutate(variables = row.names(cor.df)) %>%
+  pivot_longer(-variables) %>%
+  filter(value > .6 & value != 1) %>%
+  arrange(value) %>%
+  mutate(value = round(value,2)) %>%
+  kbl() %>%
+  kable_paper(bootstrap_options = "striped", full_width = F)
+
+
+```
+
+
+### Creating a correlation Matrix - Part 2
+
+
+```{r covariate matrix but more fleshed out}
+# Create a correlation matrix
+correlation.matrix.df <- correlation_matrix(exhaustive.continuous.predictors) %>%
+  data.frame()
+
+# Reintroduce names to the correlation matrix dataframe
+names(correlation.matrix.df) <- names(exhaustive.continuous.predictors)
+
+# Print our APA correlation matrix
+correlation.matrix.df %>%
+  kbl(caption = "Correlation matrix of all continuous variables") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  footnote(general = c("*** indicates p <.001", "** indicates p <.01 ","* indicates p <.05 "))
+
+
+```
+
+When looking at the correlation matrix above, what we are really interested is in identifying any variables that significantly correlated with our outcome variable. It seems that from our 15 variables (not including graduation rate) that function as a predictor/covariate, two of them were not significant. These are the variables Hispanic (%) and Two or More races (%)- so these will be removed. Additionally, from our table above that reports variables that are highly correlated with each other. We have issues with the following:
+
+- State vs Federal
+- Total Enrollment vs Federal
+
+The correlates between graduation rate and these variables are: Federal (r = .527), State (r = .388), and Total Enrollment (r = .607). This means that Total Enrollment is more correlated with Graduation Rate than Federal is with Graduation Rate, thus Federal will be dropped. Since Federal gets dropped, State no longer has multicollinearity issues. Therefore, Total Enrollment and State will remain as variables.
+
+In conclusion, the variables that will be removed are the following three: Hispanic (%), Two or More races (%), and Federal.
+
+
+### Creating a correlation Matrix - Part 3
+
+This correlation matrix showcases all of the variables that made it into our first multiple regression model. 
+
+```{r covariate matrix of variables that made it into the first model}
+# First model predictors
+first.model.predictors <- exhaustive.continuous.predictors %>%
+  select(-c(`Hispanic(%)`, `Two or more race(%)`, Federal))
+
+# Create a correlation matrix
+correlation.matrix.df <- correlation_matrix(first.model.predictors) %>%
+  data.frame() 
+
+# Need to rearrange the order or rows to show strength descending order
+# Will have to get creative here
+correlation.matrix.df.orderd <- correlation.matrix.df %>%
+  mutate(order = as.numeric(gsub("\\D", "", Graduation.Rate.))) %>%
+  arrange(desc(order)) %>%
+  select(-order)
+
+
+# Reintroduce names to the correlation matrix dataframe
+names(correlation.matrix.df.orderd) <- names(first.model.predictors)
+
+# Print our APA correlation matrix
+correlation.matrix.df.orderd %>%
+  kbl(caption = "Table 5: Correlation matrix of all continuous variables that were included in the first model") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  footnote(general = c("*** indicates p <.001", "** indicates p <.01 ","* indicates p <.05 "))
+
+
+```
+
+# HW 4
+
+### Run model 1
+
+We will be running this first model based on the variables that made it into the covariate matrix above. Additionally, we will be including a few categorical variables, which are: HBCU, Tribal, Carnegie and Land Grant. 
+
+The list of variables to be used in the model then are as follows:
+
+- Graduation Rate (Outcome)
+- Total Enrollment
+- Price (Predictor)
+- Asian %
+- Admitted %
+- Non-resident %
+- Black %
+- Women %
+- State %
+- White %
+- American Indian %
+- Unknown Ethnicity %
+- Hawaii %
+- HBCU
+- Tribal
+- Land Grant
+
+We did not include Hispanic and Two or More Races and Federal were not used for the reasons in the previous section. We decided not to add Carnegie just because it complicates the model. 
+
+```{r run another regression}
+# Run the multiple regression (first model)
+model1 <- lm(Graduation.Rate~ 
+             `Total Enrollment` +
+              Price + 
+             `Asian(%)` +
+             `Admitted(%)` +
+             `Non-Resident(%)` +
+             `Black(%)` +
+             `Women(%)` +
+             State +
+             `White(%)` +
+             `American Indian(%)` +
+             `Unknown Ethnicity(%)` +
+             `Hawaii(%)` +
+             HBCU +
+             Tribal +
+             Land.Grant,
+             data = data)
+
+
+# summarize the model
+summary(model1)
+```
+
+Notice now, picking the variable HBCU made black% significant now. Because HBCU is an institution characteristic, it is associated with black studnets, by taking into account this, we can now see the true relationship between black percentage and graduation rate. AS in this relationship always existed, but now that that we introduced institutional characteristics, we can see this relationship in our model, when before it was not present. 
+
+### Converting model1 into a data frame
+
+
+```{r converting model 1 into a dataframe}
+# Convert our second model into a dataframe
+model1.df <- broom::tidy(model1) 
+
+model1.df %>%
+  kbl(caption = "Model 1: Uncleaned") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+
+```
+
+### Cleaning the model1 results a bit
+
+Let's make the output cleaner so it looks publishable. Right now it looks slopy with the names and the numerous decimal numbers present. 
+
+```{r cleaning the results dataframe from model 1}
+# Renaming the variables
+model1.df.renamed <- model1.df %>% 
+  rename(Model = term,
+         `Unstandardized B` = estimate,
+         `Coefficients Std. Error` = std.error,
+         t = statistic,
+         `Sig.` = p.value)
+
+# Renaming the values of the first row
+model1.df.renamed$Model <- c("(Intercept)",
+                             "Total Enrollment",
+                             "Price",
+                             "Asian(%)",
+                             "Admitted(%)",
+                             "Non-Resident(%)",
+                             "Black(%)",
+                             "Women(%)",
+                             "State",
+                             "White(%)",
+                             "American Indian(%)",
+                             "Unknown Ethnicity(%)",
+                             "Hawaii(%)",
+                             "HBCU2",
+                             "Tribal2",
+                             "Land Grant2")
+
+# Keeping only three values for each variable
+model1.df.rounded <- model1.df.renamed %>%
+  mutate(across(where(is.numeric), ~ round(., 4))) %>%
+  arrange(Sig.)
+
+
+# Adding astricks
+model1.df.astericks <- model1.df.rounded %>%
+  mutate(Sig. = case_when(
+           Sig. < .001 ~ paste(format(Sig.),"***",sep=""),
+           Sig. < .01 ~  paste(format(Sig.),"**",sep=""),
+           Sig. < .05 ~  paste(format(Sig.),"*",sep=""),
+           TRUE ~ as.character(Sig.)
+         ))
+
+
+# Print to check the cleaning
+model1.df.astericks %>%
+  kbl(caption = "Table 6: Initial multiple regression model") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  footnote(general = c("Dependent Variable: Graduation Rate. The variable Carnegie was removed due to its many levels.
+                       *** indicates p <.001", "** indicates p <.01 ","* indicates p <.05 "))
+
+```
+
+
+### Run model 2
+
+We will now only keep the variables from above that were significant in the model. The variables that made it into round 2 are: 
+  
+- Total Enrollment
+- Price (predictor)
+- Admitted %
+- Women %
+- White %
+- Asian %
+- Black %
+- HBCU
+
+
+Variables that we removed for not being significant
+
+- Land Grant 
+- Unknown Ethnicity 
+- Tribal
+- State
+- American Indian %
+- Non-Resident %
+- Hawaii %
+
+```{r run the second model}
+# Run the multiple regression (first model)
+model2 <- lm(Graduation.Rate ~
+             `Total Enrollment` +
+              Price +
+              `Admitted(%)` +
+              `Women(%)` +
+              `White(%)` +
+              `Asian(%)` +
+              `Black(%)` +
+              HBCU,
+              data = data)
+
+
+# summarize the model
+summary(model2)
+
+
+```
+
+
+### Convert the regression output into a dataframe
+
+Printing it below to make sure it works
+
+```{r convert the regression output into a dataframe}
+# Convert our second model into a dataframe
+model2.df <- broom::tidy(model2) 
+
+model2.df %>%
+  kbl(caption = "Model 2: Uncleaned") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+```
+
+### Cleaning the model2 results a bit
+
+```{r cleaning the results dataframe}
+# Renaming the variables
+model2.df.renamed <- model2.df %>% 
+  rename(Model = term,
+         `Unstandardized B` = estimate,
+         `Coefficients Std. Error` = std.error,
+         t = statistic,
+         `Sig.` = p.value)
+
+# Renaming the values of the first row
+model2.df.renamed$Model <- c("(Intercept)",
+                             "Total Enrollment",
+                             "Price",
+                             "Admitted(%)",
+                             "Women(%)",
+                             "White(%)",
+                             "Asian(%)",
+                             "Black(%)",
+                             "HBCU")
+
+# Keeping only four values for each variable
+model2.df.rounded <- model2.df.renamed %>%
+  mutate(across(where(is.numeric), ~ round(., 4)))
+
+
+# Adding astricks
+model2.df.astericks <- model2.df.rounded %>%
+  mutate(Sig. = case_when(
+           Sig. < .001 ~ paste(format(Sig.),"***",sep=""),
+           Sig. < .01 ~  paste(format(Sig.),"**",sep=""),
+           Sig. < .05 ~  paste(format(Sig.),"*",sep=""),
+           TRUE ~ as.character(Sig.)
+         ))
+
+
+
+# Print to check the cleaning
+model2.df.astericks %>%
+  kbl(caption = "Final multiple regression model (part 1)") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+
+
+### Adding some additional variables to our model 2 results
+
+In SPSS, the results table we created above includes more variables such as:
+  
+- Standardized Coefficient Beta
+- Collinearity Tolerance
+- VIF
+
+Thus, we will need to calculate for these variables and then introduce the into out results dataframe.
+
+Additionally, since our model2 dataframe includes a row for the (Intercept), we will need to introduce some value in the first row before we can add them to our dataframe.
+
+```{r adding additional variables to our results df}
+library(QuantPsyc) # Let's you use lm.beta(), which is needed to find standaridized betas of a model
+
+# Calculate the standardized betas
+model2.standardized.Betas <- lm.beta(model2)
+
+# The tolerance check is not avaiable in R, but easily calculated by taking 1/VIF
+model2.tolerance <- 1/vif(model2)
+
+# Calculate the VIF of the model
+model2.VIF <- vif(model2)
+
+# Adding an additional value (blank space)
+`Standardized Coefficients Beta` <- c(NA,model2.standardized.Betas)
+`Collinearity Tolerance` <- c(NA, model2.tolerance)
+`Statistics VIF` <- c(NA, model2.VIF)
+
+# Now add them to the dataframe
+final.model2.uncleaned <- model2.df.rounded %>%
+  cbind(`Standardized Coefficients Beta`) %>%
+  cbind(`Collinearity Tolerance`) %>%
+  cbind(`Statistics VIF`) %>%
+  tibble()
+
+# Show the final model
+final.model2.uncleaned %>%
+  kbl(caption = "Uncleaned Final Regression Model Results") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+
+```
+
+
+### Last round of data cleaning
+
+The introduction of new variables let to many zeroes that we do not need for. Thus, they need to be rounded. Also, we will be changing the order of the variables to match what would be printed in SPSS.
+
+Lastly, change the p-value variable to a character to make it look more like SPSS.
+
+```{r last round of data cleaning}
+# Change the order of the variables
+final.model2.renamed <- final.model2.uncleaned %>%
+  dplyr::select(Model,
+                `Unstandardized B`,
+                `Coefficients Std. Error`,
+                `Standardized Coefficients Beta`,
+                t,
+                `Sig.`,
+                `Collinearity Tolerance`,
+                `Statistics VIF`)
+
+# Round the data
+final.model2 <- final.model2.renamed %>%
+  mutate(across(where(is.numeric), ~ round(., 4)))
+
+# Adding astricks
+final.model2.astericks <- final.model2 %>%
+  mutate(Sig. = case_when(
+           Sig. < .001 ~ paste(format(Sig.),"***",sep=""),
+           Sig. < .01 ~  paste(format(Sig.),"**",sep=""),
+           Sig. < .05 ~  paste(format(Sig.),"*",sep=""),
+           TRUE ~ as.character(Sig.)
+         ))
+
+# Print the final model
+final.model2.astericks %>%
+  kbl(caption = "Table 7: Final model multiple regression results") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  footnote(general = c("Dependent Variable: Graduation Rate.
+                       *** indicates p <.001", "** indicates p <.01 ","* indicates p <.05 "))
+
+```
+
+
+### Post-estimation techniques (normality)
+
+The normality assumption as a post-estimation is not the dependent variable but it is on the residuals (aka the error). Now let's plot the residuals.
+
+
+```{r plot the residuals, out.width= "70%"}
+# Introduce the residuals into the original dataframe
+data$studentized.residuals <- rstudent(model2)
+
+# Create a histogram of the outcome variable
+plot1 <- data %>%
+  ggplot(aes(x = studentized.residuals)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 15) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,120)) + 
+  theme_classic() +
+  labs(title = "A histogram of Studentized Residuals",
+       x = "Studentized Residuals",
+       y = "Frequency",
+       caption = bquote(bold("Figure 1:") ~ "A histogram of Studentized Residuals.")) +
+  theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 15,
+                                    hjust = 0))
+# Print plot 1
+plot1
+
+# Create a QQ plot
+plot2 <- data %>%
+  ggplot(aes(sample= studentized.residuals)) +
+  geom_qq() +
+  stat_qq_line() +
+  theme_classic() +
+  labs(title = "QQ Plot",
+       x = "Theoretical Quantiles",
+       y = "Frequency",
+       caption = bquote(bold("Figure 2:") ~ "A QQ Plot of studentized residuals and theoretical quantiles.")) +
+  theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 15,
+                                    hjust = 0))
+
+# Print plot 2
+plot2
+```
+
+
+### Post-etimation techniques (homoscedasticity)
+
+```{r homoscedasiticyt, out.width= "70%"}
+library(lmtest) # bptest() function for homoscedasticity
+
+# Run the Breusch-Pagan test
+bptest(model2)
+
+# Add fitted values and standardized residuals
+data$fitted.values <- model2$fitted.values
+data$standardized.residuals <- rstandard(model2)
+
+# Plot to see if there is a problem with homoscedasticity
+data %>%
+  ggplot(aes(x = fitted.values, y=standardized.residuals)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "black") +
+  theme_bw() +
+  labs(title = "Standardized Residuals vs Fitted Values ",
+       x = "Fitted Values",
+       y = "Standardized Residuals",
+       caption = bquote(bold("Figure 3:") ~ "Investigating homoscedasticity")) +
+  theme(plot.title = element_text(size = 18,
+                                  hjust = .5),
+        axis.title = element_text(size = 14, face = "bold"),
+        axis.text = element_text(size = 14),
+        plot.caption = element_text(size = 15,
+                                    hjust = 0))
+```
+Because it is significant, there is heteroscedasticity.
+
+robust standard error correction - need to figure out how to do this.
+
+
+### Post-estimation techniques (independence)
+
+Do not need to check it again if the study is cross-sectional- ours is
+
+
+### Post-estimation techniques (multicolinearity)
+
+Need to use a VIF- figure out how to do this. In SPSS< there is a VIF for every single variable in the model. This number needs to be about 2. If this number is much higher than 2, then that means there is an issue with multicollinearity.
+
+VIF stands for variance inflation factor.
