@@ -1020,7 +1020,7 @@ plot1 <- data %>%
   labs(title = "A histogram of Studentized Residuals",
        x = "Studentized Residuals",
        y = "Frequency",
-       caption = bquote(bold("Figure 1:") ~ "A histogram of Studentized Residuals.")) +
+       caption = bquote(bold("Figure 5:") ~ "A histogram of Studentized Residuals.")) +
   theme(plot.title = element_text(size = 18,
                                   hjust = 0.5),
         axis.title = element_text(size = 12, face = "bold"),
@@ -1039,7 +1039,7 @@ plot2 <- data %>%
   labs(title = "QQ Plot",
        x = "Theoretical Quantiles",
        y = "Frequency",
-       caption = bquote(bold("Figure 2:") ~ "A QQ Plot of studentized residuals and theoretical quantiles.")) +
+       caption = bquote(bold("Figure 6:") ~ "A QQ Plot of studentized residuals and theoretical quantiles.")) +
   theme(plot.title = element_text(size = 18,
                                   hjust = 0.5),
         axis.title = element_text(size = 12, face = "bold"),
@@ -1073,7 +1073,7 @@ data %>%
   labs(title = "Standardized Residuals vs Fitted Values ",
        x = "Fitted Values",
        y = "Standardized Residuals",
-       caption = bquote(bold("Figure 3:") ~ "Investigating homoscedasticity")) +
+       caption = bquote(bold("Figure 7:") ~ "Investigating homoscedasticity")) +
   theme(plot.title = element_text(size = 18,
                                   hjust = .5),
         axis.title = element_text(size = 14, face = "bold"),
