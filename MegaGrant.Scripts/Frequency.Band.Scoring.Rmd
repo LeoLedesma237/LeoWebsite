@@ -89,7 +89,7 @@ What we can do for a quick quality control check is to just pick a channel and t
 
 ```{r explore the FFT data}
 # Save one of the FFT datasets from the list
-current.data <- FFT.files.list[[3]]
+current.data <- FFT.files.list[[9]]
 
 # Obtain the dimensions
 dim(current.data)
@@ -116,8 +116,49 @@ Cz.data.long %>%
   ggplot(aes(x = Frequency_Band_Num, y = Power, group = 1)) +
   geom_point() +
   geom_line() +
+  labs(x = "Frequency (Hz)",
+       y = "Power Spectral Density") +
   theme_classic() +
-  labs(title = "Power Spectrum across 0.5Hz - 44.75Hz for ID 10510")
+  labs(title = "CZ - eyes open") +
+  theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0))
+
+
+# Let's try to graph the power spectrum for the whole head
+current.data.whole.head <- current.data %>%
+  select(-c(ID, Channels)) %>%
+  colSums() %>%
+  data.frame(Power =.)
+
+# Add frequencies back as a variable
+current.data.whole.head$Frequency_Band_Num <- row.names(current.data.whole.head)
+
+# Extra data cleaning
+current.data.whole.head <- current.data.whole.head %>%
+mutate(Frequency_Band_Num = gsub(pattern = "x",
+                               x = Frequency_Band_Num,
+                               replacement = ''),
+         Frequency_Band_Num = as.numeric(Frequency_Band_Num))
+
+
+current.data.whole.head %>%
+  ggplot(aes(x = Frequency_Band_Num, y = Power, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(x = "Frequency (Hz)",
+       y = "Power Spectral Density") +
+  theme_classic() +
+  labs(title = "Across Scalp - eyes open") +
+  theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0))
 
 ```
 
@@ -287,7 +328,6 @@ hist(final.data.wide.no.topography$beta)
 hist(final.data.wide.no.topography$gamma)
 
 ```
-
 
 
 ### Saving files
