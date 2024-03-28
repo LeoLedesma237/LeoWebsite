@@ -1,0 +1,120 @@
+---
+title: "Data Scoring ZAT Math"
+author: "Leandro Ledesma"
+date: "2024-03-26"
+output: html_document
+---
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(kableExtra)
+
+```
+
+### Load in the data
+
+```{r load in the data, warning = FALSE}
+# Set working directory
+setwd("Z:/eglab/A_ALL Project Data/Zambia projects (R01, R21, OVC)/ZambiaOVC_2022/ZambiaOVC_CleanFiles/Cohort1_cleaned_July2021_forNan/C1T1")
+
+# Load in the data
+ZAT1 <- read_excel("ZambiaOVC_ZATRR_PWWR_RC_M_co1_tm1_clean.xlsx")
+
+# Set working directory
+setwd("Z:/eglab/A_ALL Project Data/Zambia projects (R01, R21, OVC)/ZambiaOVC_2022/ZambiaOVC_CleanFiles/Cohort2_cleanedJun2021_forNan/C2T1")
+
+# Load in the data
+ZAT2 <- read_excel("ZambiaOVC_ZATRR_PWWR_RC_M_coh2_tm1_clean.xlsx")
+
+# Set working directory
+setwd("Z:/eglab/A_ALL Project Data/Zambia projects (R01, R21, OVC)/ZambiaOVC_2022/ZambiaOVC_CleanFiles/Cohort3_cleaned_Jul2021_forNan/C3T1")
+
+# Load in the data
+ZAT3 <- read_excel("ZambiaOVC_ZATRR_PWWR_RC_M_coh3_tm1_clean.xlsx")
+
+```
+
+### Bind all of the ZAT math together
+
+```{r bind the datasets}
+# Extract the variables of interest from each dataset
+ZAT1.math <-  
+ZAT1 %>%
+    select(OVC_ID, 
+         contains("M"))
+
+# Assume that 1 means boy
+ZAT2.math <- 
+ZAT2 %>%
+  select(OVC_ID, 
+         contains("M"),
+         - Ch_sex_F1_M0)
+
+ZAT3.math <- 
+ZAT3 %>%
+   select(OVC_ID, 
+         contains("M"))
+
+
+# Bind them together
+ZAT.math <- 
+  ZAT1.math %>%
+  rbind(ZAT2.math) %>%
+  rbind(ZAT3.math)
+```
+
+
+### Score the ZAT Math
+
+Each value that is not 1 is essentially a 0.
+
+```{r scoring the data}
+# Set the working directory
+setwd("C:/Users/lledesma.TIMES/Documents/OVC/Scoring Book")
+
+# Load in scoreing book
+ZAT.math.scoring.uncleaned <- read_excel("OVC_CodeBook.xlsx", sheet = "ZAT_Math")
+
+# clean it up a bit
+ZAT.math.answers <- ZAT.math.scoring.uncleaned %>%
+  select(`OVC Project`, Correct.Response = `Correct response...9`)  %>% 
+  filter(complete.cases(.))
+
+# Some data cleaning on the ZAT
+ZAT.math <- ZAT.math %>%
+  mutate_all(., function(x) as.numeric(x))
+
+# Convert ZAT Math to long format
+ZAT.math.long <- ZAT.math %>%
+  pivot_longer(-OVC_ID)
+
+# Introduce the correct answers
+ZAT.math.long$Correct.Response <- rep(ZAT.math.answers$Correct.Response, nrow(ZAT.math.long)/52)
+
+# Score each item 
+ZAT.math.long <- ZAT.math.long %>%
+  mutate(Score = ifelse(value == Correct.Response, 1, 0))
+
+# Obtain a raw math score per person
+ZAT.math.final <- ZAT.math.long %>%
+  group_by(OVC_ID) %>%
+  summarize(Math.Score = sum(Score, na.rm = TRUE))
+
+
+```
+
+
+### Save the data
+
+```{r save the data}
+# Set the working directory
+setwd("~/OVC/ZAT")
+
+# Save the data
+write_csv(ZAT.math.final, "ZAT.math.scored.csv")
+
+```

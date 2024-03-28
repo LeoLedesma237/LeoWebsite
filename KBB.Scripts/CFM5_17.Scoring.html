@@ -394,7 +394,7 @@ captured by the ipads). We technically do not need all of this
 information to be present in our final cleaned CFM 2-4 data.</p>
 <pre class="r"><code># The data dimensions
 dim(CFM5_17.uncleaned)</code></pre>
-<pre><code>[1] 1174   79</code></pre>
+<pre><code>[1] 1361   79</code></pre>
 <pre class="r"><code># Show all variables and the first few rows of the values that comprise them
 #str(CFM5_17.uncleaned)</code></pre>
 </div>
@@ -472,7 +472,7 @@ dimensions include 46 variables.</p>
 
 # The dimensions of the new dataset
 dim(CFM5_17.removed.variables)</code></pre>
-<pre><code>[1] 1174   54</code></pre>
+<pre><code>[1] 1361   54</code></pre>
 </div>
 <div id="additional-data-cleaning-dates" class="section level3">
 <h3>Additional data cleaning (dates)</h3>
@@ -962,7 +962,7 @@ CFM5_17 %&gt;%
          CF12_Walking_100,
          CF13_Walking_500,
          sen_mot_severity)</code></pre>
-<pre><code># A tibble: 1,174 × 5
+<pre><code># A tibble: 1,361 × 5
    CF3_Seeing    CF6_Hearing         CF12_Walking_100 CF13_Walking_500 sen_mot…¹
    &lt;chr&gt;         &lt;chr&gt;               &lt;chr&gt;            &lt;chr&gt;            &lt;chr&gt;    
  1 No difficulty A lot of Difficulty Cannot at all    Cannot at all    Cannot a…
@@ -975,7 +975,7 @@ CFM5_17 %&gt;%
  8 No difficulty No difficulty       No difficulty    No difficulty    No diffi…
  9 No difficulty No difficulty       No difficulty    No difficulty    No diffi…
 10 No difficulty No difficulty       No difficulty    No difficulty    No diffi…
-# … with 1,164 more rows, and abbreviated variable name ¹​sen_mot_severity</code></pre>
+# … with 1,351 more rows, and abbreviated variable name ¹​sen_mot_severity</code></pre>
 <pre class="r"><code>CFM5_17 &lt;- CFM5_17 %&gt;%
   mutate(sen_mot_difficulty = ifelse(sen_mot_severity == &quot;No difficulty&quot;, &quot;No&quot;, &quot;Yes&quot;))</code></pre>
 </div>

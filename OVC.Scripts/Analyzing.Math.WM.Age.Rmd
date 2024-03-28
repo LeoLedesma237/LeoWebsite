@@ -1,0 +1,214 @@
+---
+title: "Analyzing Math and Working Memory across Age"
+author: "Leandro Ledesma"
+date: "2024-03-26"
+output: html_document
+---
+
+### Universal block code settings
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+
+```
+
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+library(rempsyc) # Create APA tables with nice_table()
+library(flextable) # Adds aesthetic functions to the table from above
+library(kableExtra) # Extra table formatting type
+library(corrtable) # Potential correlation matrix code
+library(broom) # Converts regression outputs into dataframes using the tidy() function
+library(car) # To calcualte vif
+
+
+
+```
+
+
+### Load in the data
+
+```{r load in the data, warning = FALSE}
+# set working directory
+setwd("~/OVC/ZAT")
+
+# load in the data
+ZAT.math <- read.csv("ZAT.math.scored.csv")
+
+# set working directory
+setwd("~/OVC/Demographics")
+
+# load in the data
+demo <- read.csv("Demographics.scored.csv")
+
+# data cleaning
+demo <- demo %>%
+  select(OVC_ID = ID, 
+         Sex,
+         Child_age)
+
+# set working directory
+setwd("~/OVC/SES")
+
+# load in the data
+SES <- read_excel("SES.xlsx")
+
+# data cleaning
+SES <- SES %>%
+  select(OVC_ID, 
+         Weighted_SES_index)
+
+# set working directory
+setwd("~/OVC/Physical Data")
+
+# load in the data
+Physical <- read.csv("Physical.scored.csv")
+
+# data cleaning
+Physical <- Physical %>%
+  select(OVC_ID, 
+         BMI,
+         Head_Circum_cm) %>%
+  mutate(OVC_ID = as.numeric(OVC_ID)) %>%
+  filter(BMI < 40)
+
+# Set working directory
+setwd("~/OVC/LDSpan")
+
+# load in the data
+LDSpan <- read.csv("LDSpan.num.scored.csv")
+
+# data cleaning
+LDSpan <- LDSpan %>%
+  select(OVC_ID = ID,
+         LDSpan.num.Score)
+
+```
+
+
+### Combine the dataset into one
+
+
+```{r combine the dataset into one}
+# merged dataset
+data <-
+  ZAT.math %>%
+  left_join(demo, by = "OVC_ID") %>%
+  left_join(SES, by = "OVC_ID") %>%
+  left_join(Physical, by = "OVC_ID") %>%
+  left_join(LDSpan, by = "OVC_ID")
+
+dim(data)
+
+```
+
+
+### Missing data
+
+Just a check
+
+
+```{r missing data}
+print("The number of missing data for each variable is:")
+colSums(is.na(data))
+
+# Remove any rows with missing data
+data2 <- data %>%
+  filter(complete.cases(.))
+
+print("The number of missing data for each variable is:")
+colSums(is.na(data2))
+
+dim(data2)
+
+```
+
+### Descriptive statistics of our predictor and outcome variable
+
+```{r descriptive statistics of our predictor and outcome variable}
+# Print out the descriptive statistics using the summary function
+# Main predictor variable
+summary(data2$Math.Score)
+sd(data2$Math.Score)
+max(data2$Math.Score)
+min(data2$Math.Score)
+
+
+# The other predictor (age)
+summary(data2$Child_age)
+sd(data2$Child_age)
+max(data2$Child_age)
+min(data2$Child_age)
+
+
+# Main outcome variable
+summary(data2$LDSpan.num.Score)
+sd(data2$LDSpan.num.Score)
+max(data2$LDSpan.num.Score)
+min(data2$LDSpan.num.Score)
+```
+
+
+
+### Visulize the outcome variable
+
+Let's create histograms of our outcome variable
+
+```{r creating histograms, out.width= "90%"}
+# Create a histogram of the outcome variable
+data2 %>%
+  ggplot(aes(x = LDSpan.num.Score)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 20) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,200)) + 
+  theme_classic() +
+  labs(title = "A Histogram of Digit Letter Span",
+       x = "Digit Letter Span Score",
+       y = "Frequency",
+       #caption = "Figure 1: A histogram of graduation rates",
+       caption = bquote(bold("Figure 1:") ~ "A histogram of Digit Letter Span Performance.")) +
+  theme(plot.title = element_text(size = 14,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, 
+                                  face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0))
+
+```
+
+
+
+
+### Descriptive statistics of covariates
+
+```{r descriptive statistics of our covariates}
+# Print out the descriptive statistics using the summary function
+# Main predictor variable
+summary(data2$Weighted_SES_index)
+sd(data2$Weighted_SES_index)
+max(data2$Weighted_SES_index)
+min(data2$Weighted_SES_index)
+
+hist(data2$Weighted_SES_index)
+
+# The other predictor (age)
+summary(data2$BMI)
+sd(data2$BMI)
+max(data2$BMI)
+min(data2$BMI)
+
+
+# Main outcome variable
+summary(data2$Head_Circum_cm)
+sd(data2$Head_Circum_cm)
+max(data2$Head_Circum_cm)
+min(data2$Head_Circum_cm)
+```

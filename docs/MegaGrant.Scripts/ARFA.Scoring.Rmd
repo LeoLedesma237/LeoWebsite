@@ -68,10 +68,15 @@ ARFA.unscored %>%
 
 ```
 
-### ARFA Scoring Technique 1 (original method)
+### ARFA Scoring Technique 1a (original method)
 
 Based on the instructions in the original method, we will create scripts that will score each of the 22 items for each person. If a subject is missing information for the repeat variable then they will be excluded from the analysis. 
 
+Essentially, we are giving each item a score of 0, 1, or 2.
+
+- 2: No mistakes and no word repetition
+- 1: No mistakes and a word repetition or there was no more than one spelling mistake
+- 0: They have more than two spelling mistakes 
 
 ```{r scoring as intended}
 # Remove rows that have NA's for any of the Spelling_X_Rep Variables
@@ -87,7 +92,6 @@ length(missing.Rep.IDs)
 # Save this new dataset
 ARFA.unscored.no.missing.rep <- ARFA.unscored %>%
   filter(!(ID %in% missing.Rep.IDs))
-
 
 # Create a list to save all of the scores
 ARFA.scores.original.list <- list()
@@ -148,6 +152,76 @@ hist(ARFA.original.scored$Spelling_Performance)
 # Keep only the IDs and the composite scored variables
 ARFA.original.final <-  ARFA.original.scored %>%
   select(ID, Spelling_Performance)
+
+```
+
+
+
+
+### ARFA Scoring Technique 1b (original method tweaked)
+
+We are tweaking the original way fo scoring this task by removing the repetition portion as a consideration for scoring. Thus, each item will be score a 0, 1 or 2, but items that were spelled correctly will get a number 2 no matter what. By removing the need to have data on repetition, our sample size goes up.  
+
+Essentially, we are giving each item a score of 0, 1, or 2.
+
+- 2: No mistakes
+- 1: There was no more than one spelling mistake
+- 0: They have more than two spelling mistakes 
+
+
+```{r scoring as intended but tweaked, warning = FALSE}
+# Create a list to save all of the scores
+ARFA.scores.tweaked.list <- list()
+
+# Create vectors to extract the information we need
+items <- paste("SP",1:22,".", sep="")
+
+for(ii in 1:22) {
+
+
+  # Extract the all of the scoring variables for an item and the information on whether it was repeated or not
+    current.item <- ARFA.unscored %>%
+    select(starts_with(items[ii]))
+  
+  # Add the rows for each numeric value together, which indicates the number of spelling errors
+  current.item$Row.Sum <- current.item %>% 
+    select_if(is.numeric) %>%
+    rowSums(na.rm = TRUE)
+  
+  
+  # Take the row sum and transform those values into either a 0, 1, or 2.
+  # Below is saying, if there are more than 1 error, score it a 0
+  # If there is 1 error, give it a point of 1,
+  # And fi there are no errors, give it a point of 2. 
+  current.item.errors.scored <- ifelse(current.item$Row.Sum > 1, 0,
+                                       ifelse(current.item$Row.Sum == 1, 1, 2))
+  
+  # Save the score but rename it first
+  ARFA.scores.tweaked.list[[ii]] <- current.item.errors.scored
+
+}
+
+# Take the scores in the list and cbind them and add the original ID's
+ARFA.tweaked.scored <- ARFA.scores.tweaked.list %>%
+  do.call(cbind,.) %>%
+  data.frame() %>%
+  cbind(ID = ARFA.unscored$ID)
+
+# Turn the ID into a character variable
+ARFA.tweaked.scored$ID <- as.character(ARFA.tweaked.scored$ID)
+
+# Lastly, to get an overall measure of how well they performed in the spelling task, take another row sum of the scores to get on composite performance score.
+ARFA.tweaked.scored$Spelling_Performance <-  ARFA.tweaked.scored %>% 
+    select_if(is.numeric) %>%
+    rowSums(na.rm = TRUE)
+
+# Let's view the distribution of scores for our independent variable
+hist(ARFA.tweaked.scored$Spelling_Performance)
+
+# Keep only the IDs and the composite scored variables
+ARFA.tweaked.final <-  ARFA.tweaked.scored %>%
+  select(ID, Spelling_Performance)
+
 ```
 
 
@@ -239,20 +313,17 @@ Spelling.Error.final <-  Spelling.Error %>%
 ```
 
 
-### Graphing both scores against each other 
+### Visualizing the task
 
-```{r lets graph how these ways of scoring spelling compare to each other}
-# Join the datasets
-data <- ARFA.original.scored %>%
-  left_join(Spelling.Error, by = "ID")
-
-
-# Graph the two
-data %>%
-  ggplot(aes(x = Spelling_Performance, y = Spelling_Error_Log)) +
-  geom_point() +
-  geom_smooth() +
-  theme_classic()
+```{r visualizing the task}
+Task <- tibble(`item num` = 1:22,
+                item = correct.items,
+               repeated = rep(c("Yes  No"),22),
+               score = rep(c("2 1 0"),22))
+# Visualize the task
+Task  %>%
+  kbl(title = "ARFA Spelling Assessment") %>%
+  kable_paper(bootstrap_options = "striped", full_width = F)
 
 ```
 
@@ -268,7 +339,11 @@ setwd("~/Masters Project/cleaned_predictor_covariates")
 # Save the version of Spelling Performance
 write_csv(ARFA.original.final, file = "ARFA.Spelling.Original.Scored.csv")
 
+# Save the tweaked version of Spelling performance
+write_csv(ARFA.tweaked.final, file = "ARFA.Spelling.Tweaked.Scored.csv")
+
 # Save the version of 
 write_csv(Spelling.Error.final, file = "ARFA.Spelling.Levenshtein.Scored.csv")
+
 
 ```

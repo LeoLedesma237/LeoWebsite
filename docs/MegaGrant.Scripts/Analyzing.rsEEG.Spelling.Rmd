@@ -23,6 +23,9 @@ library(ggpubr)
 library(readxl)
 library(kableExtra)
 library(stringdist)
+library(rempsyc) # Create APA tables with nice_table()
+library(flextable) # Adds aesthetic functions to the table from above
+library(broom) # Converts regression outputs into dataframes using the tidy() function
 
 ```
 
@@ -30,14 +33,18 @@ library(stringdist)
 
 We will be loading in the scored version of the ARFA- specifically the spelling portion of it. However, two different approaches were used for the scoring of spelling performance- that is why two datasets are being imported. 
 
+Additionally, we are gonna do some data cleaning and transform the spelling performance to spelling errors. 
+
 ```{r load in predictor variable, warning= FALSE}
 # Set the working directory
 setwd("~/Masters Project/cleaned_predictor_covariates")
 
 # Load in the ARFA performance measures
-ARFA1 <- read.csv("ARFA.Spelling.Original.Scored.csv")
+ARFA1 <- read.csv("ARFA.Spelling.Tweaked.Scored.csv")
 
-ARFA2 <- read.csv("ARFA.Spelling.Levenshtein.Scored.csv")
+# Add Spelling ERror Variable
+ARFA1 <- ARFA1 %>%
+  mutate(Spelling_Error = max(Spelling_Performance) - Spelling_Performance)
 
 ```
 
@@ -57,6 +64,8 @@ rsEEG2 <- read.csv("Frequency.Bands.Topography.csv")
 
 ```
 
+
+
 ## Picking the best combination of variables
 
 The variables we have selected to analyze, both the predictor and outcome variable, can be scored or represented in many different ways. 
@@ -71,9 +80,9 @@ A detailed explanation is currently being written on my [Wiki Page](https://gith
 
 ### Hypotheses
 
-1. Poorer spelling performance is associated with higher delta power.
+1. Poorer spelling performance is associated with elevated power for lower frequency bands (delta and theta).
 
-2. Poorer spelling performance is associated with higher theta power.
+1. Poorer spelling performace is 
 
 
 The logic behind this is that poor spelling might be a sign of a less mature brain, which is represented by higher power of slower frequency bands (delta and theta). With this in mind, it is crucial then to introduce Age as a covariate into our analysis. 
@@ -102,60 +111,69 @@ length(unique(data1$ID))
 
 # Visualize the data
 plot1 <- data1 %>%
-  ggplot(aes(x = Spelling_Performance, y = delta)) +
+  ggplot(aes(x = Spelling_Error, y = delta)) +
   geom_point() +
   geom_smooth(method = "lm") +
-  labs(title = "ARFA Spelling Performance and\nDelta Power") +
-  theme_classic()
+  labs(title = "ARFA Spelling Error and\nDelta Power",
+       x = "Spelling Error") +
+  theme_classic() +
+    theme(plot.title = element_text(size = 16,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0))
 
 plot2 <- data1 %>%
-  ggplot(aes(x = Spelling_Performance, y = theta)) +
+  ggplot(aes(x = Spelling_Error, y = theta)) +
   geom_point() +
   geom_smooth(method = "lm") +
-  labs(title = "ARFA Spelling Performance and\nTheta Power") +
-  theme_classic()
+  labs(title = "ARFA Spelling Error and\nTheta Power",
+       x = "Spelling Error") +
+  theme_classic() +
+    theme(plot.title = element_text(size = 16,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0))
 
 ggarrange(plot1, plot2)
 
-```
-
-
-### Data set 2: Levenshtein ARFA Spelling Errors vs rsEEG with no topography information
-
-We see that we have 451 unique ID's in this dataset. We have more ID's in this dataset than the former, which might give us a little more power. Let's also visualize our predictor and outcome variable through a scatterplot to see if we see any type of linear relationship. 
-
-
-```{r combine the datasets 2, out.width= "90%"}
-# Combine the the datasets by using the left_join function
-data2 <- ARFA2 %>%
-  left_join(rsEEG1, by = "ID") %>%
-  filter(complete.cases(.))
-
-# Get the dimensions of the dataset
-dim(data2)
-
-# How many unique ID's are present
-length(unique(data2$ID))
 
 # Visualize the data
-plot3 <- data2 %>%
-  ggplot(aes(x = Spelling_Error_Log, y = delta)) +
+plot3 <- data1 %>%
+  ggplot(aes(x = Spelling_Error, y = alpha)) +
   geom_point() +
   geom_smooth(method = "lm") +
-  labs(title = "ARFA Spelling Error Log and\nDelta Power") +
-  theme_classic()
+  labs(title = "ARFA Spelling Error and\nAlpha Power",
+       x = "Spelling Error") +
+  theme_classic() +
+    theme(plot.title = element_text(size = 16,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0))
 
-plot4 <- data2 %>%
-  ggplot(aes(x = Spelling_Error_Log, y = theta)) +
+plot4 <- data1 %>%
+  ggplot(aes(x = Spelling_Error, y = beta)) +
   geom_point() +
   geom_smooth(method = "lm") +
-  labs(title = "ARFA Spelling Error Log and\nTheta Power") +
-  theme_classic()
-
+  labs(title = "ARFA Spelling Error and\nBeta Power",
+       x = "Spelling Error") +
+  theme_classic() +
+    theme(plot.title = element_text(size = 16,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0))
 
 ggarrange(plot3, plot4)
+
 ```
-.
+
 
 
 ### Conclusions from data visualizations
@@ -163,6 +181,7 @@ ggarrange(plot3, plot4)
 What we found is consistent with the logic we developed from reports in the literature that investigate this in children (what a relief). As mentioned, we are predicting that poorer performers in a spelling task will have higher power for slower frequency bands (delta and theta). As we can see from the first two graphs, the worse a subject performed on the spelling task the higher the power they tended to have for both delta and theta frequency bands. Additionally, when looking at the log of spelling errors, we see that this looks positively associated with delta and theta power, which also makes sense with the findings in the literature.
 
 Knowing that we are probably on the right track- let's continue with the analysis. 
+
 
 
 ### Data Analysis (Simple Regression)
@@ -173,7 +192,7 @@ model1: Delta ~ ARFA Spelling Performance
 
 model2: Theta ~ ARFA Spelling Performance
 
-model3: Delta ~ ARFA Spelling Errors
+model2: Delta ~ ARFA Spelling Errors
 
 model4: Theta ~ ARFA Spelling Errors
 
@@ -181,18 +200,17 @@ It seems that the log transformation of the Spelling Errors (model 3 and model 4
 
 ```{r running a simple regression}
 # Create the first two simple regressions using the Spelling Performance predictor
-simple.regression1 <- lm(delta~Spelling_Performance, data1)
-simple.regression2 <- lm(theta~Spelling_Performance, data1)
+simple.regression1.delta <- lm(delta~Spelling_Error, data1)
+simple.regression1.theta <- lm(theta~Spelling_Error, data1)
+simple.regression1.alpha <- lm(delta~Spelling_Error, data1)
+simple.regression1.beta <- lm(theta~Spelling_Error, data1)
 
-# Create the next two simple regressions using the Spelling errors predictor
-simple.regression3 <- lm(delta~Spelling_Error_Log, data2)
-simple.regression4 <- lm(theta~Spelling_Error_Log, data2)
 
 # Check their performance
-summary(simple.regression1)
-summary(simple.regression2)
-summary(simple.regression3)
-summary(simple.regression4)
+summary(simple.regression1.delta)
+summary(simple.regression1.theta)
+summary(simple.regression1.beta)
+summary(simple.regression1.alpha)
 
 ```
 
@@ -234,17 +252,190 @@ final.data1 <- data1 %>%
   left_join(CFIT, by = "ID")
 
 
-# Introduce the covariates for data2
-final.data2 <- data2 %>%
-  left_join(demo, by ="ID") %>%
-  left_join(CFIT, by = "ID")
-
 # Remove any subjects with missing data
 final.data1 <- final.data1 %>%
   filter(complete.cases(.))
 
-final.data2 <- final.data2 %>%
-  filter(complete.cases(.))
+# Table on continuous predictors
+continuous <- final.data1 %>%
+  select(Spelling_Error,
+         Raw.Score,
+         Age)
+
+# We nee to have our continuous variables in one column
+continuous.long <- continuous %>%
+  stack() %>%
+  select(Predictors = ind,
+         values = values)
+
+# Obtain the descriptive statistics from the long format demographic sheet
+continuous.summarize <- continuous.long %>%
+  group_by(Predictors) %>%
+  summarize(Mean = round(mean(values),2),
+            Med. = round(median(values),2),
+            SD = round(sd(values),2),
+            Min. = min(values),
+            Max. = max(values),
+            N = nrow(continuous))
+
+# Table cleaning
+continuous.summarize <- continuous.summarize %>%
+  mutate(Predictors = factor(Predictors, 
+                             labels = c("Spelling Error", 
+                                        "CFIT Raw Score",
+                                        "Age")))
+
+
+# Create an APA style table with the results
+continuous.summarize %>%
+  nice_table(title = "Descriptive Statistics of Continuous Predictors") %>%
+  bold(part = "header")
+
+# Create a table for continuous variables
+sex.df <- data.frame(table(final.data1$Sex)) %>%
+  pivot_wider(names_from = Var1, values_from = Freq) %>%
+  mutate(N = `F` + M) %>%
+  mutate(Percent = round(M/N,2)*100) %>%
+  select(-`F`, Frequency = M, Percent, N)
+
+group.df <- data.frame(table(final.data1$Group)) %>%
+  pivot_wider(names_from = Var1, values_from = Freq) %>%
+  mutate(N = BF + IC) %>%
+  mutate(Percent = round(BF/N,2)*100) %>%
+  select(-IC, Frequency = BF, Percent, N)
+
+# Stack the tables
+categorical.df <- rbind(sex.df,
+                        group.df) %>%
+  mutate(`_` = c("Male", "BF")) %>%
+  select(`_`, Frequency, Percent, N)
+
+# Create an APA style table with the results
+categorical.df %>%
+  nice_table(title = "Descriptive Statistics of Categorical Predictors") %>%
+  bold(part = "header")
+
+
+```
+
+
+### Creating a table for EEG power descriptive statistics
+
+```{r create a table for EEG power descriptive statistics}
+# Let's create a table fo the descriptive statistics
+# Let's copy a paper to do this
+EEG.data <- final.data1 %>%
+  select(ID, delta, theta, alpha, beta, gamma) %>%
+  pivot_longer(-ID, names_to = "Frequency_Band", values_to = "Power")
+
+
+EEG.summarized <- EEG.data %>%
+  group_by(Frequency_Band) %>%
+  summarize(Mean = round(mean(Power),2),
+            Med. = round(median(Power),2),
+            SD = round(sd(Power),2),
+            Min. = min(Power),
+            Max. = max(Power),
+            N = nrow(final.data1)) %>%
+  mutate(order = c(3,4,1,5,2)) %>%
+  mutate(Frequency_Band = factor(Frequency_Band,
+                                 levels = c("delta",
+                                            "theta",
+                                            "alpha",
+                                            "beta",
+                                            "gamma"),
+                                 labels = c("delta (0.5-4Hz)",
+                                            "theta (4-8Hz)",
+                                            "alpha (8-12Hz)",
+                                            "beta (12-30Hz)",
+                                            "gamma (30-40Hz)"))) %>%
+  arrange(order) %>%
+  select(-order)
+
+# Create an APA style table with the results
+EEG.summarized %>%
+  nice_table(title = "Descriptive Statistics of Frequency Band Power") %>%
+  bold(part = "header")
+
+
+
+```
+
+
+### Visualize our predictors
+
+```{r visualize predictors, out.width = "50%"}
+# We need to visualize predictors just to make sure assumptions are not being violated
+final.data1 %>%
+  ggplot(aes(x = Spelling_Error)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 20) +
+  labs(x = "Spelling Errors") +
+    theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 18, face = "bold"),
+        axis.text = element_text(size = 18),
+        plot.caption = element_text(size = 18,
+                                    hjust = 0))
+
+final.data1 %>%
+  ggplot(aes(x = Raw.Score)) +
+  geom_histogram(fill = "white",
+                 color = "black" ) +
+  labs(x = "IQ Raw Scores") +
+    theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 18, face = "bold"),
+        axis.text = element_text(size = 18),
+        plot.caption = element_text(size = 18,
+                                    hjust = 0))
+
+final.data1 %>%
+  ggplot(aes(x = Age)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 20) +
+  labs(x = "Age") +
+    theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 18, face = "bold"),
+        axis.text = element_text(size = 18),
+        plot.caption = element_text(size = 18,
+                                    hjust = 0))
+```
+
+
+### Visualizing Outcomes
+
+```{r visualizing outcome variables, out.width = "50%"}
+# We need to visualize our outcomes just to make sure they are normally distributed
+final.data1 %>%
+  ggplot(aes(x = delta)) +
+  geom_histogram(fill = "white",
+                 color = "black" ) +
+  labs(x = "delta power") +
+    theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 18, face = "bold"),
+        axis.text = element_text(size = 18),
+        plot.caption = element_text(size = 18,
+                                    hjust = 0))
+
+final.data1 %>%
+  ggplot(aes(x = theta)) +
+  geom_histogram(fill = "white",
+                 color = "black" ) +
+  labs(x = "theta power") +
+    theme(plot.title = element_text(size = 18,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 18, face = "bold"),
+        axis.text = element_text(size = 18),
+        plot.caption = element_text(size = 18,
+                                    hjust = 0))
+
+
+
 
 ```
 
@@ -258,25 +449,160 @@ The results from model 2 show that the log of spelling error was not significant
 
 ```{r run a multiple regression}
 # Create the models
-model1.delta <- lm(delta ~ Spelling_Performance + Sex + Age + Group + Raw.Score, data = final.data1)
-model1.theta <- lm(theta ~ Spelling_Performance + Sex + Age + Group + Raw.Score, data = final.data1)
+model1.delta <- lm(delta ~ Spelling_Error + Sex + Age + Group + Raw.Score, data = final.data1)
+model1.theta <- lm(theta ~ Spelling_Error + Sex + Age + Group + Raw.Score, data = final.data1)
 
-model2.delta <- lm(delta ~ Spelling_Error_Log + Sex + Age + Group + Raw.Score, data = final.data2)
-model2.theta <- lm(theta ~ Spelling_Error_Log + Sex + Age + Group + Raw.Score, data = final.data2)
 
-model3.delta <- lm(delta~ Spelling_Error_Log + Age + Spelling_Error_Log*Age , data = final.data2)
+model2.delta <- lm(delta~ Spelling_Error + Age + Spelling_Error*Age , data = final.data1)
+model2.theta <- lm(theta~ Spelling_Error + Age + Spelling_Error*Age , data = final.data1)
 
 # Obtain the summaries of model 1
 summary(model1.delta)
 summary(model1.theta)
 
-# obtain the summaries of model 2
+
 summary(model2.delta)
 summary(model2.theta)
 
-summary(model3.delta)
+```
+
+
+## Making the results prettier
+
+```{r making the results prettier}
+detach("package:flextable", unload=TRUE)
+
+# Convert our first model into a dataframe
+model1.delta.df <- broom::tidy(model1.delta) 
+
+# Keeping only three values for each variable
+model1.delta.df.rounded <- model1.delta.df %>%
+  mutate(across(where(is.numeric), ~ round(., 4))) %>%
+  arrange(p.value)
+
+# Adding astricks
+model1.delta.df.astericks <- model1.delta.df.rounded %>%
+  mutate(p.value = case_when(
+           p.value < .001 ~ paste(format(p.value),"***",sep=""),
+           p.value < .01 ~  paste(format(p.value),"**",sep=""),
+           p.value < .05 ~  paste(format(p.value),"*",sep=""),
+           TRUE ~ as.character(p.value)
+         ))
+
+
+# Print to check the cleaning
+model1.delta.df.astericks %>%
+  kbl(caption = "Multiple regression model for delta") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  footnote(general  = c("Residual standard error: 0.2227 on 445 degrees of freedom", 
+                        "Multiple R-squared:  0.2583,	Adjusted R-squared:   0.25",
+                        "F-statistic:    31 on 5 and 445 DF,  p-value: < 2.2e-16"))
+
+
+# Convert our second model into a dataframe
+model1.theta.df <- broom::tidy(model1.theta) 
+
+# Keeping only three values for each variable
+model1.theta.df.rounded <- model1.theta.df %>%
+  mutate(across(where(is.numeric), ~ round(., 4))) %>%
+  arrange(p.value)
+
+# Adding astricks
+model1.theta.df.astericks <- model1.theta.df.rounded %>%
+  mutate(p.value = case_when(
+           p.value < .001 ~ paste(format(p.value),"***",sep=""),
+           p.value < .01 ~  paste(format(p.value),"**",sep=""),
+           p.value < .05 ~  paste(format(p.value),"*",sep=""),
+           TRUE ~ as.character(p.value)
+         ))
+
+
+# Print to check the cleaning
+model1.theta.df.astericks %>%
+  kbl(caption = "Multiple regression model for theta") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  footnote(general  = c("Residual standard error: 0.1812 on 445 degrees of freedom",
+                        "Multiple R-squared:  0.09394,	Adjusted R-squared:  0.08376",
+                        "F-statistic: 9.227 on 5 and 445 DF,  p-value: 2.269e-08"))
+
+
+# Convert our second model into a dataframe
+model2.delta.df <- broom::tidy(model2.delta) 
+
+# Keeping only three values for each variable
+model2.delta.df.rounded <- model2.delta.df %>%
+  mutate(across(where(is.numeric), ~ round(., 4))) %>%
+  arrange(p.value)
+
+# Adding astricks
+model2.delta.df.astericks <- model2.delta.df.rounded %>%
+  mutate(p.value = case_when(
+           p.value < .001 ~ paste(format(p.value),"***",sep=""),
+           p.value < .01 ~  paste(format(p.value),"**",sep=""),
+           p.value < .05 ~  paste(format(p.value),"*",sep=""),
+           TRUE ~ as.character(p.value)
+         ))
+
+
+# Print to check the cleaning
+model2.delta.df.astericks %>%
+  kbl(caption = "Multiple regression interaction model for delta") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  footnote(general  = c("Residual standard error: 0.1809 on 447 degrees of freedom",
+                        "Multiple R-squared:  0.09321,	Adjusted R-squared:  0.08712", 
+                        "F-statistic: 15.32 on 3 and 447 DF,  p-value: 1.677e-09"))
+
+# Convert our second model into a dataframe
+model2.theta.df <- broom::tidy(model2.theta) 
+
+# Keeping only three values for each variable
+model2.theta.df.rounded <- model2.theta.df %>%
+  mutate(across(where(is.numeric), ~ round(., 4))) %>%
+  arrange(p.value)
+
+# Adding astricks
+model2.theta.df.astericks <- model2.theta.df.rounded %>%
+  mutate(p.value = case_when(
+           p.value < .001 ~ paste(format(p.value),"***",sep=""),
+           p.value < .01 ~  paste(format(p.value),"**",sep=""),
+           p.value < .05 ~  paste(format(p.value),"*",sep=""),
+           TRUE ~ as.character(p.value)
+         ))
+
+
+# Print to check the cleaning
+model2.theta.df.astericks %>%
+  kbl(caption = "Multiple regression interaction model for theta") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  footnote(general  = c("Residual standard error: 0.1762 on 416 degrees of freedom",
+                        "Multiple R-squared:  0.08947,	Adjusted R-squared:  0.0829",
+                        "F-statistic: 13.63 on 3 and 416 DF,  p-value: 1.704e-08",
+                        "*** indicates p <.001", "** indicates p <.01 ","* indicates p <.05"))
+```
+
+
+### Visualizing the interaction effect
+
+```{r visualizing the interaction}
+
+final.data1 %>%
+  ggplot(aes(x = Spelling_Error, y = delta)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+final.data1 %>%
+  ggplot(aes(x = Age, y = delta)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+
+
+library(interactions)
+interact_plot(model = model2.delta, pred = Spelling_Error, modx = Age)
+interact_plot(model = model2.theta, pred = Spelling_Error, modx = Age)
 
 ```
+
 
 ### Visualizing significant covariates effect on rsEEG power
 
@@ -284,14 +610,14 @@ It looks like age is negatively correlated with theta power. Showing that as som
 
 ```{r investigate Age}
 # Save Age effect on delta from model 2
-covariat.plot1 <- final.data2 %>%
+covariat.plot1 <- final.data1 %>%
   ggplot(aes(x = Age, y = delta)) +
   geom_point() +
   geom_smooth(method = "lm") +
   theme_classic()
 
 # Save Age effect on theta from model 2
-covariat.plot2 <- final.data2 %>%
+covariat.plot2 <- final.data1 %>%
   ggplot(aes(x = Age, y = theta)) +
   geom_point() +
   geom_smooth(method = "lm") +
@@ -299,38 +625,45 @@ covariat.plot2 <- final.data2 %>%
 
 ggarrange(covariat.plot1, covariat.plot2)
 
-# Plotting Sex effect on delta from model 2
-covariat.plot3 <- final.data2 %>%
-  ggplot(aes(x = Sex, y = delta)) +
-  stat_summary(fun = "mean",
-               geom = "bar",
-               fill = "white",
-               color = "black",
-               width = .45) +
-  stat_summary(fun.data = mean_cl_normal,
-               geom = "errorbar",
-               width = .2) +
-  scale_y_continuous(expand = c(0,0), limits = c(0,1.5)) +
+
+# Save Age effect on delta from model 2
+covariat.plot1 <- final.data1 %>%
+  ggplot(aes(x = Age, y = Spelling_Error)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
   theme_classic()
 
-# Plotting Sex effect on theta from model 2 
-covariat.plot4 <- final.data2 %>%
-  ggplot(aes(x = Sex, y = theta)) +
-  stat_summary(fun = "mean",
-               geom = "bar",
-               fill = "white",
-               color = "black",
-               width = .45) +
-  stat_summary(fun.data = mean_cl_normal,
-               geom = "errorbar",
-               width = .2) +
-  scale_y_continuous(expand = c(0,0), limits = c(0,1.5)) +
+# Save Age effect on theta from model 2
+covariat.plot2 <- final.data1 %>%
+  ggplot(aes(x = Age, y = Spelling_Error)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
   theme_classic()
 
+ggarrange(covariat.plot1, covariat.plot2)
 
-ggarrange(covariat.plot3, covariat.plot4)
+### Visualize this as a boxplot
+final.data1 <- final.data1 %>%
+  mutate(Age.Quantile = ecdf(Age)(Age),
+         Age.Group = ifelse(Age.Quantile > .66, "upper", 
+                            ifelse(Age.Quantile >.33, "middle",
+                                   "lower")))
 
-
+# Create a box plot
+final.data1 %>%
+  ggplot(aes(x= Age.Group, y = Spelling_Error)) +
+  geom_boxplot() +
+  theme_classic() +
+  labs(title = "Spelling Error by Age Quantiles",
+       x = "Quantile Groups of Age",
+       y = "Spelling Error") +
+      theme(plot.title = element_text(size = 16,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 13,
+                                    hjust = 0))
+  
 ```
 
 
@@ -340,11 +673,10 @@ We need to plot the residuals for model2 (there are two of them) to see if they 
 
 ```{r plot the residuals for both models}
 # introduce the residuals into the datasets
-final.data2$studentized.residuals.delta <- rstudent(model2.delta)
-final.data2$studentized.residuals.theta <- rstudent(model2.theta)
+final.data1$studentized.residuals.delta <- rstudent(model2.delta)
 
 # Create a histogram of the outcome variable
-residual.plot1 <- final.data2 %>%
+residual.plot1 <- final.data1 %>%
   ggplot(aes(x = studentized.residuals.delta)) +
   geom_histogram(fill = "white",
                  color = "black",
@@ -363,12 +695,12 @@ residual.plot1 <- final.data2 %>%
                                     hjust = 0))
 
 # Create a QQ plot
-residual.plot2 <- final.data2 %>%
+residual.plot2 <- final.data1 %>%
   ggplot(aes(sample= studentized.residuals.delta)) +
   geom_qq() +
   stat_qq_line() +
   theme_classic() +
-  labs(title = "QQ Plot for model 2 predicting delta",
+  labs(title = "QQ Plot for predicting delta",
        x = "Theoretical Quantiles",
        y = "Frequency",
        caption = bquote(bold("Figure 2:") ~ "A QQ Plot of studentized residuals and theoretical quantiles.")) +
@@ -382,45 +714,6 @@ residual.plot2 <- final.data2 %>%
 # Plot the graphs
 ggarrange(residual.plot1, residual.plot2)
 
-
-# Create a histogram of the outcome variable
-residual.plot3 <- final.data2 %>%
-  ggplot(aes(x = studentized.residuals.theta)) +
-  geom_histogram(fill = "white",
-                 color = "black",
-                 bins = 15) +
-  scale_y_continuous(expand = c(0,0), limits = c(0,120)) + 
-  theme_classic() +
-  labs(title = "A histogram of Studentized Residuals",
-       x = "Studentized Residuals",
-       y = "Frequency",
-       caption = bquote(bold("Figure 1:") ~ "A histogram of Studentized Residuals.")) +
-  theme(plot.title = element_text(size = 11,
-                                  hjust = 0.5),
-        axis.title = element_text(size = 10, face = "bold"),
-        axis.text = element_text(size = 10),
-        plot.caption = element_text(size = 8,
-                                    hjust = 0))
-
-# Create a QQ plot
-residual.plot4 <- final.data2 %>%
-  ggplot(aes(sample= studentized.residuals.theta)) +
-  geom_qq() +
-  stat_qq_line() +
-  theme_classic() +
-  labs(title = "QQ Plot for model 2 predicting theta",
-       x = "Theoretical Quantiles",
-       y = "Frequency",
-       caption = bquote(bold("Figure 2:") ~ "A QQ Plot of studentized residuals and theoretical quantiles.")) +
-  theme(plot.title = element_text(size = 11,
-                                  hjust = 0.5),
-        axis.title = element_text(size = 10, face = "bold"),
-        axis.text = element_text(size = 10),
-        plot.caption = element_text(size = 8,
-                                    hjust = 0))
-
-# Plot the graphs
-ggarrange(residual.plot3, residual.plot4)
 
 ```
 

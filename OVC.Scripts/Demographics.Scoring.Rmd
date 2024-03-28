@@ -1,0 +1,82 @@
+---
+title: "Data Scoring Demographics"
+author: "Leandro Ledesma"
+date: "2024-03-26"
+output: html_document
+---
+
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(kableExtra)
+
+```
+
+### Load in the data
+
+```{r load in the data, warning = FALSE}
+# Set working directory
+setwd("~/OVC/LDSpan")
+
+# Load in the data
+LDSpan <- read.csv("LDSpan.scored.csv")
+
+# Set working directory
+setwd("Z:/eglab/A_ALL Project Data/Zambia projects (R01, R21, OVC)/ZambiaOVC_2022/ZambiaOVC_CleanFiles")
+
+# Load in the data
+demographics <- read.csv("OVC_demographics.csv")
+
+# Drop gender variable from demographics
+demographics <- demographics %>%
+  select(-gender)
+
+```
+
+### Merge the data
+
+```{r merge the data}
+# merge the data
+data <-
+  LDSpan %>%
+  left_join(demographics, by = "ID")
+
+# Data cleaning
+data <- 
+  data %>%
+  mutate(DOE = substr(DOE, start = 1, stop = 10))
+
+```
+
+
+### Scoring Age
+
+```{r creating the variable age}
+# Creating the variable age
+# Obtain people's ages using their date of birth and the date of evaluation
+dob <- ymd(data$DOB)
+doe <- ymd(data$DOE)
+
+age_weeks <- as.numeric(difftime(doe, dob, units = "weeks"))
+age <- age_weeks/52
+data$Child_age <- round(age,1)
+
+```
+
+### Save the data
+
+```{r save the data}
+# Set the working directory
+setwd("~/OVC/Demographics")
+
+# Save the data
+write_csv(data, "Demographics.scored.csv")
+
+```
+
+
+
