@@ -26,9 +26,9 @@ library(kableExtra) # Extra table formatting type
 library(corrtable) # Potential correlation matrix code
 library(broom) # Converts regression outputs into dataframes using the tidy() function
 library(car) # To calcualte vif
-
-
-
+library(broom)
+library(ggpubr) # ggarrange
+library(quantreg) # rq (quantile regreeion)
 ```
 
 
@@ -99,10 +99,10 @@ LDSpan <- LDSpan %>%
 # merged dataset
 data <-
   ZAT.math %>%
-  left_join(demo, by = "OVC_ID") %>%
-  left_join(SES, by = "OVC_ID") %>%
-  left_join(Physical, by = "OVC_ID") %>%
-  left_join(LDSpan, by = "OVC_ID")
+  full_join(demo, by = "OVC_ID") %>%
+  full_join(SES, by = "OVC_ID") %>%
+  full_join(Physical, by = "OVC_ID") %>%
+  full_join(LDSpan, by = "OVC_ID")
 
 dim(data)
 
@@ -111,8 +111,7 @@ dim(data)
 
 ### Missing data
 
-Just a check
-
+Identifying the number of missing data per variable and then keeping only rows with no missing data. 
 
 ```{r missing data}
 print("The number of missing data for each variable is:")
@@ -129,29 +128,65 @@ dim(data2)
 
 ```
 
-### Descriptive statistics of our predictor and outcome variable
+### Descriptive statistics of our predictors and covariates
 
 ```{r descriptive statistics of our predictor and outcome variable}
-# Print out the descriptive statistics using the summary function
-# Main predictor variable
-summary(data2$Math.Score)
-sd(data2$Math.Score)
-max(data2$Math.Score)
-min(data2$Math.Score)
+# Table on continuous predictors
+continuous <- data2 %>%
+  select(Math.Score,
+         Child_age,
+         Weighted_SES_index,
+         BMI)
+
+# We nee to have our continuous variables in one column
+continuous.long <- continuous %>%
+  stack() %>%
+  select(Predictors = ind,
+         values = values)
+
+# Obtain the descriptive statistics from the long format demographic sheet
+continuous.summarize <- continuous.long %>%
+  group_by(Predictors) %>%
+  summarize(Mean = round(mean(values),2),
+            Med. = round(median(values),2),
+            SD = round(sd(values),2),
+            Min. = min(values),
+            Max. = max(values),
+            N = nrow(continuous))
+
+# Table cleaning
+continuous.summarize <- continuous.summarize %>%
+  mutate(Predictors = factor(Predictors, 
+                             labels = c("Math Score (ZAT)", 
+                                        "Age",
+                                        "Weighted SES",
+                                        "BMI")))
 
 
-# The other predictor (age)
-summary(data2$Child_age)
-sd(data2$Child_age)
-max(data2$Child_age)
-min(data2$Child_age)
+# Create an APA style table with the results
+continuous.summarize %>%
+  nice_table(title = "Descriptive Statistics of Continuous Predictors") %>%
+  bold(part = "header")
 
 
-# Main outcome variable
-summary(data2$LDSpan.num.Score)
-sd(data2$LDSpan.num.Score)
-max(data2$LDSpan.num.Score)
-min(data2$LDSpan.num.Score)
+# Create a table for categorical variables
+sex.df <- data.frame(table(data2$Sex)) %>%
+  pivot_wider(names_from = Var1, values_from = Freq) %>%
+  mutate(N = `F` + M) %>%
+  mutate(Percent = round(M/N,2)*100) %>%
+  select(-`F`, Frequency = M, Percent, N)
+
+
+# Stack the tables
+categorical.df <-sex.df %>%
+  mutate(`_` = "Male",
+         Percent = paste(Percent,"%",sep="")) %>%
+  select(`_`, Frequency, Percent, N)
+
+# Create an APA style table with the results
+categorical.df %>%
+  nice_table(title = "Descriptive Statistics of Sex") %>%
+  bold(part = "header")
 ```
 
 
@@ -185,30 +220,218 @@ data2 %>%
 ```
 
 
+### Visualizing relationship between predictors (Age and Zat Math) and outcome (Math WM)
+
+```{r create a scatterplot}
+data2 %>%
+  ggplot(aes(x= Math.Score, y = LDSpan.num.Score)) +
+  geom_jitter() +
+  geom_smooth(method = "lm",
+              se = FALSE)
+
+data2 %>%
+  ggplot(aes(x = Child_age, y = LDSpan.num.Score)) +
+  geom_jitter() +
+  geom_smooth(method = "lm",
+              se = FALSE)
+
+```
 
 
-### Descriptive statistics of covariates
+### Run a multiple regression
 
-```{r descriptive statistics of our covariates}
-# Print out the descriptive statistics using the summary function
-# Main predictor variable
-summary(data2$Weighted_SES_index)
-sd(data2$Weighted_SES_index)
-max(data2$Weighted_SES_index)
-min(data2$Weighted_SES_index)
+```{r runing a multiple regression}
+# Create the model
+model1 <- lm(LDSpan.num.Score~ Math.Score*Child_age + Weighted_SES_index + BMI, data2)
 
-hist(data2$Weighted_SES_index)
+# get the summary of the model
+summary(model1)
+```
 
-# The other predictor (age)
-summary(data2$BMI)
-sd(data2$BMI)
-max(data2$BMI)
-min(data2$BMI)
+### Visualize the interaction
+
+```{r visualize the interaction}
+library(interactions)
+
+interact_plot(model = model1, pred = Math.Score, modx = Child_age)
+```
 
 
-# Main outcome variable
-summary(data2$Head_Circum_cm)
-sd(data2$Head_Circum_cm)
-max(data2$Head_Circum_cm)
-min(data2$Head_Circum_cm)
+### Visualizing residuals
+
+```{r visualizing residuals for model 1}
+# introduce the residuals into the datasets
+data2$studentized.residuals <- rstudent(model1)
+
+# Create a histogram of the outcome variable
+residual.plot1 <- data2 %>%
+  ggplot(aes(x = studentized.residuals)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 15) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,250)) + 
+  theme_classic() +
+  labs(title = "A histogram of Studentized Residuals",
+       x = "Studentized Residuals",
+       y = "Frequency",
+       caption = bquote(bold("Figure 1:") ~ "A histogram of Studentized Residuals.")) +
+  theme(plot.title = element_text(size = 11,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 10, face = "bold"),
+        axis.text = element_text(size = 10),
+        plot.caption = element_text(size = 8,
+                                    hjust = 0))
+
+# Create a QQ plot
+residual.plot2 <- data2 %>%
+  ggplot(aes(sample= studentized.residuals)) +
+  geom_qq() +
+  stat_qq_line() +
+  theme_classic() +
+  labs(title = "QQ Plot for predicting Digits WM",
+       x = "Theoretical Quantiles",
+       y = "Frequency",
+       caption = bquote(bold("Figure 2:") ~ "A QQ Plot of studentized residuals and theoretical quantiles.")) +
+  theme(plot.title = element_text(size = 11,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 10, face = "bold"),
+        axis.text = element_text(size = 10),
+        plot.caption = element_text(size = 8,
+                                    hjust = 0))
+
+# Plot the graphs
+ggarrange(residual.plot1, residual.plot2)
+
+
+```
+
+
+
+# Another approach
+
+What if another way of investigating this relationship is by using quantile regressions?
+
+### Create a quantile regression for five quantiles
+
+```{r creating a correlation variable}
+# create three models
+#fit model
+model.10 <- rq(LDSpan.num.Score ~ Child_age* Math.Score + Weighted_SES_index + BMI, data = data2, tau = 0.10)
+
+#fit model
+model.25 <- rq(LDSpan.num.Score ~ Child_age* Math.Score + Weighted_SES_index + BMI, data = data2, tau = 0.25)
+
+#fit model
+model.50 <- rq(LDSpan.num.Score ~ Child_age* Math.Score + Weighted_SES_index + BMI, data = data2, tau = 0.50)
+
+#fit model
+model.75 <- rq(LDSpan.num.Score ~ Child_age* Math.Score + Weighted_SES_index + BMI, data = data2, tau = 0.75)
+
+#fit model
+model.95 <- rq(LDSpan.num.Score ~ Child_age* Math.Score + Weighted_SES_index + BMI, data = data2, tau = 0.95)
+
+# Place them all into one data frame
+model2_df <- 
+broom::tidy(model.10) %>%
+rbind(broom::tidy(model.25)) %>%
+rbind(broom::tidy(model.50)) %>%
+rbind(broom::tidy(model.75)) %>%
+rbind(broom::tidy(model.95))
+
+# Remove the covariates and place tau in the front
+model2_df <- model2_df %>%
+  filter(!(term %in% c("Weighted_SES_index",
+                       "BMI"))) %>%
+  select(tau, everything())
+
+
+# Keeping only two values for each variable (not p value)
+model2_df.rounded <- model2_df %>%
+  select(-p.value) %>%
+  mutate(across(where(is.numeric), ~ round(., 2)))
+
+# introduce p value rounded to four digits
+model2_df.rounded$p.value <- round(model2_df$p.value,3)
+
+# Adding astricks
+model2_df.astericks <- model2_df.rounded %>%
+  mutate(p.value = case_when(
+           p.value < .001 ~ paste(format(p.value),"***",sep=""),
+           p.value < .01 ~  paste(format(p.value),"**",sep=""),
+           p.value < .05 ~  paste(format(p.value),"*",sep=""),
+           TRUE ~ as.character(p.value)
+         ))
+
+# Do this or footnote() won't work
+detach("package:flextable", unload=TRUE)
+
+# Print to check the cleaning
+model2_df.astericks %>%
+  kbl(caption = "Quantile Multiple Regression") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+### Graph the beta coefficients of the predictors of interest
+
+
+```{r visualize beta coefficients}
+# test
+all_quant <- rq(LDSpan.num.Score ~ Child_age* Math.Score + Weighted_SES_index + BMI, data = data2, tau = seq(from = .05,
+                                                                                                        to = .95,
+                                                                                                        by = .025))
+all_quant_df <- broom::tidy(all_quant)
+
+
+# Create a graph for the intercept
+all_quant_df %>%
+  filter(term == "(Intercept)") %>%
+  ggplot(aes(x = tau, y = estimate)) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .5) +
+  geom_line(size = 1) +
+  labs(x = "Digit Span Quantile",
+       y = "Intercept (Beta Estimate)") +
+  theme_light()
+
+
+# Create a graphs for Age 
+all_quant_df %>%
+  filter(term == "Child_age") %>%
+  ggplot(aes(x = tau, y = estimate)) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .5) +
+  geom_line(size = 1) +
+  labs(x = "Digit Span Quantile",
+       y = "Age (Beta Estimate)") +
+  theme_light()
+
+# Create a graph for Math performance
+all_quant_df %>%
+  filter(term == "Math.Score") %>%
+  ggplot(aes(x = tau, y = estimate)) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .5) +
+  geom_line(size = 1) +
+  labs(x = "Digit Span Quantile",
+       y = "ZAT Math Score (Beta Estimate)") +
+  theme_light()
+
+# Create a graph for the interaction 
+all_quant_df %>%
+  filter(term == "Child_age:Math.Score") %>%
+  ggplot(aes(x = tau, y = estimate)) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .5) +
+  geom_line(size = 1) +
+  labs(x = "Digit Span Quantile",
+       y = "Age:ZAT Math Score (Beta Estimate)") +
+  theme_light()
+```
+
+
+
+### Plotting interaction effect
+
+```{r plotting interaction effect for quantile regressions}
+library(visreg)
+
+visreg(model.25, "Math.Score", by ="Child_age", overlay = TRUE)
+visreg(model.50, "Math.Score", by ="Child_age", overlay = TRUE)
+visreg(model.75, "Math.Score", by ="Child_age", overlay = TRUE)
 ```

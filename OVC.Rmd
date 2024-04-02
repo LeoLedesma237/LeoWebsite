@@ -11,3 +11,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ### Data cleaning
 
 **Step 1** Vineland data cleaning [[Click here to view script]](https://leoledesma237.github.io/LeoWebsite/OVC.Scripts/Vineland.Scoring.html) 
+
+
+
+
+### Data Analysis
+
+**Investing the relationship between WM and Math by Age** <add description here>(https://leoledesma237.github.io/LeoWebsite/OVC.Scripts/Analyzing.Math.WM.Age.html)

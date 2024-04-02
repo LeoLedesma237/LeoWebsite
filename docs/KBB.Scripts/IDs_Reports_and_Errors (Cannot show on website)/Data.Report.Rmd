@@ -110,10 +110,19 @@ All.Matched.No.Siblings <- All.Children %>%
 ### Quality control
 
 ```{r quality control}
+  All.Children %>%
+  select(HOH_ID, Child_First_Name, Child_Last_Name, KBB_DD_status, epilepsy, Child_age, Child_Gender)  %>%
+  filter(!complete.cases(.))
 
+All.Matched.Siblings %>%
+  select(HOH_ID, Child_First_Name, Child_Last_Name, KBB_DD_status, epilepsy, Child_age, Child_Gender)  %>%
+  filter(!complete.cases(.))
 
-
-
+summary(All.Matched.Siblings$Child_age)
+sd(All.Matched.Siblings$Child_age) 
+table(All.Matched.Siblings$Child_Gender)
+table(All.Matched.Siblings$epilepsy)
+table(All.Matched.Siblings$KBB_DD_status)
 ```
 
 
