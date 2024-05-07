@@ -1,0 +1,287 @@
+---
+title: "ONR VR Task Performance"
+author: 
+date: 
+output: 
+  html_document:
+    theme: cerulean
+  word_document: default
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r Enter ID Number (3 characters), echo = FALSE}
+ID = 42
+```
+
+## Overview
+
+Thank you for participating in our study (we hope you had fun!). The purpose of this document is to 1) explain the two tasks that you played in virtual reality (VR); and 2) share your performance for the three testing conditions (Day1 = Rest; Day2 = Exercise; Day3 = No Sleep). Information from your Day 0 is not present since that was considered a practice day. 
+
+```{r test, echo = FALSE, comment=""}
+cat("The following document is intended solely for ID #",ID)
+```
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------I
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+```{r library, echo= TRUE, include =FALSE}
+library(tidyverse)
+library(readxl)
+library(base) #subset strings
+library(scales)
+library(kableExtra) # Makes pretty tables
+library(ggplot2) # Allows using ggplot
+library(knitr)
+library(xtable)
+
+```
+
+```{r loading files, echo=TRUE, include=FALSE, warning = FALSE}
+# Set working directory
+setwd("~/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
+
+# Open files of interest
+# These are processed files that have any practice trials and Day 0 excluded
+GnG_Performance <- read.csv("GnG.trial.type.csv")
+GnG_RT <- read.csv("GnG.reaction.time.csv")
+Nback_Performance <- read.csv("Nback.trial.type.csv")
+Nback_RT <- read.csv("Nback.reaction.time.csv")
+```
+
+```{r data cleaning reaction times, include = FALSE}
+# Clean the reaction time csv by removing incorrect rows
+# This means what remains are reaction times for correct Go trials
+GnG_RT <- GnG_RT %>%
+  filter(Correct == 1 & Trial.Type == "Go")
+
+# Do the same for Nback- keep reaction time only for correct trials, which represent targert trials
+Nback_RT <- Nback_RT %>%
+  filter(Correct == 1 & Trial.Type == "Target")
+```
+
+
+```{r calculating the means for GnG performance and reaction time, warning = FALSE}
+# Average to only day types and trial conditions for GnG (remove performance for block types)
+GnG_Performance.mean <- GnG_Performance %>%
+  group_by(UserID, Day.Type, Trial.Type) %>%
+  summarize(Performance = round(mean(trial.mean.correct),3)*100)
+
+# Average reaction times so it only shows for Day types
+GnG_RT.mean <- GnG_RT %>%
+  group_by(UserID, Day.Type, Trial.Type) %>%
+  summarize(RT = round(mean(mean.RT)))
+
+# Average to only day types and trial conditions for Nback (remove performance for block types)
+Nback_performance.mean <- Nback_Performance %>%
+  group_by(UserID, Day.Type, Trial.Type) %>%
+  summarize(Performance = round(mean(trial.mean.correct),3)*100)
+
+# Average reaction times so it only shows for Day types
+Nback_RT.mean <- Nback_RT %>%
+  group_by(UserID, Day.Type, Trial.Type) %>%
+  summarize(RT = round(mean(mean.RT)))
+```
+
+
+```{r joining the performance and reaction time datasets together, include = FALSE}
+# Join the datasets into one data frame
+GnG <- GnG_Performance.mean %>%
+  full_join(GnG_RT.mean, by = c("UserID",
+                                "Day.Type",
+                                "Trial.Type"))
+
+Nback <- Nback_performance.mean %>%
+  full_join(Nback_RT.mean, by = c("UserID",
+                                "Day.Type",
+                                "Trial.Type"))
+
+# Rbind the datasets into one
+data <- GnG %>%
+  rbind(Nback)
+```
+
+
+```{r Additional data cleaning , echo=TRUE, include=FALSE}
+# more data cleaning
+data <- data %>%
+  rename(Day = Day.Type) %>%
+  rename(`Trial Type` = Trial.Type) %>%
+  rename(`Reaction Time` = RT) %>%
+  mutate(Day = case_when(Day == "Day 1" ~ "Rest",
+                         Day == "Day 2" ~ "Exercise",
+                         Day == "Day 3" ~ "No Sleep"))
+
+# Index the data by the current subject
+current.data <- data %>%
+  filter(UserID == ID) %>%
+  ungroup() %>%
+  select(-UserID)
+```
+
+
+
+## Go/No-Go
+
+The Go/No-Go task was the first game you played in VR. This task required you to hit certain shapes that were seen often (Go trials) and to avoid hitting shapes that were presented rarely (No-Go trials). This task is a measure of **inhibition ability** since better performance on No-Go trials indicates greater ability to inhibit a habituated response. The graphs below show overall performance for both Go and No-Go trials for all three testing days (left) and the reaction times for correct Go trials (right). Smaller numbers for reaction time indicate quicker speed in hitting the Go trials, which is a good thing.    
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------I
+
+
+ 
+
+```{r priting the GnG table, echo = FALSE, fig.show='hold', out.width= "50%"}
+# extract the clean GnG data
+GnG.clean <- current.data %>%
+  filter(`Trial Type` %in% c("Go",
+                             "No-Go"))
+
+# Print out a nice bar graph with this information
+GnG.clean %>%
+  mutate(Day = factor(Day, levels = c("Rest",
+                                      "Exercise",
+                                      "No Sleep")),
+         label = paste(Performance,"%",sep="")) %>%
+  ggplot(aes(x = Day, 
+             y = Performance, 
+             fill = `Trial Type`)) +
+  geom_bar(stat = "identity",
+           position = "dodge",
+           color = "black",
+           size = 1) +
+  geom_text(aes(label = label),
+            position = position_dodge(width = .9),
+            vjust = -.5,
+            size= 5.5) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,120)) +
+  scale_fill_manual(values = c("#298c8c","#a00000")) +
+  labs(title = "Go/No-Go Trial Performance Between\nTesting Conditions",
+       x = "Testing Conditions",
+       y = "Correct Trial (%)") +
+  theme_classic() +
+  theme(plot.title = element_text(size = 16,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 16, face = "bold"),
+        axis.text = element_text(size = 16),
+        plot.caption = element_text(size = 16,
+                                    hjust = 0))
+
+# Graph reaction time
+GnG.clean %>%
+  filter(complete.cases(.)) %>%
+  mutate(Day = factor(Day, levels = c("Rest",
+                                      "Exercise",
+                                      "No Sleep")),
+         label = paste(`Reaction Time`," (ms)",sep="")) %>%
+  ggplot(aes(x = Day, 
+             y = `Reaction Time`,
+             width =.45)) +
+  geom_bar(stat = "identity",
+           position = "dodge",
+           color = "black",
+           fill = "#9fc8c8",
+           size = 1) +
+  geom_text(aes(label = label),
+            position = position_dodge(width = .9),
+            vjust = -.5,
+            size= 5.5) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,1150)) +
+  labs(title = "Correct Go Trial Reaction Times Between\nTesting Conditions",
+       x = "Testing Conditions",
+       y = "Reation Time (ms)") +
+  theme_classic() +
+  theme(plot.title = element_text(size = 16,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 16, face = "bold"),
+        axis.text = element_text(size = 16),
+        plot.caption = element_text(size = 16,
+                                    hjust = 0))
+```
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------I
+
+## NBack
+
+The Nback was the second game you played in VR and is considered to be harder than the Go/No-Go. Our version of this task required you to hit a shape if it matched a shape that you saw two trials back (target). This type of task measures your **working memory ability**. Higher performance on target trials showed you remembered a shape correctly and higher performance on non-target trials indicated a greater ability to not misremember presented stimuli. The graphs below respectively show performance for these trial types for all three testing days (left) and reaction times for correct target trials (right).   
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------I
+
+
+```{r priting the Nback table, echo = FALSE, fig.show='hold', out.width= "50%"}
+# extract the clean GnG data
+Nback.clean <- current.data %>%
+  filter(`Trial Type` %in% c("Target",
+                             "Non-Target"))
+
+# Print out a nice bar graph with this information
+Nback.clean %>%
+  mutate(Day = factor(Day, levels = c("Rest",
+                                      "Exercise",
+                                      "No Sleep")),
+         label = paste(Performance,"%",sep="")) %>%
+  ggplot(aes(x = Day, 
+             y = Performance, 
+             fill = `Trial Type`)) +
+  geom_bar(stat = "identity",
+           position = "dodge",
+           color = "black",
+           size = 1) +
+  geom_text(aes(label = label),
+            position = position_dodge(width = .9),
+            vjust = -.5,
+            size= 5.5) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,120)) +
+  scale_fill_manual(values = c("#1a80bb","#f2c45f")) +
+  labs(title = "Target/Non-Target Trial Performance Between\nTesting Conditions",
+       x = "Testing Conditions",
+       y = "Correct Trial (%)") +
+  theme_classic() +
+  theme(plot.title = element_text(size = 16,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 16, face = "bold"),
+        axis.text = element_text(size = 16),
+        plot.caption = element_text(size = 16,
+                                    hjust = 0))
+
+# Print reaction times
+Nback.clean %>%
+  filter(complete.cases(.)) %>%
+  mutate(Day = factor(Day, levels = c("Rest",
+                                      "Exercise",
+                                      "No Sleep")),
+         label = paste(`Reaction Time`," (ms)",sep="")) %>%
+  ggplot(aes(x = Day, 
+             y = `Reaction Time`,
+             width =.45)) +
+  geom_bar(stat = "identity",
+           position = "dodge",
+           color = "black",
+           fill = "#f1a226",
+           size = 1) +
+  geom_text(aes(label = label),
+            position = position_dodge(width = .9),
+            vjust = -.5,
+            size= 5.5) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,1150)) +
+  labs(title = "Correct Target Trial Reaction Times Between\nTesting Conditions",
+       x = "Testing Conditions",
+       y = "Reation Time (ms)") +
+  theme_classic() +
+  theme(plot.title = element_text(size = 16,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 16, face = "bold"),
+        axis.text = element_text(size = 16),
+        plot.caption = element_text(size = 16,
+                                    hjust = 0))
+
+
+```
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------I

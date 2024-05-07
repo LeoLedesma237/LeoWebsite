@@ -1,0 +1,181 @@
+---
+title: "Data Scoring LDSpan"
+author: "Leandro Ledesma"
+date: "2024-03-26"
+output: html_document
+---
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(kableExtra)
+
+```
+
+### Load in the data
+
+```{r load in the data, warning = FALSE}
+# Set working directory
+setwd("Z:/eglab/A_ALL Project Data/Zambia projects (R01, R21, OVC)/ZambiaOVC_2022/ZambiaOVC_CleanFiles/Cohort1_cleaned_July2021_forNan/C1T1")
+
+# Load in the data
+LDSpan1 <- read_excel("ZambiaOVC_LDSpan_Triangles_co1_tm1_clean.xlsx")
+
+# Set working directory
+setwd("Z:/eglab/A_ALL Project Data/Zambia projects (R01, R21, OVC)/ZambiaOVC_2022/ZambiaOVC_CleanFiles/Cohort2_cleanedJun2021_forNan/C2T1")
+
+# Load in the data
+LDSpan2 <- read_excel("ZambiaOVC_LDSpan_Triangles_coh2_tm1_clean_17Jul2017.xlsx")
+
+# Set working directory
+setwd("Z:/eglab/A_ALL Project Data/Zambia projects (R01, R21, OVC)/ZambiaOVC_2022/ZambiaOVC_CleanFiles/Cohort3_cleaned_Jul2021_forNan/C3T1")
+
+# Load in the data
+LDSpan3 <- read_excel("ZambiaOVC_LDSpan_Triangles_coh3_tm1.xlsx")
+
+```
+
+### Bind all of the LDSpan together
+
+```{r bind the datasets}
+# Extract the variables of interest from each dataset
+LDSpan1.sub <-  
+LDSpan1 %>%
+  select(OVC_ID, 
+         Sex = Ch_sex,
+         `Date of Eval`,
+         starts_with("NF"),
+         starts_with("NB"),
+         starts_with("LF"),
+         starts_with("LB"))
+
+# Assume that 1 means boy
+LDSpan2.sub <- 
+LDSpan2 %>%
+    select(OVC_ID, 
+         Sex = Ch_sex_F1_M0, 
+         `Date of Eval`, 
+         starts_with("NF"),
+         starts_with("NB"),
+         starts_with("LF"),
+         starts_with("LB"))
+
+LDSpan3.sub <- 
+LDSpan3 %>%
+    select(OVC_ID, 
+         Sex = T1_Ch_sex,
+         `Date of Eval` = `T1_Date of Eval`,
+         contains("NF"),
+         contains("NB"),
+         contains("LF"),
+         contains("LB"))
+
+
+# Addiitonally data cleaning
+# Renaming
+names(LDSpan2.sub) <- names(LDSpan1.sub)
+names(LDSpan3.sub) <- names(LDSpan1.sub)
+
+# Mutating Sex variable in dataset 2
+LDSpan2.sub <- LDSpan2.sub %>% mutate(Sex = ifelse(Sex == 0, "M", "F"))
+
+# Bind them together
+LDSpan <- 
+  LDSpan1.sub %>%
+  rbind(LDSpan2.sub) %>%
+  rbind(LDSpan3.sub)
+```
+
+
+### Obtain the total score for all four subtests
+
+```{r scoring all the data}
+
+# Score for all the rows
+LDSpan.scored <- LDSpan %>%
+  select(-c(OVC_ID, Sex)) %>%
+  mutate_all(., function(x) as.numeric(x)) %>%
+  mutate_all(., function(x) ifelse(x != 1, 0, x))
+
+# Replace all NA's with a zero
+LDSpan.scored[is.na(LDSpan.scored)] <- 0
+
+# Take the raw score of these tasks and add to a dataframe with ID's, and Sex
+LDSpan.final <- data.frame(ID = LDSpan$OVC_ID,
+                          Sex =  LDSpan$Sex,
+                          DOE = LDSpan$`Date of Eval`,
+                          LDSpan.scored = rowSums(LDSpan.scored)) 
+
+```
+
+
+### View scoring distribution of composite score
+
+```{r show the scoring distribution}
+LDSpan.final %>%
+  ggplot(aes(x = LDSpan.scored)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 20)
+
+summary(LDSpan.final$LDSpan.scored)
+```
+
+
+
+### Score the data (Numbers/Digits only)
+
+Each value that is not 1 is essentially a 0.
+
+```{r scoring the data}
+LDSpan.num <- LDSpan %>%
+  select(OVC_ID, 
+         Sex,
+         contains("NF"),
+         contains("NB"))
+
+# Score for all the rows
+LDSpan.num.scored <- LDSpan.num %>%
+  select(-c(OVC_ID, Sex)) %>%
+  mutate_all(., function(x) as.numeric(x)) %>%
+  mutate_all(., function(x) ifelse(x != 1, 0, x))
+
+# Replace all NA's with a zero
+LDSpan.num.scored[is.na(LDSpan.num.scored)] <- 0
+
+# Take the raw score of these tasks and add to a dataframe with ID's, and Sex
+LDSpan.num.final <- data.frame(ID = LDSpan$OVC_ID,
+                          Sex =  LDSpan$Sex,
+                          DOE = LDSpan$`Date of Eval`,
+                          LDSpan.num.Score = rowSums(LDSpan.num.scored)) 
+
+```
+
+
+### View scoring distribution of numbers/digits only
+
+```{r show the scoring distribution for numbers}
+LDSpan.num.final %>%
+  ggplot(aes(x = LDSpan.num.Score)) +
+  geom_histogram(fill = "white",
+                 color = "black",
+                 bins = 20)
+
+summary(LDSpan.num.final$LDSpan.num.Score)
+```
+
+
+### Save the data
+
+```{r save the data}
+# Set the working directory
+setwd("C:/Users/lledesma.TIMES/Documents/OVC/LDSpan")
+
+# Save the data
+write_csv(LDSpan.num.final, "LDSpan.num.scored.csv")
+write_csv(LDSpan.final, "LDSpan.scored.csv")
+
+```

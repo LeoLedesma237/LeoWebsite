@@ -804,7 +804,7 @@ new.existing.IDs &lt;- existing.IDs %&gt;%
   filter(!(ID %in% IDs.We.Must.Recycle))</code></pre>
 <pre><code>Warning in left_join(., all.data.dd.status, by = &quot;x&quot;): Detected an unexpected many-to-many relationship between `x` and `y`.
 ℹ Row 61 of `x` matches multiple rows in `y`.
-ℹ Row 178 of `y` matches multiple rows in `x`.
+ℹ Row 183 of `y` matches multiple rows in `x`.
 ℹ If a many-to-many relationship is expected, set `relationship =
   &quot;many-to-many&quot;` to silence this warning.</code></pre>
 <pre class="r"><code># Set working directory
@@ -888,7 +888,36 @@ vector &lt;- 1:max.ID.num
 
 # See if we missed to give an ID number
 setdiff(vector, new.ID.tracker$ID)</code></pre>
-<pre><code>integer(0)</code></pre>
+<pre><code>[1] 221 222 223 224</code></pre>
+</div>
+<div id="send-information-to-ackim" class="section level3">
+<h3>Send information to Ackim</h3>
+<p>We will now send a finalized excel sheet to ackim. This has all of
+the information from our ID excel sheet but will also include the date
+of evaluation and will be sorted by that date.</p>
+<pre class="r"><code># Set working directory
+setwd(&quot;~/KBB_new_2/1_screener/final_data&quot;)
+
+# Load in all data
+all.children &lt;- read_excel(&quot;All Children.xlsx&quot;)
+
+# Add the child ID x
+all.children &lt;- all.children %&gt;%
+  mutate(x = paste(HOH_First_Name, HOH_Last_Name, Child_First_Name, Child_Last_Name)) %&gt;%
+  select(x, Date_of_Evaluation)
+
+final.send.to.Ackim &lt;- new.ID.tracker %&gt;%
+  left_join(all.children, by = &quot;x&quot;) %&gt;%
+  select(Date_of_Evaluation, everything()) %&gt;%
+  arrange(Date_of_Evaluation)
+  
+
+# Set save directory
+setwd(&quot;~/KBB_new_2/matched_siblings&quot;)
+
+# Save the data
+write.xlsx(final.send.to.Ackim,
+           &quot;New ID Tracker (send to Ackim).xlsx&quot;)</code></pre>
 </div>
 
 

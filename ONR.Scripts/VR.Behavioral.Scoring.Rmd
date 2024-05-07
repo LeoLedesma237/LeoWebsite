@@ -48,11 +48,11 @@ Nback.original <- Nback.original %>% select(-X)
 
 The data dimensions above are gigantic and unnecessary. This is because each person had roughly 1,500 trials for each GnG session and around 600 trials for the Nback. Our goal is to reduce these dimensions for each person.
 
-### Data reduction Go/No-Go
+### Data reduction Go/No-Go Part 1 - Cleaning
 
 We will be reducing the data by obtaining the scores of each person on variables of interest. This can be changed later to include more rows. For the Go/No-Go there are Day 0's (practice days) and practice sessions that need to be removed. Then we can label the trials by Go or No-Go and finally use the group_by function to reduce the data to give us the mean scores for trial type for each ID on their respective testing day. 
 
-```{r GnG data reduction}
+```{r GnG data reduction cleaning portion}
 # Remove Day 0 from our dataset or problematic day types (not noted in the visitor log)
 GnG.removed.days <-  GnG.original %>%
   filter(!(Day.Type %in% c("Day 0", "Date not saved in the Visitor Log")))
@@ -97,6 +97,16 @@ go.trials <- c("G1", "G5", "G8", "G12")
 GnG.trial.type <- GnG.removed.practice.blocks %>%
   mutate(Trial.Type = ifelse(ItemID %in% go.trials, "Go", "No-Go"))
 
+
+```
+
+
+
+### Data reduction Go/No-Go Part 2 - Actual data reduction
+
+
+```{r GnG data reduction part}
+
 # Reduce the dimensions even more by grouping and obtaining performance score for each block type
 # Every subject should have 30 rows: 2 (trial types) x 5 (BlockName) x 3 (Days) = 30
 GnG.grouped.Trial.Type <- GnG.trial.type %>%
@@ -115,6 +125,33 @@ GnG.grouped.Reaction.Time <- GnG.trial.type %>%
   summarize(mean.RT = mean(TimeToImpact))
 
 ```
+
+
+### Data reduction Go/No-Go Part 3 - Quality Control
+
+```{r check the quality of the data, results = 'asis', echo = FALSE}
+paste("This section is the quality control for: 'GnG.grouped.Trial.Type'")
+paste("This dataset contains",length(unique(GnG.grouped.Trial.Type$UserID)),"unique IDs.")
+paste("The following table shows the frequency of each GnG Condition for all subjects for each trial type:")
+table(GnG.grouped.Trial.Type$BlockName, GnG.grouped.Trial.Type$Day.Type, GnG.grouped.Trial.Type$Trial.Type)
+paste("Let's view the distribution of scores for Go and No-Go trials, averaged to no include days")
+
+GnG.grouped.Trial.Type %>%
+  ggplot(aes(x = trial.mean.correct)) +
+  geom_histogram() +
+  facet_wrap(~Trial.Type)
+
+paste("This section is the quality control for: 'GnG.grouped.Reaction.Time'")
+paste("This dataset contains",length(unique(GnG.grouped.Reaction.Time$UserID)),"unique IDs.")
+paste("Quality check 1: Are there -1 for reaction times for correct go trials?")
+summary(GnG.grouped.Reaction.Time$mean.RT[GnG.grouped.Reaction.Time$Trial.Type == "Go" & GnG.grouped.Reaction.Time$Correct == 1])
+
+paste("What is the proportion of Go/No-Go trials in the original dataset?")
+data.frame(Proportion = cbind(prop.table(table(GnG.trial.type$Trial.Type))))
+
+```
+
+
 
 ### Data reduction Nback
 
@@ -148,32 +185,6 @@ Nback.kept.non.practice.blocks %>%
   names()
 
 
-
-#####################################################################################################
-### Example of the proposed code to identify target trials
-example.session <- Nback.kept.non.practice.blocks %>%
-  filter(UserID == 3 & Day.Type == "Day 1")
-
-## Test: Add the additional variable to it identify target trials and shift it down two rows
-example.session$ItemID2 <- c("-", "-", example.session$ItemID[1:(length(example.session$ItemID)-2)])
-
-example.session <- example.session %>%
-  mutate(Trial.Type = ifelse(ItemID == ItemID2, "Target", "Distractor")) %>%
-  select(ItemID, ItemID2, Trial.Type, Correct, Reacted)
-
-# View the example of how scoring works
-example.session %>%
-  head(40) %>%
-  kbl() %>%
-  kable_paper(full_width = F)
-
-
-# Obtain the proportion of target trials
-example.session %>%
-  select(Trial.Type) %>%
-  table() %>%
-  prop.table() %>%
-  round(2)
 ##################################################################################################
 # Add target and distracter labels to all Nback sessions
 # Create an empty list
@@ -185,33 +196,53 @@ Nback.file.names <- Nback.kept.non.practice.blocks %>% select(UserID, Day.Type) 
 
 # Run the loop 
 for(ii in 1:nrow(Nback.file.names)) {
-  
+
   # Extract the ID in the list
   current.ID <- Nback.file.names$UserID[ii]
   
   # Extract the  Day Type in the list
   current.Day.Type <- Nback.file.names$Day.Type[ii]
   
-  # Use ID and Day Type to subet one CSV file from the Nback
+  # Use ID and Day Type to subset one CSV file from the Nback
   current.Nback <- Nback.kept.non.practice.blocks %>%
     filter(UserID == current.ID & Day.Type == current.Day.Type)
   
+  # Split the Figure variable to obtain the sequence of shown stimuli and save that as a separate data frame
+  split.Figure.df <- str_split(current.Nback$Figure, pattern = "_") %>%
+    do.call(rbind,.) %>%
+    data.frame() %>%
+    select(-X3)
+  
+  # Give them names associated with what is being measure
+  names(split.Figure.df) <- c("Shape", "Sequence")
+
+  # Introduce them into the main Nback dataframe
+  current.Nback2 <- cbind(current.Nback, split.Figure.df)
+  
   # Add the second variable that duplicates ItemID and shifts it down two rows
-  current.Nback$ItemID2 <- c("-", "-", current.Nback$ItemID[1:(length(current.Nback$ItemID)-2)])
+  current.Nback2$ItemID2 <- c("-", "-", current.Nback2$ItemID[1:(length(current.Nback2$ItemID)-2)])
 
   # Use the second variable to identify target trials by marking matching rows as 'Target
-  current.Nback <- current.Nback %>%
-  mutate(Trial.Type = ifelse(ItemID == ItemID2, "Target", "Distractor")) %>%
+  current.Nback2 <- current.Nback2 %>%
+    mutate(Trial.Type = case_when(
+      
+      ItemID == ItemID2 & Sequence %in% c(2:19) ~ "Target",
+      ItemID != ItemID2 & Sequence %in% c(2:19) ~ "Non-Target",
+      TRUE ~ "First/Second Trial"
+      
+    )) %>%
     select(UserID, BlockID, ItemID, ItemID2, Trial.Type, everything())
   
   # Save this manipulation into the list
-  all.Nback.sessions[[ii]] <- current.Nback
+  all.Nback.sessions[[ii]] <- current.Nback2
 }
 
 # Save the list with the transformation back as a dataframe
 Nback.trial.type <- all.Nback.sessions%>%
   do.call(rbind,.) %>%
   data.frame()
+
+
 
 # Reduce the dimensions even more by grouping and obtaining performance score for each block type
 Nback.grouped.Trial.Type <- Nback.trial.type %>%
@@ -236,30 +267,162 @@ Nback.grouped.Reaction.Target <- Nback.trial.type %>%
   unique()
 
 
+```
+
+
+### Nback quality control (to send to Mark)
+
+Identifying that there are 20% Target trials as expected. Also identifying that there are no trials where a target that is correct has a -1 reaction time. 
+
+```{r nback quality control}
+### Quality control, get the frequency of each 
+data.frame(Frequency = cbind(table(Nback.trial.type$Trial.Type))) %>%
+  mutate(Total = sum(Frequency),
+         Percentage = Frequency/Total * 100)
+
+
+# Checking a -1 value for reaction time for correct target trials
+Nback.trial.type %>%
+  filter(Trial.Type == "Target" & Correct == 1) %>%
+  select(TimeToImpact) %>%
+  unlist() %>%
+  summary()
 
 ```
 
-### Save the data
+
+
+### Reduce data dimensionality for vigilance decrement 
+
+
+```{r reduce data dimensionality for vigilance decrement}
+# Reduce the data dimensionality for the GnG
+# We can identify the order by taking advantage of the unique function
+# unique tells us two things, the first is all of the unique values in a variable
+# and secondly the order of those unique values in the dataset- we can use this to our advantage
+
+unique.IDs <- unique(GnG.trial.type$UserID)
+unique.Days <- unique(GnG.trial.type$Day.Type)
+
+all.ordered.list <- list()
+
+for (ii in 1:length(unique.IDs)) {
+
+  # Extract the first ID
+  current.ID <- unique.IDs[ii]
+  current.data <- GnG.trial.type %>%
+    filter(UserID == current.ID)
+
+  all.days.list <- list()
+  for (iii in 1:3) {
+    
+    # Extract by day
+    current.day <- unique.Days[iii]
+    current.data.day <- current.data %>%
+      filter(Day.Type == current.day)
+    
+    # Extract the current order of blocks for this day
+    block.order <- unique(current.data.day$BlockName)
+    
+    # Introduce a new variable that adds the order of each block displayed
+    current.data.day <- current.data.day %>%
+      mutate(Order = case_when(
+        BlockName == block.order[1] ~ 1,
+        BlockName == block.order[2] ~ 2,
+        BlockName == block.order[3] ~ 3,
+        BlockName == block.order[4] ~ 4,
+        BlockName == block.order[5] ~ 5,
+        TRUE ~ 0
+      ))
+    
+    all.days.list[[iii]] <- current.data.day
+  }
+    
+  all.ordered.list[[ii]] <- do.call(rbind,all.days.list)
+}
+
+# Save it as one large dataset
+GnG.ordered <- do.call(rbind, all.ordered.list)
+
+
+# Data dimensionality
+GnG.ordered.reduced <- GnG.ordered %>%
+  mutate(BlockName_and_order = paste(BlockName, Order)) %>%
+  group_by(UserID, BlockName_and_order, Trial.Type, Day.Type) %>%
+  summarize(trial.mean.order.correct = round(mean(Correct),2),
+            mean.score = round(mean(ItemScore)),
+            trial.num = length(Correct)) %>%
+  arrange(Day.Type)
+
+# Extract order and blockname from the variable that contains both
+GnG.ordered.reduced$Order <-  as.numeric(gsub("\\D", "", GnG.ordered.reduced$BlockName_and_order))
+GnG.ordered.reduced$BlockName <- gsub("[^a-zA-Z]", " ", GnG.ordered.reduced$BlockName_and_order)
+
+# Remove the variable with information on both
+GnG.ordered.reduced <- GnG.ordered.reduced %>%
+  ungroup() %>%
+  select(-BlockName_and_order)
+
+
+head(table(GnG.ordered$UserID, GnG.ordered$Order))
+```
+
+
+
+### Save the data (locally)
 
 ```{r save the data, warning = FALSE}
 # Set the save directory
 setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
 
 # Save the data
-write.csv(x = GnG.grouped.Trial.Type,
+write_csv(x = GnG.grouped.Trial.Type,
           file = "GnG.trial.type.csv")
 
-write.csv(x = GnG.grouped.Reaction.Time,
+write_csv(x = GnG.grouped.Reaction.Time,
           file = "GnG.reaction.time.csv")
 
-write.csv(x = Nback.grouped.Trial.Type,
+write_csv(x = Nback.grouped.Trial.Type,
           file = "Nback.trial.type.csv")
 
-write.csv(x = Nback.grouped.Reaction.Time,
+write_csv(x = Nback.grouped.Reaction.Time,
           file = "Nback.reaction.time.csv")
 
-write.csv(x = Nback.grouped.Reaction.Target,
+write_csv(x = Nback.grouped.Reaction.Target,
           file = "Nback.target.reacted.csv")
+
+write_csv(x = GnG.ordered.reduced,
+          file = "GnG.conditions.ordered.csv")
+
+```
+
+### Save the data to the server
+
+```{r save the data to the server, warning = FALSE}
+# Set another save directory
+setwd("M:/Qualtrics_Data/Processed data/VR Performance")
+
+# Save the data
+write_csv(x = GnG.grouped.Trial.Type,
+          file = "GnG.trial.type.csv")
+
+write_csv(x = GnG.grouped.Reaction.Time,
+          file = "GnG.reaction.time.csv")
+
+write_csv(x = Nback.grouped.Trial.Type,
+          file = "Nback.trial.type.csv")
+
+write_csv(x = Nback.grouped.Reaction.Time,
+          file = "Nback.reaction.time.csv")
+
+write_csv(x = Nback.grouped.Reaction.Target,
+          file = "Nback.target.reacted.csv")
+
+write_csv(x = GnG.ordered.reduced,
+          file = "GnG.conditions.ordered.csv")
+
+```
+
 
 ```
 

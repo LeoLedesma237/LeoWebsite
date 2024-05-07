@@ -413,14 +413,23 @@ that match, and then bind these datasets into one.</p>
          Child_Date_of_Birth,
          BF,
          BM,
+         glasses,
+         hearing.aid,
+         walking.equipment,
+         Seeing = CF3_Seeing,
+         Hearing = CF6_Hearing,
+         Walking = CF10_Walking,
          sen_mot_difficulty,
          sen_mot_severity,
+         CFM_DD,
          KBB_DD,
          KBB_DD_num,
          CFM_DD_type,
          KBB_DD_type,
+         CFM.atleast.alot,
          epilepsy,
          KBB_DD_status,
+         CFM_DD_status,
          Child_ID)
 
 CFM5_17 &lt;- CFM5_17 %&gt;%
@@ -441,15 +450,29 @@ CFM5_17 &lt;- CFM5_17 %&gt;%
          Child_Date_of_Birth,
          BF,
          BM,
+         glasses,
+         hearing.aid,
+         walking.equipment,
+         Seeing = CF3_Seeing,
+         Hearing = CF6_Hearing,
+         Walking = CF13_Walking_500,
          sen_mot_difficulty,
          sen_mot_severity,
+         CFM_DD, 
          KBB_DD,
          KBB_DD_num,
          CFM_DD_type,
          KBB_DD_type,
+         CFM.atleast.alot,
          epilepsy,
          KBB_DD_status,
+         CFM_DD_status,
          Child_ID)
+
+
+# Create a variable indicating the screener type
+CFM2_4$Screener.Type &lt;- rep(&quot;CFM2_4&quot;, nrow(CFM2_4))
+CFM5_17$Screener.Type &lt;- rep(&quot;CFM5_17&quot;, nrow(CFM5_17))
 
 # Bind the datasets into one
 CFM_data_before_exclusion &lt;- rbind(CFM2_4, CFM5_17)
@@ -539,7 +562,7 @@ potential_errors_households &lt;- do.call(rbind, one_child_household) %&gt;%
 
 # Obtain the dimensions of the potential error households
 dim(potential_errors_households)</code></pre>
-<pre><code>[1] 37 26</code></pre>
+<pre><code>[1] 38 36</code></pre>
 <pre class="r"><code># Remove these children from CFM data
 CFM_data &lt;- CFM_data %&gt;%
   filter(!(Child_ID %in% potential_errors_households$Child_ID))
@@ -728,17 +751,17 @@ sections, let’s ensure that no children/rows got lost along the way. To
 do this, we are going to count the rows of the original dataset, and
 then take the sum of all the datasets we created and add them up. If the
 numbers matched then everyone was accounted for.</p>
-<pre><code>[1] &quot;The original data set contains 1573 rows&quot;</code></pre>
-<pre><code>[1] &quot;Number of unique children in our dataset 1573&quot;</code></pre>
+<pre><code>[1] &quot;The original data set contains 1612 rows&quot;</code></pre>
+<pre><code>[1] &quot;Number of unique children in our dataset 1612&quot;</code></pre>
 <pre><code>[1] &quot;We excluded 84 children.&quot;</code></pre>
 <pre><code>[1] &quot; - 76 non-DD children were excluded for having some type of sensory or motor difficulty&quot;</code></pre>
 <pre><code>[1] &quot; - 8 DD children were excluded because they had Cannot at all for at least one sensory or motor domain&quot;</code></pre>
-<pre><code>[1] &quot;Their exlusion left us with 1489 children&quot;</code></pre>
-<pre><code>[1] &quot;37 children were temporarily removed because of an incorrect HOH_ID spelling&quot;</code></pre>
-<pre><code>[1] &quot;After their removal, we were left with 1452 children.&quot;</code></pre>
-<pre><code>[1] &quot;From these eligible households, 394 children were able to be matched and 1058 were not.&quot;</code></pre>
-<pre><code>[1] &quot;Overall, we had 167 unique households that can participate&quot;</code></pre>
-<pre><code>[1] &quot;The sum of excluded children, children removed from not having a sibling, children with a match, and those without a match is: 1573&quot;</code></pre>
+<pre><code>[1] &quot;Their exlusion left us with 1528 children&quot;</code></pre>
+<pre><code>[1] &quot;38 children were temporarily removed because of an incorrect HOH_ID spelling&quot;</code></pre>
+<pre><code>[1] &quot;After their removal, we were left with 1490 children.&quot;</code></pre>
+<pre><code>[1] &quot;From these eligible households, 404 children were able to be matched and 1086 were not.&quot;</code></pre>
+<pre><code>[1] &quot;Overall, we had 170 unique households that can participate&quot;</code></pre>
+<pre><code>[1] &quot;The sum of excluded children, children removed from not having a sibling, children with a match, and those without a match is: 1612&quot;</code></pre>
 </div>
 <div id="save-the-data" class="section level3">
 <h3>Save the data</h3>
@@ -770,10 +793,10 @@ write.xlsx(list(excluded_no_DD = exclude_no_DD,
                 Unable_to_match = not_eligible_children_df), file = &quot;All CFM Excluded Children and Why.xlsx&quot;)
 
 # Save excel sheet 2
-write.xlsx(list(eligible_children = eligible_children_df2), file = &quot;All CFM Eligible Children.xlsx&quot;)</code></pre>
-<pre><code>Warning in file.create(to[okay]): cannot create file &#39;All CFM Eligible
-Children.xlsx&#39;, reason &#39;Permission denied&#39;</code></pre>
-<pre class="r"><code># Save excel sheet 3
+write.xlsx(list(eligible_children = eligible_children_df2), file = &quot;All CFM Eligible Children.xlsx&quot;)
+
+
+# Save excel sheet 3
 write.xlsx(list(error_household = potential_errors_households,
                 correct_household = correct_households_df),
            file =  &quot;Potential_Household_errors.xlsx&quot;)

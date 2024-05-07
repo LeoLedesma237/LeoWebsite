@@ -11,8 +11,9 @@
 
 <meta name="author" content="Leandro Ledesma" />
 
+<meta name="date" content="2024-03-26" />
 
-<title>ONR Day Labeling</title>
+<title>Data Scoring LDSpan</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -349,449 +350,192 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">ONR Day Labeling</h1>
+<h1 class="title toc-ignore">Data Scoring LDSpan</h1>
 <h4 class="author">Leandro Ledesma</h4>
+<h4 class="date">2024-03-26</h4>
 
 </div>
 
 
-<div id="universal-block-code-settings" class="section level3">
-<h3>Universal block code settings</h3>
-<pre class="r"><code>knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(message = FALSE)
-knitr::opts_chunk$set(comment = NULL)</code></pre>
-</div>
 <div id="load-in-the-data-manipulation-packages-first" class="section level3">
 <h3>Load in the data manipulation packages first</h3>
-<pre class="r"><code># Load in packages
-library(tidyverse)
+<pre class="r"><code>library(tidyverse)</code></pre>
+<pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.2 ──
+## ✔ ggplot2 3.4.0     ✔ purrr   1.0.1
+## ✔ tibble  3.2.1     ✔ dplyr   1.1.1
+## ✔ tidyr   1.3.0     ✔ stringr 1.5.0
+## ✔ readr   2.1.3     ✔ forcats 1.0.0
+## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+## ✖ dplyr::filter() masks stats::filter()
+## ✖ dplyr::lag()    masks stats::lag()</code></pre>
+<pre class="r"><code>library(ggplot2)
+library(ggpubr)
 library(readxl)
-library(gdata) # Use startsWith function
-library(base) #subset strings
-library(scales)
-library(rio)
-library(purrr)</code></pre>
-</div>
-<div id="last-day-this-code-was-ran" class="section level3">
-<h3>Last day this code was ran</h3>
-<pre class="r"><code>paste(&quot;This code was last ran on:&quot;, Sys.Date())</code></pre>
-<pre><code>[1] &quot;This code was last ran on: 2024-04-19&quot;</code></pre>
-</div>
-<div id="create-ids-with-leading-zeroes" class="section level3">
-<h3>Create ID’s with leading zeroes</h3>
-<pre class="r"><code># Create an empty character vector to store ID numbers
-ID.numbers &lt;- character(999)
-
-# Use sprintf to format the values with leading zeros so it creates a vector with zeroes in fron of each number smaller than 100
-for (i in 1:999) {
-  ID.numbers[i] &lt;- sprintf(&quot;%03d&quot;, i)
-}
-
-# Check to see if the zeroes were added
-head(ID.numbers,99)</code></pre>
-<pre><code> [1] &quot;001&quot; &quot;002&quot; &quot;003&quot; &quot;004&quot; &quot;005&quot; &quot;006&quot; &quot;007&quot; &quot;008&quot; &quot;009&quot; &quot;010&quot; &quot;011&quot; &quot;012&quot;
-[13] &quot;013&quot; &quot;014&quot; &quot;015&quot; &quot;016&quot; &quot;017&quot; &quot;018&quot; &quot;019&quot; &quot;020&quot; &quot;021&quot; &quot;022&quot; &quot;023&quot; &quot;024&quot;
-[25] &quot;025&quot; &quot;026&quot; &quot;027&quot; &quot;028&quot; &quot;029&quot; &quot;030&quot; &quot;031&quot; &quot;032&quot; &quot;033&quot; &quot;034&quot; &quot;035&quot; &quot;036&quot;
-[37] &quot;037&quot; &quot;038&quot; &quot;039&quot; &quot;040&quot; &quot;041&quot; &quot;042&quot; &quot;043&quot; &quot;044&quot; &quot;045&quot; &quot;046&quot; &quot;047&quot; &quot;048&quot;
-[49] &quot;049&quot; &quot;050&quot; &quot;051&quot; &quot;052&quot; &quot;053&quot; &quot;054&quot; &quot;055&quot; &quot;056&quot; &quot;057&quot; &quot;058&quot; &quot;059&quot; &quot;060&quot;
-[61] &quot;061&quot; &quot;062&quot; &quot;063&quot; &quot;064&quot; &quot;065&quot; &quot;066&quot; &quot;067&quot; &quot;068&quot; &quot;069&quot; &quot;070&quot; &quot;071&quot; &quot;072&quot;
-[73] &quot;073&quot; &quot;074&quot; &quot;075&quot; &quot;076&quot; &quot;077&quot; &quot;078&quot; &quot;079&quot; &quot;080&quot; &quot;081&quot; &quot;082&quot; &quot;083&quot; &quot;084&quot;
-[85] &quot;085&quot; &quot;086&quot; &quot;087&quot; &quot;088&quot; &quot;089&quot; &quot;090&quot; &quot;091&quot; &quot;092&quot; &quot;093&quot; &quot;094&quot; &quot;095&quot; &quot;096&quot;
-[97] &quot;097&quot; &quot;098&quot; &quot;099&quot;</code></pre>
+library(kableExtra)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;kableExtra&#39;
+## 
+## The following object is masked from &#39;package:dplyr&#39;:
+## 
+##     group_rows</code></pre>
 </div>
 <div id="load-in-the-data" class="section level3">
 <h3>Load in the data</h3>
-<p>These next few sections are a bit complex. ONR behavioral data is
-saved locally on two separate computers (UH-ONR and UH-ONR2). This is
-because we are using two rooms for data collection, each with their own
-VR systems. Every day around 3:00 AM, these locally saved data are
-transfered to a secure server and saved in separate folders. Inside
-these directories, ID named folders (ex: 001 or 015) contain CSV files
-representing the performance during the VR tasks. Each CSV corresponds
-to a GnG or an Nback task completed on one of the four testing days.</p>
+<pre class="r"><code># Set working directory
+setwd(&quot;Z:/eglab/A_ALL Project Data/Zambia projects (R01, R21, OVC)/ZambiaOVC_2022/ZambiaOVC_CleanFiles/Cohort1_cleaned_July2021_forNan/C1T1&quot;)
+
+# Load in the data
+LDSpan1 &lt;- read_excel(&quot;ZambiaOVC_LDSpan_Triangles_co1_tm1_clean.xlsx&quot;)
+
+# Set working directory
+setwd(&quot;Z:/eglab/A_ALL Project Data/Zambia projects (R01, R21, OVC)/ZambiaOVC_2022/ZambiaOVC_CleanFiles/Cohort2_cleanedJun2021_forNan/C2T1&quot;)
+
+# Load in the data
+LDSpan2 &lt;- read_excel(&quot;ZambiaOVC_LDSpan_Triangles_coh2_tm1_clean_17Jul2017.xlsx&quot;)</code></pre>
+<pre><code>## New names:
+## • `` -&gt; `...123`
+## • `` -&gt; `...124`
+## • `` -&gt; `...125`
+## • `` -&gt; `...126`
+## • `` -&gt; `...127`</code></pre>
+<pre class="r"><code># Set working directory
+setwd(&quot;Z:/eglab/A_ALL Project Data/Zambia projects (R01, R21, OVC)/ZambiaOVC_2022/ZambiaOVC_CleanFiles/Cohort3_cleaned_Jul2021_forNan/C3T1&quot;)
+
+# Load in the data
+LDSpan3 &lt;- read_excel(&quot;ZambiaOVC_LDSpan_Triangles_coh3_tm1.xlsx&quot;)</code></pre>
 </div>
-<div id="obtaining-pathways-to-participants-behavioral-data" class="section level3">
-<h3>Obtaining pathways to participant’s behavioral data</h3>
-<p>This first chunk of code is going into both directories on the server
-and recording the pathways of participants that have behavioral data
-saved.</p>
-<pre class="r"><code># set working directory for ONR computer 1
-setwd(&quot;M:/VR_CSVs/UH-ONR&quot;)
+<div id="bind-all-of-the-ldspan-together" class="section level3">
+<h3>Bind all of the LDSpan together</h3>
+<pre class="r"><code># Extract the variables of interest from each dataset
+LDSpan1.sub &lt;-  
+LDSpan1 %&gt;%
+  select(OVC_ID, 
+         Sex = Ch_sex,
+         `Date of Eval`,
+         starts_with(&quot;NF&quot;),
+         starts_with(&quot;NB&quot;),
+         starts_with(&quot;LF&quot;),
+         starts_with(&quot;LB&quot;))
 
-# let&#39;s get the names of all the files in the folder
-file.names.UH_ONR &lt;- list.files()
+# Assume that 1 means boy
+LDSpan2.sub &lt;- 
+LDSpan2 %&gt;%
+    select(OVC_ID, 
+         Sex = Ch_sex_F1_M0, 
+         `Date of Eval`, 
+         starts_with(&quot;NF&quot;),
+         starts_with(&quot;NB&quot;),
+         starts_with(&quot;LF&quot;),
+         starts_with(&quot;LB&quot;))
 
-# set working directory for ONR computer 1
-setwd(&quot;M:/VR_CSVs/UH-ONR2&quot;)
+LDSpan3.sub &lt;- 
+LDSpan3 %&gt;%
+    select(OVC_ID, 
+         Sex = T1_Ch_sex,
+         `Date of Eval` = `T1_Date of Eval`,
+         contains(&quot;NF&quot;),
+         contains(&quot;NB&quot;),
+         contains(&quot;LF&quot;),
+         contains(&quot;LB&quot;))
 
-# let&#39;s get the names of all the files in the folder
-file.names.UH_ONR2 &lt;- list.files()
 
-# Obtain the intersected IDs from both computers
-intersect.IDs.UH_ONR &lt;- intersect(file.names.UH_ONR,ID.numbers)
-intersect.IDs.UH_ONR2 &lt;- intersect(file.names.UH_ONR2,ID.numbers)
+# Addiitonally data cleaning
+# Renaming
+names(LDSpan2.sub) &lt;- names(LDSpan1.sub)
+names(LDSpan3.sub) &lt;- names(LDSpan1.sub)
 
-# Create two pathways using the intersected IDs
-pathway.UH_ONR &lt;- paste(&quot;M:/VR_CSVs/UH-ONR/&quot;,intersect.IDs.UH_ONR,&quot;/&quot;, sep=&quot;&quot;)
-pathway.UH_ONR2 &lt;- paste(&quot;M:/VR_CSVs/UH-ONR2/&quot;,intersect.IDs.UH_ONR2,&quot;/&quot;, sep=&quot;&quot;)</code></pre>
+# Mutating Sex variable in dataset 2
+LDSpan2.sub &lt;- LDSpan2.sub %&gt;% mutate(Sex = ifelse(Sex == 0, &quot;M&quot;, &quot;F&quot;))
+
+# Bind them together
+LDSpan &lt;- 
+  LDSpan1.sub %&gt;%
+  rbind(LDSpan2.sub) %&gt;%
+  rbind(LDSpan3.sub)</code></pre>
 </div>
-<div id="obtaining-each-csv-file-name-for-computer-1" class="section level3">
-<h3>Obtaining each CSV file name for computer 1</h3>
-<p>This next chunk of code is using the pathways from above to record
-the names and pathways of each CSV file in Computer 1 and saving them as
-a data frame.</p>
-<pre class="r"><code># Create a for loop to go into each pathway of a subject&#39;s ID folder and extract the names of CSV&#39;s present there
-# Do this for both pathways
-# Computer 1
-CSVs.UH_ONR &lt;- list()
+<div id="obtain-the-total-score-for-all-four-subtests" class="section level3">
+<h3>Obtain the total score for all four subtests</h3>
+<pre class="r"><code># Score for all the rows
+LDSpan.scored &lt;- LDSpan %&gt;%
+  select(-c(OVC_ID, Sex)) %&gt;%
+  mutate_all(., function(x) as.numeric(x)) %&gt;%
+  mutate_all(., function(x) ifelse(x != 1, 0, x))</code></pre>
+<pre><code>## Warning: There were 29 warnings in `mutate()`.
+## The first warning was:
+## ℹ In argument: `NF_2a = (function (x) ...`.
+## Caused by warning:
+## ! NAs introduced by coercion
+## ℹ Run ]8;;ide:run:dplyr::last_dplyr_warnings()dplyr::last_dplyr_warnings()]8;; to see the 28 remaining warnings.</code></pre>
+<pre class="r"><code># Replace all NA&#39;s with a zero
+LDSpan.scored[is.na(LDSpan.scored)] &lt;- 0
 
-for(ii in 1:length(pathway.UH_ONR)) {
-  #ii = 1
-  # Changes the working directory to each pathway
-  setwd(pathway.UH_ONR[[ii]])
-  
-  # Obtain the CSVs for the folder
-  CSVs.current &lt;- list.files()
-  
-  # Create a vector for the current ID and computer number (Repeat it by the number of CSVs present)
-  current.ID &lt;- rep(intersect.IDs.UH_ONR[ii], length(CSVs.current))
-  current.pathway &lt;- rep(pathway.UH_ONR[ii], length(CSVs.current))
-  current.computer &lt;- rep(&quot;Computer 1&quot;, length(CSVs.current))
-  
-  # Create a data frame including the ID, the pathway, CSV, and the computer number
-  UH_ONR.df &lt;- data.frame(ID = current.ID,
-                          Pathway = current.pathway,
-                          CSVs = CSVs.current,
-                          Computer = current.computer) 
-  
-  # Extracts all the names of the CSVs located in that pathway + it&#39;s pathway
-  CSVs.UH_ONR[[ii]] &lt;- UH_ONR.df
-}
-
-CSVs.UH_ONR &lt;- CSVs.UH_ONR %&gt;%
-  do.call(rbind,.) %&gt;%
-  data.frame()</code></pre>
+# Take the raw score of these tasks and add to a dataframe with ID&#39;s, and Sex
+LDSpan.final &lt;- data.frame(ID = LDSpan$OVC_ID,
+                          Sex =  LDSpan$Sex,
+                          DOE = LDSpan$`Date of Eval`,
+                          LDSpan.scored = rowSums(LDSpan.scored)) </code></pre>
 </div>
-<div id="obtaining-each-csv-file-name-for-computer-2" class="section level3">
-<h3>Obtaining each CSV file name for computer 2</h3>
-<p>This next chunk of code does the same as above except for the files
-in computer 2.</p>
-<pre class="r"><code># Create a for loop to go into each pathway of a subject&#39;s ID folder and extract the names of CSV&#39;s present there
-# Do this for both pathways
-# Computer 2
-CSVs.UH_ONR2 &lt;- list()
-
-for(ii in 1:length(pathway.UH_ONR2)) {
-  #ii = 1
-  # Changes the working directory to each pathway
-  setwd(pathway.UH_ONR2[[ii]])
-  
-  # Obtain the CSVs for the folder
-  CSVs.current &lt;- list.files()
-  
-  # Create a vector for the current ID and computer number (Repeat it by the number of CSVs present)
-  current.ID &lt;- rep(intersect.IDs.UH_ONR2[ii], length(CSVs.current))
-  current.pathway &lt;- rep(pathway.UH_ONR2[ii], length(CSVs.current))
-  current.computer &lt;- rep(&quot;Computer 2&quot;, length(CSVs.current))
-  
-  # Create a data frame including the ID, the pathway, CSV, and the computer number
-  UH_ONR.df &lt;- data.frame(ID = current.ID,
-                          Pathway = current.pathway,
-                          CSVs = CSVs.current,
-                          Computer = current.computer) 
-  
-  # Extracts all the names of the CSVs located in that pathway + it&#39;s pathway
-  CSVs.UH_ONR2[[ii]] &lt;- UH_ONR.df
-}
-
-CSVs.UH_ONR2 &lt;- CSVs.UH_ONR2 %&gt;%
-  do.call(rbind,.) %&gt;%
-  data.frame()</code></pre>
+<div id="view-scoring-distribution-of-composite-score" class="section level3">
+<h3>View scoring distribution of composite score</h3>
+<pre class="r"><code>LDSpan.final %&gt;%
+  ggplot(aes(x = LDSpan.scored)) +
+  geom_histogram(fill = &quot;white&quot;,
+                 color = &quot;black&quot;,
+                 bins = 20)</code></pre>
+<p><img src="data:image/png;base64,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6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OHpwIFGgMrD60eBVqEdbc2eHgqUKAxsPLQ6lGgRVh3a4OH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" width="672" /></p>
+<pre class="r"><code>summary(LDSpan.final$LDSpan.scored)</code></pre>
+<pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##    1.00   12.00   19.00   17.56   22.00   38.00</code></pre>
 </div>
-<div id="removing-redundant-csvs-from-computer-2" class="section level3">
-<h3>Removing redundant CSVs from computer 2</h3>
-<p>Unfortunately, we have some redundant files from early data recording
-in the project. Some files saved in Computer 2 are identical to files
-saved in Computer 1. We want to identify these files and associate them
-with only one pathway before we start to read them in. This will make
-the computing process more efficient.</p>
-<pre class="r"><code># Identify CSVs in Computer 2 that are not in Computer 1 (save non duplicate CSVs)
-nonDuplicate.CSVs &lt;- setdiff(CSVs.UH_ONR2$CSVs, CSVs.UH_ONR$CSVs)
+<div id="score-the-data-numbersdigits-only" class="section level3">
+<h3>Score the data (Numbers/Digits only)</h3>
+<p>Each value that is not 1 is essentially a 0.</p>
+<pre class="r"><code>LDSpan.num &lt;- LDSpan %&gt;%
+  select(OVC_ID, 
+         Sex,
+         contains(&quot;NF&quot;),
+         contains(&quot;NB&quot;))
 
-# Overwrite the Computer 2 data frame with one containing only CSVs that are not in Computer 1
-CSVs.UH_ONR2 &lt;- CSVs.UH_ONR2 %&gt;%
-  filter(CSVs %in% nonDuplicate.CSVs)</code></pre>
+# Score for all the rows
+LDSpan.num.scored &lt;- LDSpan.num %&gt;%
+  select(-c(OVC_ID, Sex)) %&gt;%
+  mutate_all(., function(x) as.numeric(x)) %&gt;%
+  mutate_all(., function(x) ifelse(x != 1, 0, x))</code></pre>
+<pre><code>## Warning: There were 13 warnings in `mutate()`.
+## The first warning was:
+## ℹ In argument: `NF_2a = (function (x) ...`.
+## Caused by warning:
+## ! NAs introduced by coercion
+## ℹ Run ]8;;ide:run:dplyr::last_dplyr_warnings()dplyr::last_dplyr_warnings()]8;; to see the 12 remaining warnings.</code></pre>
+<pre class="r"><code># Replace all NA&#39;s with a zero
+LDSpan.num.scored[is.na(LDSpan.num.scored)] &lt;- 0
+
+# Take the raw score of these tasks and add to a dataframe with ID&#39;s, and Sex
+LDSpan.num.final &lt;- data.frame(ID = LDSpan$OVC_ID,
+                          Sex =  LDSpan$Sex,
+                          DOE = LDSpan$`Date of Eval`,
+                          LDSpan.num.Score = rowSums(LDSpan.num.scored)) </code></pre>
 </div>
-<div id="identifying-complete-subjects-from-vr-data" class="section level3">
-<h3>Identifying complete subjects from VR data</h3>
-<p>The logic is as follows. There are four testing days and each day two
-CSV files are saved- one for GnG and the other for the Nback. On Day 0
-(practice day) a 30 minute practice session CSV is saved for both tasks.
-On day 1 the baseline CSVs are saved. On day 2 the intense exercise CSVs
-are saved. And lastly, on day 3 the sleep deprivation CSVs are saved.
-Thus, a subject that completed all testing days will have 8 CSVs.</p>
-<p>We will be merging the data frames from both computers created in the
-previous scripts and extracting the ID numbers that have 8 CSVs saved.
-We will then use this information to create a new variable indicating
-whether the subject is complete or not.</p>
-<pre class="r"><code># Merge the datasets from above
-CSVs.merged.UH_ONR &lt;- CSVs.UH_ONR %&gt;%
-  rbind(CSVs.UH_ONR2)
-
-# Total unique ID&#39;s from all subjects that have a VR session saved
-paste(&quot;There is at least one CSV file saved from&quot;, length(unique(CSVs.merged.UH_ONR$ID)), &quot;participants&quot;, sep= &quot; &quot;)</code></pre>
-<pre><code>[1] &quot;There is at least one CSV file saved from 241 participants&quot;</code></pre>
-<pre class="r"><code># IDs that have 8 file names
-completed.IDs &lt;- CSVs.merged.UH_ONR %&gt;%
-  group_by(ID) %&gt;%
-  count() %&gt;%
-  filter(n == 8) %&gt;%
-  select(ID) %&gt;%
-  unlist() %&gt;% unname()
-
-# Complete ID&#39;s and their pathways 
-CSVs.merged.UH_ONR &lt;- CSVs.merged.UH_ONR %&gt;%
-  mutate(Status = ifelse(ID %in% completed.IDs, &quot;Complete&quot;, &quot;Incomplete&quot;))
-
-# Total unique ID&#39;s from all subjects that have all VR sessions accounted for
-paste(&quot;All VR sessions accounted for&quot;, length(completed.IDs), &quot;participants&quot;, sep= &quot; &quot;)</code></pre>
-<pre><code>[1] &quot;All VR sessions accounted for 162 participants&quot;</code></pre>
+<div id="view-scoring-distribution-of-numbersdigits-only" class="section level3">
+<h3>View scoring distribution of numbers/digits only</h3>
+<pre class="r"><code>LDSpan.num.final %&gt;%
+  ggplot(aes(x = LDSpan.num.Score)) +
+  geom_histogram(fill = &quot;white&quot;,
+                 color = &quot;black&quot;,
+                 bins = 20)</code></pre>
+<p><img src="data:image/png;base64,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" width="672" /></p>
+<pre class="r"><code>summary(LDSpan.num.final$LDSpan.num.Score)</code></pre>
+<pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   0.000   7.000  10.000   9.771  12.000  21.000</code></pre>
 </div>
-<div id="read-in-the-files" class="section level3">
-<h3>Read in the files</h3>
-<p>We will now read in the files and save them into a list. This takes
-about 30 seconds. Additionally, as each file is being read, a new
-variable called computer will be added that indicates if the data was
-recorded in Computer 1 or in Computer 2.</p>
-<pre class="r"><code># Read in the files
-all.CSVs &lt;- list()
+<div id="save-the-data" class="section level3">
+<h3>Save the data</h3>
+<pre class="r"><code># Set the working directory
+setwd(&quot;C:/Users/lledesma.TIMES/Documents/OVC/LDSpan&quot;)
 
-for(ii in 1:nrow(CSVs.merged.UH_ONR)) {
-   
-  # Current file name and its pathway 
-  current.csv &lt;- paste(CSVs.merged.UH_ONR$Pathway[ii],  CSVs.merged.UH_ONR$CSVs[ii], sep=&quot;&quot;)
-    
-  # Read in and save the current CSV in a list
-  read.csv &lt;- read.csv(current.csv)
-  
-  # Mutate the csv to include which computer it came from
-  read.csv$Computer &lt;- rep(CSVs.merged.UH_ONR$Computer[ii], times = nrow(read.csv))
-  
-  # Save the mutated CSV
-  all.CSVs[[ii]] &lt;- read.csv
-  
-  # Name the list by the ID and CSV
-  names(all.CSVs)[[ii]] &lt;- paste(CSVs.merged.UH_ONR$ID[ii],CSVs.merged.UH_ONR$CSVs[ii])
-}
-
-# Check to see that the above code worked
-paste(&quot;There are&quot;, length(all.CSVs),&quot;CSV files that were read in&quot;, sep =&quot; &quot;)</code></pre>
-<pre><code>[1] &quot;There are 1623 CSV files that were read in&quot;</code></pre>
-<pre class="r"><code># Half of the CSVs, the ones for GnG have the following dimensions
-dim(all.CSVs[[8]])</code></pre>
-<pre><code>[1] 1150   40</code></pre>
-<pre class="r"><code># The other half of the CSVs, the ones for Nback each have the following dimensions
-dim(all.CSVs[[9]])</code></pre>
-<pre><code>[1] 680  40</code></pre>
-</div>
-<div id="map-all-of-the-read-csv-files-into-a-new-data-frame" class="section level3">
-<h3>Map all of the read csv files into a new data frame</h3>
-<p>We will now create a data frame that contains all of the CSVs read
-from above in the variable tibble. We will add additional variables to
-this data frame such as the ID from that dataset, the day of testing,
-the task type (Go/No-Go or Nback) and the computer used to record the
-data.</p>
-<pre class="r"><code># Create a new data frame that will contain all CSV information
-all.data &lt;- data.frame(file.num = 1:length(all.CSVs))
-
-# Use the map function to make a variable called tibble, where each row contains the full data from the VR CSV
-all.data$tibbles &lt;- map(all.CSVs, as_tibble)
-
-# Create for loops that extract information from the first row of each data frame in the tibbles variable
-# This will include ID, day of testing, task type (GnG/Nback)
-
-ID.list &lt;- list()
-testing.date &lt;- list()
-task.type &lt;- list()
-Computer.num &lt;- list()
-
-for(ii in 1:nrow(all.data)) {
-
-# Obtain the first tibble and save it into an object
-current.dataset &lt;- all.data$tibbles[[ii]]
-
-# Extract the following information and save it to the all.data data frame
-ID.list[[ii]] &lt;- unique(current.dataset$UserID)
-testing.date[[ii]] &lt;- unique(substr(current.dataset$StartDate,1,10))
-Computer.num[[ii]] &lt;- unique(current.dataset$Computer)
-
-
-if(gsub(&quot;[^a-zA-Z]&quot;, &quot;&quot;, current.dataset$BlockID[1]) == &quot;G&quot;) {
-  task.type[ii] &lt;- &quot;Go/NoGo&quot;
-
-} else if(gsub(&quot;[^a-zA-Z]&quot;, &quot;&quot;, current.dataset$BlockID[1]) == &quot;N&quot;) {
-  task.type[ii] &lt;- &quot;N-back&quot;
-  
-}
-
-}
-
-# Add the lists back into the dataframe
-all.data$ID &lt;- unlist(ID.list)
-all.data$Testing.Date &lt;- unlist(testing.date)
-all.data$Task.type &lt;- unlist(task.type)
-all.data$Computer.num &lt;- unlist(Computer.num)</code></pre>
-</div>
-<div id="introducing-the-visitor-log-and-labeling-the-dates" class="section level3">
-<h3>Introducing the Visitor Log and labeling the dates</h3>
-<p>Since the CSV file names do not contain information about the testing
-day and since that information is also not available inside the CSV
-files, we have to manually turn to the Visitor Log. This is an excel
-sheet where ONR data collectors manually input the dates of when
-participants completed their visiting session and also add any
-additional notes about how testing went. We will be using this excel
-sheet to help us name our CSV files by testing day.</p>
-<p>Additionally for this to work, we had to convert any NA’s from the
-dates of the visitor log into zeroes (for more info look at the index
-part of the code) and dropped any NA’s in the ID column.</p>
-<p>The final produce is the all data.frame with the proper day types for
-each CSV file. This was manually inspected and shown to be correct by
-comparing the final data set with the dates from the Visitor Log.</p>
-<p>Lastly, and data set is shown at the bottom that indicate all CSV
-files that should have been logged in the Visitor Log but were not.</p>
-<pre class="r"><code># Set working directory to the visitor log
-setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/Visitor_log&quot;)
-
-# Load in the Visitor Log
-VisitorLog.org &lt;- read_excel(&quot;Visiting_Log_must_manually_update.xlsx&quot;)
-
-# Keep only the variables of interest
-VisitorLog &lt;- VisitorLog.org %&gt;%
-  select(ID, `Day 0 Date`, `Day 1 Date`, `Day 2 Date`, `Day 3 Date`)
-
-# Convert visitor log into long
-VisitorLog.Long &lt;- VisitorLog %&gt;%
-  pivot_longer(-ID) %&gt;%
-  rename(Day.type = name,
-         Date = value) %&gt;%
-  mutate(ID = as.numeric(ID),
-         Day.type = substr(Day.type, 1, 5),
-         Date = substr(Date,1,10))
-
-# Convert all missing dates in the Visitor Log into &quot;0&quot;
-VisitorLog.Long &lt;- VisitorLog.Long %&gt;%
-  mutate(Date = ifelse(is.na(Date),&quot;0&quot;,Date))
-
-# If any other variable have missing data then drop the rows to that variable
-VisitorLog.Long &lt;- drop_na(VisitorLog.Long)
-
-# Check to see if there is any missing data
-missing.data &lt;- VisitorLog.Long %&gt;%
-  filter(!complete.cases(.))
-
-paste(&quot;This is a check for missing data that should be 0. Right now it is:&quot;, nrow(missing.data))</code></pre>
-<pre><code>[1] &quot;This is a check for missing data that should be 0. Right now it is: 0&quot;</code></pre>
-<pre class="r"><code># Create a for loop that adds the day type to the all.data data frame using the information from the Visitor Log
-Day.type &lt;- list()
-
-for(ii in 1:nrow(all.data)) {
-  
-  # Extract the ID from the current row in all data
-  current.ID &lt;- all.data$ID[ii]
-  current.Testing.Date &lt;- all.data$Testing.Date[ii]
-  
-  # Use this ID to filter the rows of the Visitor Log that match with it
-  filtered.VisitorLog &lt;- VisitorLog.Long %&gt;%
-    filter(ID %in% current.ID)
-  
-  # If the Date from one of these rows matches the of the current all data row then copy over the Day type to all.data
-  # If it does not then write that it is missing from the Visitor Log
-  if(current.Testing.Date %in% filtered.VisitorLog$Date) {
-    
-    # Obtain the index (Boolean) to where this condition is true
-    index &lt;- filtered.VisitorLog$Date == current.Testing.Date
-    
-    # Save the correct day type
-    Day.type[[ii]] &lt;- filtered.VisitorLog$Day.type[index]
-    
-  } else {
-    
-    # Save that the date is missing from the Visitor Log 
-    Day.type[[ii]] &lt;- &quot;Date not saved in the Visitor Log&quot;
-    
-  }
-  
-}
-
-# Add the Day.type list information into all.data
-all.data$Day.type &lt;- unlist(Day.type)
-
-# Chance the order of columns for easier manually viewing and sort them by ID and Day.type
-all.data &lt;- all.data %&gt;% select(file.num, ID, Day.type, Testing.Date, everything()) %&gt;%
-  arrange(ID,Day.type) 
-
-
-# Let&#39;s see if there are errors with the Visitor Log
-all.data %&gt;%
-  filter(Day.type == &quot;Date not saved in the Visitor Log&quot;) %&gt;%
-  select(-tibbles)</code></pre>
-<pre><code>  file.num  ID                          Day.type Testing.Date Task.type
-1     1333 142 Date not saved in the Visitor Log   2023-10-31   Go/NoGo
-2     1334 142 Date not saved in the Visitor Log   2023-10-31    N-back
-  Computer.num
-1   Computer 2
-2   Computer 2</code></pre>
-<pre class="r"><code># Number of Unique ID&#39;s accounted for in the visitor log
-length(unique(all.data$ID))</code></pre>
-<pre><code>[1] 241</code></pre>
-</div>
-<div id="adding-the-day-type-into-the-original-datasets" class="section level3">
-<h3>Adding the day type into the original datasets</h3>
-<p>We know the Day Type now in the all.data set, however, we also want
-to introduce this information into the original tibbles. This way when
-we saved this transformed data for later processing and then analysis,
-the day types would be included.</p>
-<pre class="r"><code># Create a loop to add the Day type as a column into each tibble
-for(ii in 1:nrow(all.data)) {
-
-  # Obtain the tibble of the current row
-  current.dataset &lt;- all.data$tibbles[[ii]]
-  
-  # Add the Day type to this tibble, aka the original CSV file
-  current.dataset$Day.Type &lt;- rep(all.data$Day.type[ii], nrow(current.dataset))
-  
-  # Override the tibble in the all data data frame with the tibble that has a day type added
-  all.data$tibbles[[ii]] &lt;- current.dataset
-}</code></pre>
-</div>
-<div id="splitting-the-data-based-on-their-tasks" class="section level3">
-<h3>Splitting the data based on their tasks</h3>
-<p>Now that we have our data in an organized manner with the ID, Day
-Type (Day0-3), Testing Date, Task Type (Go/No-Go or N-back), and
-Computer number (1 or 2), we can start the process of combining the data
-into one large dataset by task type.</p>
-<pre class="r"><code># Save all the GnG data into a new object
-all.GnG &lt;- all.data %&gt;%
-  filter(Task.type == &quot;Go/NoGo&quot;)
-
-# Save all of the Nback data into a new object
-all.Nback &lt;- all.data %&gt;%
-  filter(Task.type == &quot;N-back&quot;)
-
-# Collapse both new objects into a single dataframe with all the tibbles (CSVs) stacked on top of each other
-all.GnG.tibbles &lt;- do.call(rbind, as.list(all.GnG$tibbles))
-all.Nback.tibbles &lt;- do.call(rbind, as.list(all.Nback$tibbles))</code></pre>
-</div>
-<div id="saving-files" class="section level3">
-<h3>Saving files</h3>
-<p>Now we will save GnG and Nback data with Day Type and Computer Number
-added as variables into two CSV files.</p>
-<pre class="r"><code># Set saving directory
-setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data&quot;)
-
-# Save the data as CSVs
-write.csv(all.GnG.tibbles, &quot;GnG.day.type.added.csv&quot;)
-write.csv(all.Nback.tibbles, &quot;Nback.day.type.added.csv&quot;)</code></pre>
+# Save the data
+write_csv(LDSpan.num.final, &quot;LDSpan.num.scored.csv&quot;)
+write_csv(LDSpan.final, &quot;LDSpan.scored.csv&quot;)</code></pre>
 </div>
 
 

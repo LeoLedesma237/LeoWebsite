@@ -394,7 +394,7 @@ captured by the ipads). We technically do not need all of this
 information to be present in our final cleaned CFM 2-4 data.</p>
 <pre class="r"><code># The data dimensions
 dim(CFM5_17.uncleaned)</code></pre>
-<pre><code>[1] 1407   79</code></pre>
+<pre><code>[1] 1441   79</code></pre>
 <pre class="r"><code># Show all variables and the first few rows of the values that comprise them
 #str(CFM5_17.uncleaned)</code></pre>
 </div>
@@ -472,7 +472,7 @@ dimensions include 46 variables.</p>
 
 # The dimensions of the new dataset
 dim(CFM5_17.removed.variables)</code></pre>
-<pre><code>[1] 1407   54</code></pre>
+<pre><code>[1] 1441   54</code></pre>
 </div>
 <div id="additional-data-cleaning-dates" class="section level3">
 <h3>Additional data cleaning (dates)</h3>
@@ -531,6 +531,26 @@ setwd(&quot;~/KBB_new_2/1_screener/processed_data&quot;)
 # save the data
 write.csv(x = CFM5_17.HOH.ID,
           file = &quot;CFM5_17_to_be_inspected.csv&quot;)</code></pre>
+</div>
+<div id="access-to-resources-to-help-with-difficulties" class="section level3">
+<h3>Access to resources to help with difficulties</h3>
+<pre class="r"><code>CFM5_17.HOH.ID &lt;- CFM5_17.HOH.ID %&gt;%
+  mutate(glasses = ifelse(CF1 == 1, &quot;Yes&quot;, &quot;No&quot;),
+         hearing.aid = ifelse(CF4 == 1, &quot;Yes&quot;, &quot;No&quot;),
+         walking.equipment = ifelse(CF7 == 1, &quot;Yes&quot;, &quot;No&quot;))
+
+table(CFM5_17.HOH.ID$glasses)</code></pre>
+<pre><code>
+  No  Yes 
+1431    9 </code></pre>
+<pre class="r"><code>table(CFM5_17.HOH.ID$hearing.aid)</code></pre>
+<pre><code>
+  No  Yes 
+1436    4 </code></pre>
+<pre class="r"><code>table(CFM5_17.HOH.ID$walking.equipment)</code></pre>
+<pre><code>
+  No  Yes 
+1435    6 </code></pre>
 </div>
 <div id="major-data-transformation" class="section level3">
 <h3>Major data transformation</h3>
@@ -696,14 +716,18 @@ CFM5_17 &lt;- CFM5_17 %&gt;%
   mutate(DD_mental = mental_health_opr_fun(CF23_Anxiety,
                                            CF24_Depression))
 
-
-
 # Add this variable
 CFM5_17 &lt;- CFM5_17 %&gt;%
   mutate(CFM_DD_at_some = ifelse(CFM_DD == &quot;No difficulty&quot;,CFM_DD,&quot;Some Difficulty&quot;))
 
 CFM5_17 &lt;- CFM5_17 %&gt;%
   mutate(KBB_DD_at_some = ifelse(KBB_DD == &quot;No difficulty&quot;,KBB_DD,&quot;Some Difficulty&quot;)) </code></pre>
+</div>
+<div id="combining-behavioral-reports-and-mental-health-related-reports" class="section level3">
+<h3>Combining behavioral reports and mental health related reports</h3>
+<pre class="r"><code># Modify CFM_DD just to include information from both behaviors and mental health
+CFM5_17 &lt;- CFM5_17 %&gt;%
+  mutate(CFM_DD = paste(CFM_DD,&quot;/&quot;,DD_mental,sep=&quot;&quot;))</code></pre>
 </div>
 <div id="number-of-difficulties-each-child-has-cfm-and-kbb-definitions-of-dd" class="section level3">
 <h3>Number of difficulties each child has (CFM and KBB definitions of
@@ -833,6 +857,79 @@ for(ii in 1:nrow(KBB_data)) {
 
 CFM5_17$KBB_DD_type &lt;- KBB_DD_type_list %&gt;% unlist()</code></pre>
 </div>
+<div id="organizing-all-reported-at-least-a-lot-of-difficulties-into-one-variable-and-mental-health-too" class="section level3">
+<h3>Organizing all reported ‘at least A LOT OF difficulties’ into one
+variable AND MENTAL HEALTH TOO</h3>
+<p>If a value contains ‘A lot of difficulty’ or ‘Cannot at all’, then
+that variable name will be saved into a special variable. Additionally
+we need to add mental health variables IF they are daily!</p>
+<p>This code has been manually inspected and it works as intended.</p>
+<pre class="r"><code># Create a list to contain at least a lot of difficulty functional domains
+atleast.alot.list &lt;- list()
+
+# Create a loop for every single row in the data frame (which corresponds to every child)
+for(ii in 1:nrow(CFM_data)) {
+
+  # First extract the row of interest
+  current.row &lt;- CFM_data[ii,]
+  
+  # Save the column names as it&#39;s own object
+  column.names &lt;- names(CFM_data)
+  
+  # Keep column names that contain &quot;A lot of difficulty&quot; present or &quot;Cannot at all&quot; as a cell value
+  alot.difficulty &lt;- column.names[current.row == &quot;A lot of Difficulty&quot; |  current.row == &quot;Cannot at all&quot;]
+  
+  # convert any difficulties into one cell 
+  alot.difficulty.collapsed &lt;- paste(alot.difficulty, collapse = &quot;; &quot;)
+  
+  # Create an if statement for saving the data
+  if(length(nchar(alot.difficulty)) == 0) {
+    atleast.alot.list[[ii]] &lt;- &quot;&quot;   
+  } else {
+    atleast.alot.list[[ii]] &lt;- alot.difficulty.collapsed
+  }
+    
+}
+
+# Save this information in the CFM5_17 object
+CFM5_17$CFM.atleast.alot &lt;- do.call(c, atleast.alot.list)
+
+# Now we need to repeat this process but with DAILY related problems. Once we obtain this we will merge them together using the paste function
+daily.list &lt;- list()
+
+# Create a loop for every single row in the data frame (which corresponds to every child)
+for(ii in 1:nrow(CFM_data)) {
+
+  # First extract the row of interest
+  current.row &lt;- CFM_data[ii,]
+  
+  # Save the column names as it&#39;s own object
+  column.names &lt;- names(CFM_data)
+  
+  # Keep column names that contain &quot;A lot of difficulty&quot; present or &quot;Cannot at all&quot; as a cell value
+  daily.difficulty &lt;- column.names[current.row == &quot;Daily&quot;]
+  
+  # convert any difficulties into one cell 
+  daily.difficulty.collapsed &lt;- paste(daily.difficulty, collapse = &quot;; &quot;)
+  
+  # Create an if statement for saving the data
+  if(length(nchar(daily.difficulty)) == 0) {
+    daily.list[[ii]] &lt;- &quot;&quot;   
+  } else {
+    daily.list[[ii]] &lt;- daily.difficulty.collapsed
+  }
+    
+}
+
+# Save this information in the CFM5_17 object
+CFM5_17$daily.difficulty &lt;- do.call(c, daily.list)
+
+# Introduce this variable into the at.leat.alot variable
+CFM5_17 &lt;- CFM5_17 %&gt;%
+  mutate(CFM.atleast.alot = ifelse(daily.difficulty != &quot;&quot;,
+                                   paste(CFM.atleast.alot,daily.difficulty,sep=&quot;; &quot;),
+                                   CFM.atleast.alot))</code></pre>
+</div>
 <div id="scoring-epilepsy" class="section level3">
 <h3>Scoring Epilepsy</h3>
 <p>We are using the Birbeck Epilepsy Screening Questionnaire. It is
@@ -915,6 +1012,11 @@ for(ii in 1:nrow(CFM5_17)) {
 # Add this variable back into the 
 CFM5_17$KBB_DD_status &lt;- unlist(KBB_DD_status)</code></pre>
 </div>
+<div id="creating-our-final-cfm-dd-variable" class="section level3">
+<h3>Creating our final CFM DD variable</h3>
+<pre class="r"><code>CFM5_17 &lt;- CFM5_17 %&gt;%
+  mutate(CFM_DD_status = ifelse(CFM_DD_at_some == &quot;Some Difficulty&quot;,&quot;Yes&quot;, &quot;No&quot;))</code></pre>
+</div>
 <div id="cannot-at-all-sensory-difficulties-exclusion" class="section level3">
 <h3>‘Cannot at all’ Sensory difficulties exclusion</h3>
 <p>We want to develop a variable that indicates to us if a Child has
@@ -962,7 +1064,7 @@ CFM5_17 %&gt;%
          CF12_Walking_100,
          CF13_Walking_500,
          sen_mot_severity)</code></pre>
-<pre><code># A tibble: 1,407 × 5
+<pre><code># A tibble: 1,441 × 5
    CF3_Seeing    CF6_Hearing         CF12_Walking_100 CF13_Walking_500 sen_mot…¹
    &lt;chr&gt;         &lt;chr&gt;               &lt;chr&gt;            &lt;chr&gt;            &lt;chr&gt;    
  1 No difficulty A lot of Difficulty Cannot at all    Cannot at all    Cannot a…
@@ -975,7 +1077,7 @@ CFM5_17 %&gt;%
  8 No difficulty No difficulty       No difficulty    No difficulty    No diffi…
  9 No difficulty No difficulty       No difficulty    No difficulty    No diffi…
 10 No difficulty No difficulty       No difficulty    No difficulty    No diffi…
-# … with 1,397 more rows, and abbreviated variable name ¹​sen_mot_severity</code></pre>
+# … with 1,431 more rows, and abbreviated variable name ¹​sen_mot_severity</code></pre>
 <pre class="r"><code>CFM5_17 &lt;- CFM5_17 %&gt;%
   mutate(sen_mot_difficulty = ifelse(sen_mot_severity == &quot;No difficulty&quot;, &quot;No&quot;, &quot;Yes&quot;))</code></pre>
 </div>

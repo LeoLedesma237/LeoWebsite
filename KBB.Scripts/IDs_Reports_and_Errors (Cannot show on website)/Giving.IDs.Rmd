@@ -269,3 +269,36 @@ vector <- 1:max.ID.num
 setdiff(vector, new.ID.tracker$ID)
 
 ```
+
+
+### Send information to Ackim
+
+We will now send a finalized excel sheet to ackim. This has all of the information from our ID excel sheet but will also include the date of evaluation and will be sorted by that date.
+
+
+```{r create the excel version to send to Ackim, warning = FALSE}
+# Set working directory
+setwd("~/KBB_new_2/1_screener/final_data")
+
+# Load in all data
+all.children <- read_excel("All Children.xlsx")
+
+# Add the child ID x
+all.children <- all.children %>%
+  mutate(x = paste(HOH_First_Name, HOH_Last_Name, Child_First_Name, Child_Last_Name)) %>%
+  select(x, Date_of_Evaluation)
+
+final.send.to.Ackim <- new.ID.tracker %>%
+  left_join(all.children, by = "x") %>%
+  select(Date_of_Evaluation, everything()) %>%
+  arrange(Date_of_Evaluation)
+  
+
+# Set save directory
+setwd("~/KBB_new_2/matched_siblings")
+
+# Save the data
+write.xlsx(final.send.to.Ackim,
+           "New ID Tracker (send to Ackim).xlsx")
+
+```

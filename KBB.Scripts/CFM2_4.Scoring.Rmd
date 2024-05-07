@@ -191,6 +191,22 @@ write.csv(x = CFM2_4.HOH.ID,
 
 ```
 
+### Access to resources to help with difficulties
+
+
+```{r access to resources to help with difficulties}
+CFM2_4.HOH.ID <- CFM2_4.HOH.ID %>%
+  mutate(glasses = ifelse(CF1 == 1, "Yes", "No"),
+         hearing.aid = ifelse(CF4 == 1, "Yes", "No"),
+         walking.equipment = ifelse(CF7 == 1, "Yes", "No"))
+
+table(CFM2_4.HOH.ID$glasses)
+table(CFM2_4.HOH.ID$hearing.aid)
+table(CFM2_4.HOH.ID$walking.equipment)
+```
+
+
+
 
 ### Major data transformation
 
@@ -409,6 +425,46 @@ CFM2_4$KBB_DD_type <- KBB_DD_type_list %>% unlist()
 ```
 
 
+### Organizing all reported 'at least A LOT OF difficulties' into one variable
+
+If a value contains 'A lot of difficulty' or 'Cannot at all', then that variable name will be saved into a special variable. This code has been manually inspected and it works as intended. 
+
+```{r organizing at least a lot of difficulties into one variable}
+# Create a list to contain at least a lot of difficulty functional domains
+atleast.alot.list <- list()
+
+# Create a loop for every single row in the data frame (which corresponds to every child)
+for(ii in 1:nrow(CFM_data)) {
+
+  # First extract the row of interest
+  current.row <- CFM_data[ii,]
+  
+  # Save the column names as it's own object
+  column.names <- names(CFM_data)
+  
+  # Keep column names that contain "A lot of difficulty" present or "Cannot at all" as a cell value
+  alot.difficulty <- column.names[current.row == "A lot of Difficulty" |  current.row == "Cannot at all"]
+  
+  # convert any difficulties into one cell 
+  alot.difficulty.collapsed <- paste(alot.difficulty, collapse = "; ")
+  
+  # Create an if statement for saving the data
+  if(length(nchar(alot.difficulty)) == 0) {
+    atleast.alot.list[[ii]] <- ""   
+  } else {
+    atleast.alot.list[[ii]] <- alot.difficulty.collapsed
+  }
+    
+}
+
+# Save this information in the CFM2_4 object
+CFM2_4$CFM.atleast.alot <- do.call(c, atleast.alot.list)
+
+```
+
+
+
+
 ### Scoring Epilepsy
 
 We are using the Birbeck Epilepsy Screening Questionnaire. It is comprised of 12 questions. The first 9 questions when answered as 'positive' will indicate that the child may have epilepsy if the remaining 3 questions are reported as negative. 
@@ -492,6 +548,17 @@ for(ii in 1:nrow(CFM2_4)) {
 CFM2_4$KBB_DD_status <- unlist(KBB_DD_status)
 
 ```
+
+
+### Creating our final CFM DD variable
+
+```{r creating our final CFM DD variable}
+
+CFM2_4 <- CFM2_4 %>%
+  mutate(CFM_DD_status = ifelse(CFM_DD_at_some == "Some Difficulty","Yes", "No"))
+
+```
+
 
 
 ### 'Cannot at all' Sensory difficulties exclusion

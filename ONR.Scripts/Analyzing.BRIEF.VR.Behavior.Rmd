@@ -62,13 +62,13 @@ setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_prepr
 GnG.performance <- read.csv("GnG.trial.type.csv")
 
 # Data cleaning- we are only interested in Day 1
-GnG.performance <- GnG.performance %>% filter(Day.Type == "Day 1" & BlockName == "Colors and Shape") %>% select(-X)
+GnG.performance <- GnG.performance %>% filter(Day.Type == "Day 1" & BlockName == "Colors and Shape") 
 
 # Load in the Nback data (Reacted)
 Nback.reacted <- read.csv("Nback.target.reacted.csv")
 
 # Data cleaning- we are only interested in Day 1
-Nback.performance <- Nback.reacted %>% filter(Day.Type == "Day 1" & BlockName == "2-Back AR w ND") %>% select(-X)
+Nback.performance <- Nback.reacted %>% filter(Day.Type == "Day 1" & BlockName == "2-Back AR w ND") 
 
 # Set working directory
 setwd("~/ONR/BRIEF")
@@ -104,14 +104,12 @@ Nback.rt <- read.csv("Nback.reaction.time.csv")
 # Additional data cleaning
 # For GnG, we are only interested in Colors and Shape Condition for Day and for correct Go trials.
 GnG.rt <- GnG.rt %>%
-  filter(BlockName == "Colors and Shape" & Day.Type == "Day 1" & Trial.Type == "Go" & Correct == 1) %>%
-  select(-X)
+  filter(BlockName == "Colors and Shape" & Day.Type == "Day 1" & Trial.Type == "Go" & Correct == 1)
 
 # Additional data cleaning
 # For GnG, we are only interested in Colors and Shape Condition for Day and for correct Go trials.
 Nback.rt <- Nback.rt %>%
-  filter(BlockName == "2-Back AR w ND" & Day.Type == "Day 1" & Trial.Type == "Target" & Correct == 1) %>%
-  select(-X)
+  filter(BlockName == "2-Back AR w ND" & Day.Type == "Day 1" & Trial.Type == "Target" & Correct == 1) 
 
 ```
 

@@ -11,8 +11,9 @@
 
 <meta name="author" content="Leandro Ledesma" />
 
+<meta name="date" content="2024-04-02" />
 
-<title>ONR Day Labeling</title>
+<title>Data Scoring ZAT Reading Comprehension</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -349,449 +350,134 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">ONR Day Labeling</h1>
+<h1 class="title toc-ignore">Data Scoring ZAT Reading Comprehension</h1>
 <h4 class="author">Leandro Ledesma</h4>
+<h4 class="date">2024-04-02</h4>
 
 </div>
 
 
-<div id="universal-block-code-settings" class="section level3">
-<h3>Universal block code settings</h3>
-<pre class="r"><code>knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(message = FALSE)
-knitr::opts_chunk$set(comment = NULL)</code></pre>
-</div>
 <div id="load-in-the-data-manipulation-packages-first" class="section level3">
 <h3>Load in the data manipulation packages first</h3>
-<pre class="r"><code># Load in packages
-library(tidyverse)
+<pre class="r"><code>library(tidyverse)</code></pre>
+<pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.2 ──
+## ✔ ggplot2 3.4.0     ✔ purrr   1.0.1
+## ✔ tibble  3.2.1     ✔ dplyr   1.1.1
+## ✔ tidyr   1.3.0     ✔ stringr 1.5.0
+## ✔ readr   2.1.3     ✔ forcats 1.0.0
+## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+## ✖ dplyr::filter() masks stats::filter()
+## ✖ dplyr::lag()    masks stats::lag()</code></pre>
+<pre class="r"><code>library(ggplot2)
+library(ggpubr)
 library(readxl)
-library(gdata) # Use startsWith function
-library(base) #subset strings
-library(scales)
-library(rio)
-library(purrr)</code></pre>
-</div>
-<div id="last-day-this-code-was-ran" class="section level3">
-<h3>Last day this code was ran</h3>
-<pre class="r"><code>paste(&quot;This code was last ran on:&quot;, Sys.Date())</code></pre>
-<pre><code>[1] &quot;This code was last ran on: 2024-04-19&quot;</code></pre>
-</div>
-<div id="create-ids-with-leading-zeroes" class="section level3">
-<h3>Create ID’s with leading zeroes</h3>
-<pre class="r"><code># Create an empty character vector to store ID numbers
-ID.numbers &lt;- character(999)
-
-# Use sprintf to format the values with leading zeros so it creates a vector with zeroes in fron of each number smaller than 100
-for (i in 1:999) {
-  ID.numbers[i] &lt;- sprintf(&quot;%03d&quot;, i)
-}
-
-# Check to see if the zeroes were added
-head(ID.numbers,99)</code></pre>
-<pre><code> [1] &quot;001&quot; &quot;002&quot; &quot;003&quot; &quot;004&quot; &quot;005&quot; &quot;006&quot; &quot;007&quot; &quot;008&quot; &quot;009&quot; &quot;010&quot; &quot;011&quot; &quot;012&quot;
-[13] &quot;013&quot; &quot;014&quot; &quot;015&quot; &quot;016&quot; &quot;017&quot; &quot;018&quot; &quot;019&quot; &quot;020&quot; &quot;021&quot; &quot;022&quot; &quot;023&quot; &quot;024&quot;
-[25] &quot;025&quot; &quot;026&quot; &quot;027&quot; &quot;028&quot; &quot;029&quot; &quot;030&quot; &quot;031&quot; &quot;032&quot; &quot;033&quot; &quot;034&quot; &quot;035&quot; &quot;036&quot;
-[37] &quot;037&quot; &quot;038&quot; &quot;039&quot; &quot;040&quot; &quot;041&quot; &quot;042&quot; &quot;043&quot; &quot;044&quot; &quot;045&quot; &quot;046&quot; &quot;047&quot; &quot;048&quot;
-[49] &quot;049&quot; &quot;050&quot; &quot;051&quot; &quot;052&quot; &quot;053&quot; &quot;054&quot; &quot;055&quot; &quot;056&quot; &quot;057&quot; &quot;058&quot; &quot;059&quot; &quot;060&quot;
-[61] &quot;061&quot; &quot;062&quot; &quot;063&quot; &quot;064&quot; &quot;065&quot; &quot;066&quot; &quot;067&quot; &quot;068&quot; &quot;069&quot; &quot;070&quot; &quot;071&quot; &quot;072&quot;
-[73] &quot;073&quot; &quot;074&quot; &quot;075&quot; &quot;076&quot; &quot;077&quot; &quot;078&quot; &quot;079&quot; &quot;080&quot; &quot;081&quot; &quot;082&quot; &quot;083&quot; &quot;084&quot;
-[85] &quot;085&quot; &quot;086&quot; &quot;087&quot; &quot;088&quot; &quot;089&quot; &quot;090&quot; &quot;091&quot; &quot;092&quot; &quot;093&quot; &quot;094&quot; &quot;095&quot; &quot;096&quot;
-[97] &quot;097&quot; &quot;098&quot; &quot;099&quot;</code></pre>
+library(kableExtra)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;kableExtra&#39;
+## 
+## The following object is masked from &#39;package:dplyr&#39;:
+## 
+##     group_rows</code></pre>
 </div>
 <div id="load-in-the-data" class="section level3">
 <h3>Load in the data</h3>
-<p>These next few sections are a bit complex. ONR behavioral data is
-saved locally on two separate computers (UH-ONR and UH-ONR2). This is
-because we are using two rooms for data collection, each with their own
-VR systems. Every day around 3:00 AM, these locally saved data are
-transfered to a secure server and saved in separate folders. Inside
-these directories, ID named folders (ex: 001 or 015) contain CSV files
-representing the performance during the VR tasks. Each CSV corresponds
-to a GnG or an Nback task completed on one of the four testing days.</p>
+<pre class="r"><code># Set working directory
+setwd(&quot;Z:/eglab/A_ALL Project Data/Zambia projects (R01, R21, OVC)/ZambiaOVC_2022/ZambiaOVC_CleanFiles/Cohort1_cleaned_July2021_forNan/C1T1&quot;)
+
+# Load in the data
+ZAT1 &lt;- read_excel(&quot;ZambiaOVC_ZATRR_PWWR_RC_M_co1_tm1_clean.xlsx&quot;)
+
+# Set working directory
+setwd(&quot;Z:/eglab/A_ALL Project Data/Zambia projects (R01, R21, OVC)/ZambiaOVC_2022/ZambiaOVC_CleanFiles/Cohort2_cleanedJun2021_forNan/C2T1&quot;)
+
+# Load in the data
+ZAT2 &lt;- read_excel(&quot;ZambiaOVC_ZATRR_PWWR_RC_M_coh2_tm1_clean.xlsx&quot;)
+
+# Set working directory
+setwd(&quot;Z:/eglab/A_ALL Project Data/Zambia projects (R01, R21, OVC)/ZambiaOVC_2022/ZambiaOVC_CleanFiles/Cohort3_cleaned_Jul2021_forNan/C3T1&quot;)
+
+# Load in the data
+ZAT3 &lt;- read_excel(&quot;ZambiaOVC_ZATRR_PWWR_RC_M_coh3_tm1_clean.xlsx&quot;)</code></pre>
 </div>
-<div id="obtaining-pathways-to-participants-behavioral-data" class="section level3">
-<h3>Obtaining pathways to participant’s behavioral data</h3>
-<p>This first chunk of code is going into both directories on the server
-and recording the pathways of participants that have behavioral data
-saved.</p>
-<pre class="r"><code># set working directory for ONR computer 1
-setwd(&quot;M:/VR_CSVs/UH-ONR&quot;)
+<div id="bind-all-of-the-zat-reading-together" class="section level3">
+<h3>Bind all of the ZAT reading together</h3>
+<pre class="r"><code># Extract the variables of interest from each dataset
+ZAT1.RC &lt;-  
+ZAT1 %&gt;%
+    select(OVC_ID, 
+         contains(&quot;RC&quot;))
 
-# let&#39;s get the names of all the files in the folder
-file.names.UH_ONR &lt;- list.files()
+# Assume that 1 means boy
+ZAT2.RC &lt;- 
+ZAT2 %&gt;%
+  select(OVC_ID, 
+         contains(&quot;RC&quot;),
+         - Ch_sex_F1_M0)
 
-# set working directory for ONR computer 1
-setwd(&quot;M:/VR_CSVs/UH-ONR2&quot;)
+ZAT3.RC &lt;- 
+ZAT3 %&gt;%
+   select(OVC_ID, 
+         contains(&quot;RC&quot;))
 
-# let&#39;s get the names of all the files in the folder
-file.names.UH_ONR2 &lt;- list.files()
 
-# Obtain the intersected IDs from both computers
-intersect.IDs.UH_ONR &lt;- intersect(file.names.UH_ONR,ID.numbers)
-intersect.IDs.UH_ONR2 &lt;- intersect(file.names.UH_ONR2,ID.numbers)
-
-# Create two pathways using the intersected IDs
-pathway.UH_ONR &lt;- paste(&quot;M:/VR_CSVs/UH-ONR/&quot;,intersect.IDs.UH_ONR,&quot;/&quot;, sep=&quot;&quot;)
-pathway.UH_ONR2 &lt;- paste(&quot;M:/VR_CSVs/UH-ONR2/&quot;,intersect.IDs.UH_ONR2,&quot;/&quot;, sep=&quot;&quot;)</code></pre>
+# Bind them together
+ZAT.RC &lt;- 
+  ZAT1.RC %&gt;%
+  rbind(ZAT2.RC) %&gt;%
+  rbind(ZAT3.RC)</code></pre>
 </div>
-<div id="obtaining-each-csv-file-name-for-computer-1" class="section level3">
-<h3>Obtaining each CSV file name for computer 1</h3>
-<p>This next chunk of code is using the pathways from above to record
-the names and pathways of each CSV file in Computer 1 and saving them as
-a data frame.</p>
-<pre class="r"><code># Create a for loop to go into each pathway of a subject&#39;s ID folder and extract the names of CSV&#39;s present there
-# Do this for both pathways
-# Computer 1
-CSVs.UH_ONR &lt;- list()
+<div id="score-the-zat-math" class="section level3">
+<h3>Score the ZAT Math</h3>
+<p>Each value that is not 1 is essentially a 0.</p>
+<pre class="r"><code># Set the working directory
+setwd(&quot;C:/Users/lledesma.TIMES/Documents/OVC/Scoring Book&quot;)
 
-for(ii in 1:length(pathway.UH_ONR)) {
-  #ii = 1
-  # Changes the working directory to each pathway
-  setwd(pathway.UH_ONR[[ii]])
-  
-  # Obtain the CSVs for the folder
-  CSVs.current &lt;- list.files()
-  
-  # Create a vector for the current ID and computer number (Repeat it by the number of CSVs present)
-  current.ID &lt;- rep(intersect.IDs.UH_ONR[ii], length(CSVs.current))
-  current.pathway &lt;- rep(pathway.UH_ONR[ii], length(CSVs.current))
-  current.computer &lt;- rep(&quot;Computer 1&quot;, length(CSVs.current))
-  
-  # Create a data frame including the ID, the pathway, CSV, and the computer number
-  UH_ONR.df &lt;- data.frame(ID = current.ID,
-                          Pathway = current.pathway,
-                          CSVs = CSVs.current,
-                          Computer = current.computer) 
-  
-  # Extracts all the names of the CSVs located in that pathway + it&#39;s pathway
-  CSVs.UH_ONR[[ii]] &lt;- UH_ONR.df
-}
+# Load in scoreing book
+ZAT.RC.scoring.uncleaned &lt;- read_excel(&quot;OVC_CodeBook.xlsx&quot;, sheet = &quot;ZAT_RC&quot;)</code></pre>
+<pre><code>## New names:
+## • `Correct response` -&gt; `Correct response...9`
+## • `Correct response` -&gt; `Correct response...10`</code></pre>
+<pre class="r"><code># clean it up a bit
+ZAT.RC.answers &lt;- ZAT.RC.scoring.uncleaned %&gt;%
+  select(`OVC Project`, Correct.Response = `Correct response...10`)  %&gt;% 
+  filter(complete.cases(.))
 
-CSVs.UH_ONR &lt;- CSVs.UH_ONR %&gt;%
-  do.call(rbind,.) %&gt;%
-  data.frame()</code></pre>
+# Some data cleaning on the ZAT
+ZAT.RC &lt;- ZAT.RC %&gt;%
+  mutate_all(., function(x) as.numeric(x))</code></pre>
+<pre><code>## Warning: There were 25 warnings in `mutate()`.
+## The first warning was:
+## ℹ In argument: `RCT1 = (function (x) ...`.
+## Caused by warning:
+## ! NAs introduced by coercion
+## ℹ Run ]8;;ide:run:dplyr::last_dplyr_warnings()dplyr::last_dplyr_warnings()]8;; to see the 24 remaining warnings.</code></pre>
+<pre class="r"><code># Convert ZAT Math to long format
+ZAT.RC.long &lt;- ZAT.RC %&gt;%
+  pivot_longer(-OVC_ID)
+
+# Introduce the correct answers
+ZAT.RC.long$Correct.Response &lt;- rep(ZAT.RC.answers$Correct.Response, nrow(ZAT.RC.long)/25)
+
+# Score each item 
+ZAT.RC.long &lt;- ZAT.RC.long %&gt;%
+  mutate(Score = ifelse(value == Correct.Response, 1, 0))
+
+# Remove practice trials
+ZAT.RC.long &lt;- ZAT.RC.long %&gt;% 
+  filter(!(name %in% c(&quot;RCT1&quot;,&quot;RCT2&quot;,&quot;RCT5&quot;,&quot;RCT6&quot;)))
+
+# Obtain a raw math score per person
+ZAT.RC.final &lt;- ZAT.RC.long %&gt;%
+  group_by(OVC_ID) %&gt;%
+  summarize(RC.Score = sum(Score, na.rm = TRUE))</code></pre>
 </div>
-<div id="obtaining-each-csv-file-name-for-computer-2" class="section level3">
-<h3>Obtaining each CSV file name for computer 2</h3>
-<p>This next chunk of code does the same as above except for the files
-in computer 2.</p>
-<pre class="r"><code># Create a for loop to go into each pathway of a subject&#39;s ID folder and extract the names of CSV&#39;s present there
-# Do this for both pathways
-# Computer 2
-CSVs.UH_ONR2 &lt;- list()
+<div id="save-the-data" class="section level3">
+<h3>Save the data</h3>
+<pre class="r"><code># Set the working directory
+setwd(&quot;~/OVC/ZAT&quot;)
 
-for(ii in 1:length(pathway.UH_ONR2)) {
-  #ii = 1
-  # Changes the working directory to each pathway
-  setwd(pathway.UH_ONR2[[ii]])
-  
-  # Obtain the CSVs for the folder
-  CSVs.current &lt;- list.files()
-  
-  # Create a vector for the current ID and computer number (Repeat it by the number of CSVs present)
-  current.ID &lt;- rep(intersect.IDs.UH_ONR2[ii], length(CSVs.current))
-  current.pathway &lt;- rep(pathway.UH_ONR2[ii], length(CSVs.current))
-  current.computer &lt;- rep(&quot;Computer 2&quot;, length(CSVs.current))
-  
-  # Create a data frame including the ID, the pathway, CSV, and the computer number
-  UH_ONR.df &lt;- data.frame(ID = current.ID,
-                          Pathway = current.pathway,
-                          CSVs = CSVs.current,
-                          Computer = current.computer) 
-  
-  # Extracts all the names of the CSVs located in that pathway + it&#39;s pathway
-  CSVs.UH_ONR2[[ii]] &lt;- UH_ONR.df
-}
-
-CSVs.UH_ONR2 &lt;- CSVs.UH_ONR2 %&gt;%
-  do.call(rbind,.) %&gt;%
-  data.frame()</code></pre>
-</div>
-<div id="removing-redundant-csvs-from-computer-2" class="section level3">
-<h3>Removing redundant CSVs from computer 2</h3>
-<p>Unfortunately, we have some redundant files from early data recording
-in the project. Some files saved in Computer 2 are identical to files
-saved in Computer 1. We want to identify these files and associate them
-with only one pathway before we start to read them in. This will make
-the computing process more efficient.</p>
-<pre class="r"><code># Identify CSVs in Computer 2 that are not in Computer 1 (save non duplicate CSVs)
-nonDuplicate.CSVs &lt;- setdiff(CSVs.UH_ONR2$CSVs, CSVs.UH_ONR$CSVs)
-
-# Overwrite the Computer 2 data frame with one containing only CSVs that are not in Computer 1
-CSVs.UH_ONR2 &lt;- CSVs.UH_ONR2 %&gt;%
-  filter(CSVs %in% nonDuplicate.CSVs)</code></pre>
-</div>
-<div id="identifying-complete-subjects-from-vr-data" class="section level3">
-<h3>Identifying complete subjects from VR data</h3>
-<p>The logic is as follows. There are four testing days and each day two
-CSV files are saved- one for GnG and the other for the Nback. On Day 0
-(practice day) a 30 minute practice session CSV is saved for both tasks.
-On day 1 the baseline CSVs are saved. On day 2 the intense exercise CSVs
-are saved. And lastly, on day 3 the sleep deprivation CSVs are saved.
-Thus, a subject that completed all testing days will have 8 CSVs.</p>
-<p>We will be merging the data frames from both computers created in the
-previous scripts and extracting the ID numbers that have 8 CSVs saved.
-We will then use this information to create a new variable indicating
-whether the subject is complete or not.</p>
-<pre class="r"><code># Merge the datasets from above
-CSVs.merged.UH_ONR &lt;- CSVs.UH_ONR %&gt;%
-  rbind(CSVs.UH_ONR2)
-
-# Total unique ID&#39;s from all subjects that have a VR session saved
-paste(&quot;There is at least one CSV file saved from&quot;, length(unique(CSVs.merged.UH_ONR$ID)), &quot;participants&quot;, sep= &quot; &quot;)</code></pre>
-<pre><code>[1] &quot;There is at least one CSV file saved from 241 participants&quot;</code></pre>
-<pre class="r"><code># IDs that have 8 file names
-completed.IDs &lt;- CSVs.merged.UH_ONR %&gt;%
-  group_by(ID) %&gt;%
-  count() %&gt;%
-  filter(n == 8) %&gt;%
-  select(ID) %&gt;%
-  unlist() %&gt;% unname()
-
-# Complete ID&#39;s and their pathways 
-CSVs.merged.UH_ONR &lt;- CSVs.merged.UH_ONR %&gt;%
-  mutate(Status = ifelse(ID %in% completed.IDs, &quot;Complete&quot;, &quot;Incomplete&quot;))
-
-# Total unique ID&#39;s from all subjects that have all VR sessions accounted for
-paste(&quot;All VR sessions accounted for&quot;, length(completed.IDs), &quot;participants&quot;, sep= &quot; &quot;)</code></pre>
-<pre><code>[1] &quot;All VR sessions accounted for 162 participants&quot;</code></pre>
-</div>
-<div id="read-in-the-files" class="section level3">
-<h3>Read in the files</h3>
-<p>We will now read in the files and save them into a list. This takes
-about 30 seconds. Additionally, as each file is being read, a new
-variable called computer will be added that indicates if the data was
-recorded in Computer 1 or in Computer 2.</p>
-<pre class="r"><code># Read in the files
-all.CSVs &lt;- list()
-
-for(ii in 1:nrow(CSVs.merged.UH_ONR)) {
-   
-  # Current file name and its pathway 
-  current.csv &lt;- paste(CSVs.merged.UH_ONR$Pathway[ii],  CSVs.merged.UH_ONR$CSVs[ii], sep=&quot;&quot;)
-    
-  # Read in and save the current CSV in a list
-  read.csv &lt;- read.csv(current.csv)
-  
-  # Mutate the csv to include which computer it came from
-  read.csv$Computer &lt;- rep(CSVs.merged.UH_ONR$Computer[ii], times = nrow(read.csv))
-  
-  # Save the mutated CSV
-  all.CSVs[[ii]] &lt;- read.csv
-  
-  # Name the list by the ID and CSV
-  names(all.CSVs)[[ii]] &lt;- paste(CSVs.merged.UH_ONR$ID[ii],CSVs.merged.UH_ONR$CSVs[ii])
-}
-
-# Check to see that the above code worked
-paste(&quot;There are&quot;, length(all.CSVs),&quot;CSV files that were read in&quot;, sep =&quot; &quot;)</code></pre>
-<pre><code>[1] &quot;There are 1623 CSV files that were read in&quot;</code></pre>
-<pre class="r"><code># Half of the CSVs, the ones for GnG have the following dimensions
-dim(all.CSVs[[8]])</code></pre>
-<pre><code>[1] 1150   40</code></pre>
-<pre class="r"><code># The other half of the CSVs, the ones for Nback each have the following dimensions
-dim(all.CSVs[[9]])</code></pre>
-<pre><code>[1] 680  40</code></pre>
-</div>
-<div id="map-all-of-the-read-csv-files-into-a-new-data-frame" class="section level3">
-<h3>Map all of the read csv files into a new data frame</h3>
-<p>We will now create a data frame that contains all of the CSVs read
-from above in the variable tibble. We will add additional variables to
-this data frame such as the ID from that dataset, the day of testing,
-the task type (Go/No-Go or Nback) and the computer used to record the
-data.</p>
-<pre class="r"><code># Create a new data frame that will contain all CSV information
-all.data &lt;- data.frame(file.num = 1:length(all.CSVs))
-
-# Use the map function to make a variable called tibble, where each row contains the full data from the VR CSV
-all.data$tibbles &lt;- map(all.CSVs, as_tibble)
-
-# Create for loops that extract information from the first row of each data frame in the tibbles variable
-# This will include ID, day of testing, task type (GnG/Nback)
-
-ID.list &lt;- list()
-testing.date &lt;- list()
-task.type &lt;- list()
-Computer.num &lt;- list()
-
-for(ii in 1:nrow(all.data)) {
-
-# Obtain the first tibble and save it into an object
-current.dataset &lt;- all.data$tibbles[[ii]]
-
-# Extract the following information and save it to the all.data data frame
-ID.list[[ii]] &lt;- unique(current.dataset$UserID)
-testing.date[[ii]] &lt;- unique(substr(current.dataset$StartDate,1,10))
-Computer.num[[ii]] &lt;- unique(current.dataset$Computer)
-
-
-if(gsub(&quot;[^a-zA-Z]&quot;, &quot;&quot;, current.dataset$BlockID[1]) == &quot;G&quot;) {
-  task.type[ii] &lt;- &quot;Go/NoGo&quot;
-
-} else if(gsub(&quot;[^a-zA-Z]&quot;, &quot;&quot;, current.dataset$BlockID[1]) == &quot;N&quot;) {
-  task.type[ii] &lt;- &quot;N-back&quot;
-  
-}
-
-}
-
-# Add the lists back into the dataframe
-all.data$ID &lt;- unlist(ID.list)
-all.data$Testing.Date &lt;- unlist(testing.date)
-all.data$Task.type &lt;- unlist(task.type)
-all.data$Computer.num &lt;- unlist(Computer.num)</code></pre>
-</div>
-<div id="introducing-the-visitor-log-and-labeling-the-dates" class="section level3">
-<h3>Introducing the Visitor Log and labeling the dates</h3>
-<p>Since the CSV file names do not contain information about the testing
-day and since that information is also not available inside the CSV
-files, we have to manually turn to the Visitor Log. This is an excel
-sheet where ONR data collectors manually input the dates of when
-participants completed their visiting session and also add any
-additional notes about how testing went. We will be using this excel
-sheet to help us name our CSV files by testing day.</p>
-<p>Additionally for this to work, we had to convert any NA’s from the
-dates of the visitor log into zeroes (for more info look at the index
-part of the code) and dropped any NA’s in the ID column.</p>
-<p>The final produce is the all data.frame with the proper day types for
-each CSV file. This was manually inspected and shown to be correct by
-comparing the final data set with the dates from the Visitor Log.</p>
-<p>Lastly, and data set is shown at the bottom that indicate all CSV
-files that should have been logged in the Visitor Log but were not.</p>
-<pre class="r"><code># Set working directory to the visitor log
-setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/Visitor_log&quot;)
-
-# Load in the Visitor Log
-VisitorLog.org &lt;- read_excel(&quot;Visiting_Log_must_manually_update.xlsx&quot;)
-
-# Keep only the variables of interest
-VisitorLog &lt;- VisitorLog.org %&gt;%
-  select(ID, `Day 0 Date`, `Day 1 Date`, `Day 2 Date`, `Day 3 Date`)
-
-# Convert visitor log into long
-VisitorLog.Long &lt;- VisitorLog %&gt;%
-  pivot_longer(-ID) %&gt;%
-  rename(Day.type = name,
-         Date = value) %&gt;%
-  mutate(ID = as.numeric(ID),
-         Day.type = substr(Day.type, 1, 5),
-         Date = substr(Date,1,10))
-
-# Convert all missing dates in the Visitor Log into &quot;0&quot;
-VisitorLog.Long &lt;- VisitorLog.Long %&gt;%
-  mutate(Date = ifelse(is.na(Date),&quot;0&quot;,Date))
-
-# If any other variable have missing data then drop the rows to that variable
-VisitorLog.Long &lt;- drop_na(VisitorLog.Long)
-
-# Check to see if there is any missing data
-missing.data &lt;- VisitorLog.Long %&gt;%
-  filter(!complete.cases(.))
-
-paste(&quot;This is a check for missing data that should be 0. Right now it is:&quot;, nrow(missing.data))</code></pre>
-<pre><code>[1] &quot;This is a check for missing data that should be 0. Right now it is: 0&quot;</code></pre>
-<pre class="r"><code># Create a for loop that adds the day type to the all.data data frame using the information from the Visitor Log
-Day.type &lt;- list()
-
-for(ii in 1:nrow(all.data)) {
-  
-  # Extract the ID from the current row in all data
-  current.ID &lt;- all.data$ID[ii]
-  current.Testing.Date &lt;- all.data$Testing.Date[ii]
-  
-  # Use this ID to filter the rows of the Visitor Log that match with it
-  filtered.VisitorLog &lt;- VisitorLog.Long %&gt;%
-    filter(ID %in% current.ID)
-  
-  # If the Date from one of these rows matches the of the current all data row then copy over the Day type to all.data
-  # If it does not then write that it is missing from the Visitor Log
-  if(current.Testing.Date %in% filtered.VisitorLog$Date) {
-    
-    # Obtain the index (Boolean) to where this condition is true
-    index &lt;- filtered.VisitorLog$Date == current.Testing.Date
-    
-    # Save the correct day type
-    Day.type[[ii]] &lt;- filtered.VisitorLog$Day.type[index]
-    
-  } else {
-    
-    # Save that the date is missing from the Visitor Log 
-    Day.type[[ii]] &lt;- &quot;Date not saved in the Visitor Log&quot;
-    
-  }
-  
-}
-
-# Add the Day.type list information into all.data
-all.data$Day.type &lt;- unlist(Day.type)
-
-# Chance the order of columns for easier manually viewing and sort them by ID and Day.type
-all.data &lt;- all.data %&gt;% select(file.num, ID, Day.type, Testing.Date, everything()) %&gt;%
-  arrange(ID,Day.type) 
-
-
-# Let&#39;s see if there are errors with the Visitor Log
-all.data %&gt;%
-  filter(Day.type == &quot;Date not saved in the Visitor Log&quot;) %&gt;%
-  select(-tibbles)</code></pre>
-<pre><code>  file.num  ID                          Day.type Testing.Date Task.type
-1     1333 142 Date not saved in the Visitor Log   2023-10-31   Go/NoGo
-2     1334 142 Date not saved in the Visitor Log   2023-10-31    N-back
-  Computer.num
-1   Computer 2
-2   Computer 2</code></pre>
-<pre class="r"><code># Number of Unique ID&#39;s accounted for in the visitor log
-length(unique(all.data$ID))</code></pre>
-<pre><code>[1] 241</code></pre>
-</div>
-<div id="adding-the-day-type-into-the-original-datasets" class="section level3">
-<h3>Adding the day type into the original datasets</h3>
-<p>We know the Day Type now in the all.data set, however, we also want
-to introduce this information into the original tibbles. This way when
-we saved this transformed data for later processing and then analysis,
-the day types would be included.</p>
-<pre class="r"><code># Create a loop to add the Day type as a column into each tibble
-for(ii in 1:nrow(all.data)) {
-
-  # Obtain the tibble of the current row
-  current.dataset &lt;- all.data$tibbles[[ii]]
-  
-  # Add the Day type to this tibble, aka the original CSV file
-  current.dataset$Day.Type &lt;- rep(all.data$Day.type[ii], nrow(current.dataset))
-  
-  # Override the tibble in the all data data frame with the tibble that has a day type added
-  all.data$tibbles[[ii]] &lt;- current.dataset
-}</code></pre>
-</div>
-<div id="splitting-the-data-based-on-their-tasks" class="section level3">
-<h3>Splitting the data based on their tasks</h3>
-<p>Now that we have our data in an organized manner with the ID, Day
-Type (Day0-3), Testing Date, Task Type (Go/No-Go or N-back), and
-Computer number (1 or 2), we can start the process of combining the data
-into one large dataset by task type.</p>
-<pre class="r"><code># Save all the GnG data into a new object
-all.GnG &lt;- all.data %&gt;%
-  filter(Task.type == &quot;Go/NoGo&quot;)
-
-# Save all of the Nback data into a new object
-all.Nback &lt;- all.data %&gt;%
-  filter(Task.type == &quot;N-back&quot;)
-
-# Collapse both new objects into a single dataframe with all the tibbles (CSVs) stacked on top of each other
-all.GnG.tibbles &lt;- do.call(rbind, as.list(all.GnG$tibbles))
-all.Nback.tibbles &lt;- do.call(rbind, as.list(all.Nback$tibbles))</code></pre>
-</div>
-<div id="saving-files" class="section level3">
-<h3>Saving files</h3>
-<p>Now we will save GnG and Nback data with Day Type and Computer Number
-added as variables into two CSV files.</p>
-<pre class="r"><code># Set saving directory
-setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data&quot;)
-
-# Save the data as CSVs
-write.csv(all.GnG.tibbles, &quot;GnG.day.type.added.csv&quot;)
-write.csv(all.Nback.tibbles, &quot;Nback.day.type.added.csv&quot;)</code></pre>
+# Save the data
+write_csv(ZAT.RC.final, &quot;ZAT.RC.scored.csv&quot;)</code></pre>
 </div>
 
 

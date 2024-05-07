@@ -22,6 +22,7 @@ library(ggpubr)
 library(readxl)
 library(kableExtra)
 library(stringdist)
+library(psych)
 
 ```
 
@@ -68,6 +69,19 @@ ARFA.unscored %>%
 
 ```
 
+
+### Missing data
+
+The variables that contain the most missing values are those for repetition. 
+
+```{r investigating missing data}
+colSums(is.na(ARFA.unscored)) %>% sort()
+
+```
+
+
+
+
 ### ARFA Scoring Technique 1a (original method)
 
 Based on the instructions in the original method, we will create scripts that will score each of the 22 items for each person. If a subject is missing information for the repeat variable then they will be excluded from the analysis. 
@@ -77,6 +91,11 @@ Essentially, we are giving each item a score of 0, 1, or 2.
 - 2: No mistakes and no word repetition
 - 1: No mistakes and a word repetition or there was no more than one spelling mistake
 - 0: They have more than two spelling mistakes 
+
+Additionally, subjects that have missing data at all for any rows will be excluded from the scoring process as well. These numbers are described below. Ideally we should figure out a way to interpolate these data so we can increase our power some more. 
+
+The function of the for loop is to extract the variables associated with different types of errors that could have been committed for each item. While the first items contain variables that are all numeric, some of the following items contain variables that are characters. The code below is extracting all of these variables and if they are characters they will be converted to numeric. The consequence of this is any character strings in those variables will be converted to NA's. These NA's can then be transformed into a value of 1 to indicate an error. However, for this procedure to be accurate, there must be NO NA'S in the dataset before scoring. That's why any subjects that did contain NA's were removed to prevent this from occurring.  
+
 
 ```{r scoring as intended}
 # Remove rows that have NA's for any of the Spelling_X_Rep Variables
@@ -93,6 +112,19 @@ length(missing.Rep.IDs)
 ARFA.unscored.no.missing.rep <- ARFA.unscored %>%
   filter(!(ID %in% missing.Rep.IDs))
 
+# Check for any missing data
+rows.with.missing.data <- ARFA.unscored.no.missing.rep %>% 
+  filter(!complete.cases(.))
+
+# Remove these rows but keep note of it
+paste("Removed",nrow(rows.with.missing.data),"subjects from scoring because they had missing data for one or more items")
+
+ARFA.unscored.no.missing.data <- ARFA.unscored.no.missing.rep %>%
+  filter(!(ID %in% rows.with.missing.data$ID))
+
+# A report of your data before it is scored
+paste("The data that will be scored contains",nrow(ARFA.unscored.no.missing.data),"subjects. The number of missing data from these subjects is is",sum(is.na(ARFA.unscored.no.missing.data)))
+
 # Create a list to save all of the scores
 ARFA.scores.original.list <- list()
 
@@ -103,19 +135,29 @@ repeated <- paste("Spelling_",1:22,"_Rep",sep="")
 for(ii in 1:22) {
 
   # Extract the all of the scoring variables for an item and the information on whether it was repeated or not
-  current.item <- ARFA.unscored.no.missing.rep %>%
+  current.item <- ARFA.unscored.no.missing.data %>%
     select(starts_with(items[ii]), starts_with(repeated[ii]))
   
   # Rename the Spelling_X_variable so we can use the case_when() function on everyone, it should be second the last variable
   names.length <- length(names(current.item))
   names(current.item)[names.length] <- "Spelling_Rep"
   
-  # Add the rows for each numeric value together, which indicates the number of spelling errors
-  current.item$Row.Sum <- current.item %>% 
-    select_if(is.numeric) %>%
-    rowSums(na.rm = TRUE)
+  # Extract the non-repeated variables (aka variables that measure a type of error)
+  scoring.items <- current.item %>% 
+    select(starts_with("SP", ignore.case = FALSE))
   
+  # Convert all scoring items into numeric (they should be numeric to begin with!)
+  scoring.items.numeric <- scoring.items %>%
+    lapply(as.numeric) %>%
+    do.call(cbind,.) %>%
+    data.frame()
   
+  # Transform NA's in this numerically transformed dataset into 1's to indicate errors
+  scoring.items.numeric[is.na(scoring.items.numeric)] <- 1
+  
+  # Add the values for all the variables of each row. If the sum is greater than 1 then that indicates error for the spelling of that item. 
+  current.item$Row.Sum <- rowSums(scoring.items.numeric)
+
   # Use the information from repetition and the sums of rows to develop a score of 0, 1, or 2
   current.item <- current.item %>%
     mutate(Score = case_when(
@@ -136,7 +178,7 @@ for(ii in 1:22) {
 ARFA.original.scored <- ARFA.scores.original.list %>%
   do.call(cbind,.) %>%
   data.frame() %>%
-  cbind(ID = ARFA.unscored.no.missing.rep$ID)
+  cbind(ID = ARFA.unscored.no.missing.data$ID)
 
 # Turn the ID into a character variable
 ARFA.original.scored$ID <- as.character(ARFA.original.scored$ID)
@@ -144,7 +186,11 @@ ARFA.original.scored$ID <- as.character(ARFA.original.scored$ID)
 # Lastly, to get an overall measure of how well they performed in the spelling task, take another row sum of the scores to get on composite performance score.
 ARFA.original.scored$Spelling_Performance <-  ARFA.original.scored %>% 
     select_if(is.numeric) %>%
-    rowSums(na.rm = TRUE)
+    rowSums()
+
+# Check again for any missing data in the scored data frame (there should be none)
+
+paste("There should be no NA's in the scored data set. The number of missing data for this dataset is",sum(is.na(ARFA.original.scored)))
 
 # Let's view the distribution of scores for our independent variable
 hist(ARFA.original.scored$Spelling_Performance)
@@ -153,9 +199,11 @@ hist(ARFA.original.scored$Spelling_Performance)
 ARFA.original.final <-  ARFA.original.scored %>%
   select(ID, Spelling_Performance)
 
+# Obtain some descriptive statistics on this variable
+describe(ARFA.original.final$Spelling_Performance) %>%
+  kbl() %>%
+  kable_paper()
 ```
-
-
 
 
 ### ARFA Scoring Technique 1b (original method tweaked)
@@ -170,6 +218,18 @@ Essentially, we are giving each item a score of 0, 1, or 2.
 
 
 ```{r scoring as intended but tweaked, warning = FALSE}
+# Drop all repetition variables since they are not needed.
+ARFA.dropped.rep <- ARFA.unscored %>%
+  select(- ends_with("Rep"))
+
+paste("The dimension for the spelling data after removing repetition variables is:", paste(dim(ARFA.dropped.rep),collapse = " x "), "This means that there are",nrow(ARFA.dropped.rep),"subjects.")
+
+# Remove any rows with missing data
+ARFA.dropped.rep.no.missing <- ARFA.dropped.rep %>%
+  filter(complete.cases(.))
+
+paste("We removed",nrow(ARFA.dropped.rep) - nrow(ARFA.dropped.rep.no.missing),"subjects for having at least one variable contain a missing value- thus removing the data to",nrow(ARFA.dropped.rep.no.missing),"subjects that had their data scored")
+
 # Create a list to save all of the scores
 ARFA.scores.tweaked.list <- list()
 
@@ -177,27 +237,39 @@ ARFA.scores.tweaked.list <- list()
 items <- paste("SP",1:22,".", sep="")
 
 for(ii in 1:22) {
-
-
+  
   # Extract the all of the scoring variables for an item and the information on whether it was repeated or not
-    current.item <- ARFA.unscored %>%
+    scoring.items <- ARFA.dropped.rep.no.missing %>%
     select(starts_with(items[ii]))
   
-  # Add the rows for each numeric value together, which indicates the number of spelling errors
-  current.item$Row.Sum <- current.item %>% 
-    select_if(is.numeric) %>%
-    rowSums(na.rm = TRUE)
-  
-  
-  # Take the row sum and transform those values into either a 0, 1, or 2.
-  # Below is saying, if there are more than 1 error, score it a 0
-  # If there is 1 error, give it a point of 1,
-  # And fi there are no errors, give it a point of 2. 
-  current.item.errors.scored <- ifelse(current.item$Row.Sum > 1, 0,
-                                       ifelse(current.item$Row.Sum == 1, 1, 2))
-  
-  # Save the score but rename it first
-  ARFA.scores.tweaked.list[[ii]] <- current.item.errors.scored
+    # Convert all scoring items into numeric (they should be numeric to begin with!)
+    scoring.items.numeric <- scoring.items %>%
+      lapply(as.numeric) %>%
+      do.call(cbind,.) %>%
+      data.frame()
+    
+    # Transform NA's in this numerically transformed dataset into 1's to indicate errors
+    scoring.items.numeric[is.na(scoring.items.numeric)] <- 1
+    
+    # Add the values for all the variables of each row. If the sum is greater than 1 then that indicates error for the spelling of that item. 
+    scoring.items$Row.Sum <- rowSums(scoring.items.numeric)
+    
+    # Take the row sum and transform those values into either a 0, 1, or 2.
+    # Below is saying, if there are more than 1 error, score it a 0
+    # If there is 1 error, give it a point of 1,
+    # And fi there are no errors, give it a point of 2. 
+    scoring.items <- scoring.items %>%
+      mutate(Score = case_when(
+        
+        Row.Sum == 0 ~ 2,
+        Row.Sum == 1 ~ 1,
+        TRUE ~ 0
+        
+      ))
+    
+    
+    # Save the score but rename it first
+    ARFA.scores.tweaked.list[[ii]] <- scoring.items$Score
 
 }
 
@@ -205,7 +277,7 @@ for(ii in 1:22) {
 ARFA.tweaked.scored <- ARFA.scores.tweaked.list %>%
   do.call(cbind,.) %>%
   data.frame() %>%
-  cbind(ID = ARFA.unscored$ID)
+  cbind(ID = ARFA.dropped.rep.no.missing$ID)
 
 # Turn the ID into a character variable
 ARFA.tweaked.scored$ID <- as.character(ARFA.tweaked.scored$ID)
@@ -213,7 +285,11 @@ ARFA.tweaked.scored$ID <- as.character(ARFA.tweaked.scored$ID)
 # Lastly, to get an overall measure of how well they performed in the spelling task, take another row sum of the scores to get on composite performance score.
 ARFA.tweaked.scored$Spelling_Performance <-  ARFA.tweaked.scored %>% 
     select_if(is.numeric) %>%
-    rowSums(na.rm = TRUE)
+    rowSums()
+
+
+# Check again for any missing data in the scored data frame (there should be none)
+paste("There should be no NA's in the scored data set. The number of missing data for this dataset is",sum(is.na(ARFA.tweaked.scored)))
 
 # Let's view the distribution of scores for our independent variable
 hist(ARFA.tweaked.scored$Spelling_Performance)
@@ -221,6 +297,11 @@ hist(ARFA.tweaked.scored$Spelling_Performance)
 # Keep only the IDs and the composite scored variables
 ARFA.tweaked.final <-  ARFA.tweaked.scored %>%
   select(ID, Spelling_Performance)
+
+# Obtain some descriptive statistics on this variable
+describe(ARFA.tweaked.scored$Spelling_Performance) %>%
+  kbl() %>%
+  kable_paper()
 
 ```
 

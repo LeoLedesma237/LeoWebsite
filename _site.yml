@@ -6,8 +6,6 @@ navbar:
       href: index.html
     - text: "MegaGrant"
       href: MegaGrant.html
-    - text: "ONR"
-      href: ONR.html
     - text: "KBB"
       href: KBB.html
     - text: "OVC"

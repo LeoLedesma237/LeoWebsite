@@ -46,7 +46,7 @@ setwd("C:/Users/lledesma.TIMES/Documents/KBB_new_2/1_screener/final_data")
 All.Children <- read_excel("All Children.xlsx")
 Excluded.Children.DD <- read_excel("All CFM Excluded Children and Why.xlsx", sheet = "excluded_DD")
 Excluded.Children.noDD <- read_excel("All CFM Excluded Children and Why.xlsx", sheet = "excluded_no_DD")
-Excluded.Children.NoMatch.org <- read_excel("All CFM Excluded Children and Why.xlsx", sheet = "Unable_to_match")
+Excluded.Children.NoMatch.org <- read_exce0l("All CFM Excluded Children and Why.xlsx", sheet = "Unable_to_match")
 One.House.Children <- read_excel("Potential_Household_errors.xlsx")
 
 # Rbind the excluded children into one (not counting those that were removed because of not having a match)
@@ -106,6 +106,23 @@ All.Matched.No.Siblings <- All.Children %>%
 
 ```
 
+
+### Delete this section later
+
+```{r delete this section later}
+recruited.missing.gender <- All.Matched.Siblings %>% select(Date_of_Evaluation, Name_of_the_Village, HOH_First_Name, HOH_Last_Name, Child_First_Name, Child_Last_Name, Child_Date_of_Birth, Child_Gender) %>% filter(!complete.cases(.))
+
+not.recruited.missing.gender <- All.Children %>% select(Date_of_Evaluation, Name_of_the_Village, HOH_First_Name, HOH_Last_Name, Child_First_Name, Child_Last_Name, Child_Date_of_Birth, Child_Gender) %>% filter(!complete.cases(.))
+
+missing.gender <- rbind(recruited.missing.gender,
+                        not.recruited.missing.gender) %>% unique()
+
+# set a save directory
+setwd("~/KBB_new_2/errors")
+
+write.xlsx(missing.gender,
+           file= "missing.gender.xlsx")
+```
 
 ### Quality control
 

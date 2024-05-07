@@ -594,7 +594,12 @@ library(kableExtra)</code></pre>
 <div id="last-day-this-code-was-ran" class="section level3">
 <h3>Last day this code was ran</h3>
 <pre class="r"><code>paste(&quot;This code was last ran on:&quot;, Sys.Date())</code></pre>
-<pre><code>[1] &quot;This code was last ran on: 2024-02-21&quot;</code></pre>
+<pre><code>[1] &quot;This code was last ran on: 2024-04-19&quot;</code></pre>
+</div>
+<div id="please-read" class="section level3">
+<h3>Please Read</h3>
+<p>For this code to work, you must manually obtain information from all
+three screeners and the PilotIDs.</p>
 </div>
 <div id="load-in-the-data" class="section level3">
 <h3>Load in the data</h3>
@@ -613,9 +618,20 @@ setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/Demographics&quot;)
 
 # Load in the following data
 PilotIDs &lt;- read.csv(&quot;PilotIDs.csv&quot;)
-Screener.Ano &lt;- read.csv(&quot;Anonymous.Screener.csv&quot;)
-Screener.SONA &lt;- read.csv(&quot;SONA.Screener.csv&quot;)
-Screener.ROTC &lt;- read.csv(&quot;ROTC.Screener.csv&quot;)
+
+# Set working directory
+setwd(&quot;~/ONR/Qualtrics/Screeners&quot;)
+
+# Load in all file names
+all.screeners &lt;- list.files()
+
+# Sort the names
+all.screeners.sorted &lt;- sort(all.screeners)
+
+# Load in the screener information
+Screener.Ano &lt;- read.csv(all.screeners.sorted[1])
+Screener.ROTC &lt;- read.csv(all.screeners.sorted[2])
+Screener.SONA &lt;- read.csv(all.screeners.sorted[3])
 
 # Clean the pilot data by dropping NA&#39;s from the ID variable
 PilotIDs &lt;- PilotIDs %&gt;%
@@ -623,9 +639,9 @@ PilotIDs &lt;- PilotIDs %&gt;%
 
 # Check the dimensions of the screeners
 dim(Screener.Ano)</code></pre>
-<pre><code>[1] 2091  140</code></pre>
+<pre><code>[1] 2365  140</code></pre>
 <pre class="r"><code>dim(Screener.SONA)</code></pre>
-<pre><code>[1]  87 141</code></pre>
+<pre><code>[1] 162 141</code></pre>
 <pre class="r"><code>dim(Screener.ROTC)</code></pre>
 <pre><code>[1]  27 140</code></pre>
 <pre class="r"><code># Remove the first two rows of the Screeners (They are meaningless)
@@ -753,6 +769,14 @@ n
 </tr>
 <tr>
 <td style="text-align:right;">
+94
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
 105
 </td>
 <td style="text-align:right;">
@@ -794,6 +818,14 @@ n
 <tr>
 <td style="text-align:right;">
 190
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+209
 </td>
 <td style="text-align:right;">
 2
@@ -901,6 +933,9 @@ NA
 demographics &lt;- demographics %&gt;%
   filter(complete.cases(.))
 
+# Remove any potential duplicates where they types in the information twice the same using unique
+demographics &lt;- unique(demographics)
+
 # Check for duplicates in the data
 demographics %&gt;%
   group_by(ID) %&gt;%
@@ -923,6 +958,14 @@ n
 <tr>
 <td style="text-align:right;">
 91
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+94
 </td>
 <td style="text-align:right;">
 2
@@ -1072,7 +1115,7 @@ Age
 </table>
 <pre class="r"><code># Number of unique ID&#39;s in this data frame
 length(unique(demographics$ID))</code></pre>
-<pre><code>[1] 186</code></pre>
+<pre><code>[1] 225</code></pre>
 </div>
 <div id="adding-demographics-manually" class="section level3">
 <h3>Adding demographics manually</h3>
@@ -1083,7 +1126,8 @@ missed with the code above. Thus for these cases, their demographic
 information was added manually.</p>
 <pre class="r"><code># ID&#39;s that need demographic data
 setdiff(PilotIDs$ID, demographics$ID) %&gt;% sort()</code></pre>
-<pre><code> [1]  35  55  60  96 131 132 134 139 146 151 167 173 181 182 185 191 192 195 200</code></pre>
+<pre><code> [1]  35  55  60  96 131 132 134 139 146 151 167 173 181 182 185 191 192 195 198
+[20] 211 219 231</code></pre>
 <pre class="r"><code># Set working directory
 setwd(&quot;~/ONR/Demographics&quot;)
 
@@ -1106,7 +1150,7 @@ demographics &lt;- demographics %&gt;%
 <div id="current-demographic-information-numbers" class="section level3">
 <h3>Current demographic information numbers</h3>
 <pre class="r"><code>paste(&quot;We have demographic information for:&quot;, length(unique(demographics$ID)),&quot;participants out of&quot;, length(unique(PilotIDs$ID)), sep=&quot; &quot;)</code></pre>
-<pre><code>[1] &quot;We have demographic information for: 205 participants out of 205&quot;</code></pre>
+<pre><code>[1] &quot;We have demographic information for: 243 participants out of 247&quot;</code></pre>
 </div>
 <div id="save-demographic-information" class="section level3">
 <h3>Save demographic information</h3>
@@ -1114,7 +1158,15 @@ demographics &lt;- demographics %&gt;%
 setwd(&quot;C:/Users/lledesma.TIMES/Documents/ONR/Demographics&quot;)
 
 # Save the data as a CSV
-write.csv(x = demographics, file = &quot;complete.demographics.csv&quot;)</code></pre>
+write_csv(x = demographics, file = &quot;complete.demographics.csv&quot;)</code></pre>
+</div>
+<div id="save-demographic-information-on-the-server" class="section level3">
+<h3>Save demographic information on the server</h3>
+<pre class="r"><code># Set save working directory
+setwd(&quot;M:/Qualtrics_Data/Processed data/Demographics&quot;)
+
+# Save the data as a CSV
+write_csv(x = demographics, file = &quot;complete.demographics.csv&quot;)</code></pre>
 </div>
 
 

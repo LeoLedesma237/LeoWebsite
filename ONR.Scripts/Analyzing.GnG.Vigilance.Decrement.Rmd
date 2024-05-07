@@ -1,0 +1,125 @@
+---
+title: "Analyzing Vigilance Decrement in the GnG"
+author: "Leandro Ledesma"
+date: "2024-04-04"
+output: html_document
+---
+
+### Universal block code settings
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+
+```
+
+### Load in the data manipulation packages first
+
+```{r loading in the packages, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(lmtest) # bptest() function for homoscedasticity
+library(kableExtra)
+library(boot)
+
+```
+
+### Load in the data
+
+As mentioned above, we are only interested in performance on Day 1 for the 'Colors and Shape' block session for the GnG and the forward arrows no distractor condition in the Nback. Thus, these data will remain for the rest of the analysis. 
+
+```{r load in the data, warning = FALSE}
+# Set working directory
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_preprocessing/Processed Data")
+
+# Load in the Nback data (Reacted)
+GnG.ordered <- read.csv("GnG.conditions.ordered.csv")
+
+# Data cleaning- we are only interested in Day 1
+GnG.day1 <- GnG.ordered %>% filter(Day.Type == "Day 1") 
+
+# Adding demographic data
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/Demographics")
+
+# Save the data as a CSV
+demographics <- read.csv("complete.demographics.csv")
+
+# Clean demographics
+demographics <- demographics %>%
+  select(-c(X, email))
+
+```
+
+
+
+### Graph the data across time
+
+```{r graphing the data}
+GnG.day1 %>%
+  ggplot(aes(x=Order, 
+             y = trial.mean.order.correct, 
+             color = Trial.Type)) +
+  stat_summary(fun = mean,
+               geom = "point") +
+  stat_summary(fun = mean,
+               geom = "line") +
+  stat_summary(fun.data = mean_cl_boot,
+               geom ="errorbar",
+               width = .2)
+
+data.frame(rbind(table(GnG.day1$Order, GnG.day1$BlockName)))
+
+```
+
+
+### View the distribution of each group order
+
+```{r graphing each group order}
+
+GnG.day1 %>%
+  filter(Order == 5) %>%
+  ggplot(aes(x = trial.mean.order.correct)) +
+  geom_histogram() +
+  facet_wrap(~Trial.Type)
+
+
+
+```
+
+### Analyzing the data
+
+```{r analyzing the data with a robust ANOVA type}
+GnG.day1$Day.Type <- factor(GnG.day1$Day.Type)
+GnG.day1$Order <- factor(GnG.day1$Order)
+GnG.day1$BlockName <- factor(GnG.day1$BlockName)
+GnG.day1$UserID <- factor(GnG.day1$UserID)
+
+library(rstatix)
+
+GnG.day1.Go <- GnG.day1 %>% filter(Trial.Type == "Go")
+GnG.day1.NoGo <- GnG.day1 %>% filter(Trial.Type == "No-Go")
+
+anova_test(data = GnG.day1.NoGo, 
+           dv = trial.mean.order.correct, 
+           wid = UserID, 
+           within = Order)
+
+summary(x)
+
+
+library(lme4)
+library(lmerTest)
+
+# Make the first order the reference one
+GnG.day1 <- within(GnG.day1, Order <- relevel(Order, ref = 2))
+GnG.day1$Order <- relevel(GnG.day1$Order, "1")
+
+
+model <- lmer(trial.mean.order.correct ~ Order + (1 | UserID),
+              data = GnG.day1)
+
+summary(model)
+```
