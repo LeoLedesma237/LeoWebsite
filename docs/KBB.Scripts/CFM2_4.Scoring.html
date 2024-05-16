@@ -394,7 +394,7 @@ captured by the ipads). We technically do not need all of this
 information to be present in our final cleaned CFM 2-4 data.</p>
 <pre class="r"><code># The data dimensions
 dim(CFM2_4.uncleaned)</code></pre>
-<pre><code>[1] 166  85</code></pre>
+<pre><code>[1] 171  85</code></pre>
 <pre class="r"><code># Show all variables and the first few rows of the values that comprise them
 # str(CFM2_4.uncleaned)</code></pre>
 </div>
@@ -464,7 +464,7 @@ dimensions include 46 variables.</p>
 
 # The dimensions of the new dataset
 dim(CFM2_4.removed.variables)</code></pre>
-<pre><code>[1] 166  46</code></pre>
+<pre><code>[1] 171  46</code></pre>
 </div>
 <div id="additional-data-cleaning-dates" class="section level3">
 <h3>Additional data cleaning (dates)</h3>
@@ -523,6 +523,26 @@ setwd(&quot;~/KBB_new_2/1_screener/processed_data&quot;)
 # save the data
 write.csv(x = CFM2_4.HOH.ID,
           file = &quot;CFM2_4_to_be_inspected.csv&quot;)</code></pre>
+</div>
+<div id="access-to-resources-to-help-with-difficulties" class="section level3">
+<h3>Access to resources to help with difficulties</h3>
+<pre class="r"><code>CFM2_4.HOH.ID &lt;- CFM2_4.HOH.ID %&gt;%
+  mutate(glasses = ifelse(CF1 == 1, &quot;Yes&quot;, &quot;No&quot;),
+         hearing.aid = ifelse(CF4 == 1, &quot;Yes&quot;, &quot;No&quot;),
+         walking.equipment = ifelse(CF7 == 1, &quot;Yes&quot;, &quot;No&quot;))
+
+table(CFM2_4.HOH.ID$glasses)</code></pre>
+<pre><code>
+ No 
+171 </code></pre>
+<pre class="r"><code>table(CFM2_4.HOH.ID$hearing.aid)</code></pre>
+<pre><code>
+ No Yes 
+170   1 </code></pre>
+<pre class="r"><code>table(CFM2_4.HOH.ID$walking.equipment)</code></pre>
+<pre><code>
+ No 
+171 </code></pre>
 </div>
 <div id="major-data-transformation" class="section level3">
 <h3>Major data transformation</h3>
@@ -735,6 +755,42 @@ for(ii in 1:nrow(KBB_data)) {
 
 CFM2_4$KBB_DD_type &lt;- KBB_DD_type_list %&gt;% unlist()</code></pre>
 </div>
+<div id="organizing-all-reported-at-least-a-lot-of-difficulties-into-one-variable" class="section level3">
+<h3>Organizing all reported ‘at least A LOT OF difficulties’ into one
+variable</h3>
+<p>If a value contains ‘A lot of difficulty’ or ‘Cannot at all’, then
+that variable name will be saved into a special variable. This code has
+been manually inspected and it works as intended.</p>
+<pre class="r"><code># Create a list to contain at least a lot of difficulty functional domains
+atleast.alot.list &lt;- list()
+
+# Create a loop for every single row in the data frame (which corresponds to every child)
+for(ii in 1:nrow(CFM_data)) {
+
+  # First extract the row of interest
+  current.row &lt;- CFM_data[ii,]
+  
+  # Save the column names as it&#39;s own object
+  column.names &lt;- names(CFM_data)
+  
+  # Keep column names that contain &quot;A lot of difficulty&quot; present or &quot;Cannot at all&quot; as a cell value
+  alot.difficulty &lt;- column.names[current.row == &quot;A lot of Difficulty&quot; |  current.row == &quot;Cannot at all&quot;]
+  
+  # convert any difficulties into one cell 
+  alot.difficulty.collapsed &lt;- paste(alot.difficulty, collapse = &quot;; &quot;)
+  
+  # Create an if statement for saving the data
+  if(length(nchar(alot.difficulty)) == 0) {
+    atleast.alot.list[[ii]] &lt;- &quot;&quot;   
+  } else {
+    atleast.alot.list[[ii]] &lt;- alot.difficulty.collapsed
+  }
+    
+}
+
+# Save this information in the CFM2_4 object
+CFM2_4$CFM.atleast.alot &lt;- do.call(c, atleast.alot.list)</code></pre>
+</div>
 <div id="scoring-epilepsy" class="section level3">
 <h3>Scoring Epilepsy</h3>
 <p>We are using the Birbeck Epilepsy Screening Questionnaire. It is
@@ -813,6 +869,11 @@ for(ii in 1:nrow(CFM2_4)) {
 
 # Add this variable back into the 
 CFM2_4$KBB_DD_status &lt;- unlist(KBB_DD_status)</code></pre>
+</div>
+<div id="creating-our-final-cfm-dd-variable" class="section level3">
+<h3>Creating our final CFM DD variable</h3>
+<pre class="r"><code>CFM2_4 &lt;- CFM2_4 %&gt;%
+  mutate(CFM_DD_status = ifelse(CFM_DD_at_some == &quot;Some Difficulty&quot;,&quot;Yes&quot;, &quot;No&quot;))</code></pre>
 </div>
 <div id="cannot-at-all-sensory-difficulties-exclusion" class="section level3">
 <h3>‘Cannot at all’ Sensory difficulties exclusion</h3>

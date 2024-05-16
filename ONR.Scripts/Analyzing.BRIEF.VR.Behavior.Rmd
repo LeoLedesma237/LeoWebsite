@@ -92,7 +92,7 @@ demographics <- read.csv("complete.demographics.csv")
 
 # Clean demographics
 demographics <- demographics %>%
-  select(-c(X, email))
+  select(-email)
 
 ### Additionally we are going to load in reaction times
 # Set working directory
@@ -570,7 +570,7 @@ So basically, a higher d prime means better performance on both Target and Non-t
 Nback.data.wide <- Nback.performance.merged %>%
   select(-c(trial.num)) %>%
   pivot_wider(names_from = Trial.Type, values_from = target.mean.reacted) %>%
-  rename(Hit.rate = Target, False.Alarm.Rate = Distractor)
+  rename(Hit.rate = Target, False.Alarm.Rate = `Non-Target`)
 
 # View the range of scales for the target performance
 Nback.data.wide$Hit.rate %>% sort()
@@ -619,8 +619,8 @@ Nback.dprime %>%
   geom_point() +
   geom_smooth(method = "lm") +
   theme_bw() +
-  labs(title = "Scatterplot of Inhibition T Scores and Nback Trial Type d.prime",
-       x = "Inhibition T Scores",
+  labs(title = "Scatterplot of Working Memory T Scores and Nback Trial Type d.prime",
+       x = "Working Memory T Scores",
        y = "d.prime") +
   theme(plot.title = element_text(size = 15,
                                   hjust = 0.5),

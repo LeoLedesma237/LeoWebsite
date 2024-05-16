@@ -686,8 +686,56 @@ All.Matched.Siblings &lt;- All.Children %&gt;%
 All.Matched.No.Siblings &lt;- All.Children %&gt;%
   filter(child.id %in% Matched.No.Siblings$child.id)  </code></pre>
 </div>
+<div id="delete-this-section-later" class="section level3">
+<h3>Delete this section later</h3>
+<pre class="r"><code>recruited.missing.gender &lt;- All.Matched.Siblings %&gt;% select(Date_of_Evaluation, Name_of_the_Village, HOH_First_Name, HOH_Last_Name, Child_First_Name, Child_Last_Name, Child_Date_of_Birth, Child_Gender) %&gt;% filter(!complete.cases(.))
+
+not.recruited.missing.gender &lt;- All.Children %&gt;% select(Date_of_Evaluation, Name_of_the_Village, HOH_First_Name, HOH_Last_Name, Child_First_Name, Child_Last_Name, Child_Date_of_Birth, Child_Gender) %&gt;% filter(!complete.cases(.))
+
+missing.gender &lt;- rbind(recruited.missing.gender,
+                        not.recruited.missing.gender) %&gt;% unique()
+
+# set a save directory
+setwd(&quot;~/KBB_new_2/errors&quot;)
+
+write.xlsx(missing.gender,
+           file= &quot;missing.gender.xlsx&quot;)</code></pre>
+</div>
 <div id="quality-control" class="section level3">
 <h3>Quality control</h3>
+<pre class="r"><code>  All.Children %&gt;%
+  select(HOH_ID, Child_First_Name, Child_Last_Name, KBB_DD_status, epilepsy, Child_age, Child_Gender)  %&gt;%
+  filter(!complete.cases(.))</code></pre>
+<pre><code># A tibble: 1 × 7
+  HOH_ID                    Child_Firs…¹ Child…² KBB_D…³ epile…⁴ Child…⁵ Child…⁶
+  &lt;chr&gt;                     &lt;chr&gt;        &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;     &lt;dbl&gt; &lt;chr&gt;  
+1 Costern Mubele 1975-01-01 Frida        Mubele  No      No           NA female 
+# … with abbreviated variable names ¹​Child_First_Name, ²​Child_Last_Name,
+#   ³​KBB_DD_status, ⁴​epilepsy, ⁵​Child_age, ⁶​Child_Gender</code></pre>
+<pre class="r"><code>All.Matched.Siblings %&gt;%
+  select(HOH_ID, Child_First_Name, Child_Last_Name, KBB_DD_status, epilepsy, Child_age, Child_Gender)  %&gt;%
+  filter(!complete.cases(.))</code></pre>
+<pre><code># A tibble: 0 × 7
+# … with 7 variables: HOH_ID &lt;chr&gt;, Child_First_Name &lt;chr&gt;,
+#   Child_Last_Name &lt;chr&gt;, KBB_DD_status &lt;chr&gt;, epilepsy &lt;chr&gt;,
+#   Child_age &lt;dbl&gt;, Child_Gender &lt;chr&gt;</code></pre>
+<pre class="r"><code>summary(All.Matched.Siblings$Child_age)</code></pre>
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   2.10    7.50   10.85   10.61   13.80   18.20 </code></pre>
+<pre class="r"><code>sd(All.Matched.Siblings$Child_age) </code></pre>
+<pre><code>[1] 3.895486</code></pre>
+<pre class="r"><code>table(All.Matched.Siblings$Child_Gender)</code></pre>
+<pre><code>
+female   male 
+   184    180 </code></pre>
+<pre class="r"><code>table(All.Matched.Siblings$epilepsy)</code></pre>
+<pre><code>
+ No Yes 
+323  41 </code></pre>
+<pre class="r"><code>table(All.Matched.Siblings$KBB_DD_status)</code></pre>
+<pre><code>
+ No Yes 
+182 182 </code></pre>
 </div>
 <div id="descriptive-statistics-all-children" class="section level3">
 <h3>Descriptive statistics All Children</h3>
@@ -931,28 +979,28 @@ N
 Total Children Screened
 </td>
 <td style="text-align:right;">
-1287
+1324
 </td>
 <td style="text-align:right;">
-282
+288
 </td>
 <td style="text-align:left;">
 18%
 </td>
 <td style="text-align:right;">
-64
+65
 </td>
 <td style="text-align:left;">
 4%
 </td>
 <td style="text-align:right;">
-789
+814
 </td>
 <td style="text-align:left;">
 50%
 </td>
 <td style="text-align:right;">
-1569
+1612
 </td>
 </tr>
 <tr>
@@ -989,7 +1037,7 @@ All Excluded Children
 Unable to Match Children
 </td>
 <td style="text-align:right;">
-1014
+1046
 </td>
 <td style="text-align:right;">
 78
@@ -1004,13 +1052,13 @@ Unable to Match Children
 1%
 </td>
 <td style="text-align:right;">
-556
+575
 </td>
 <td style="text-align:left;">
 51%
 </td>
 <td style="text-align:right;">
-1092
+1124
 </td>
 </tr>
 <tr>
@@ -1018,28 +1066,28 @@ Unable to Match Children
 Non-direct slibling matches
 </td>
 <td style="text-align:right;">
-20
+23
 </td>
 <td style="text-align:right;">
-19
+21
 </td>
 <td style="text-align:left;">
-49%
+48%
 </td>
 <td style="text-align:right;">
-9
+10
 </td>
 <td style="text-align:left;">
 23%
 </td>
 <td style="text-align:right;">
-24
+25
 </td>
 <td style="text-align:left;">
-62%
+57%
 </td>
 <td style="text-align:right;">
-39
+44
 </td>
 </tr>
 <tr>
@@ -1047,28 +1095,28 @@ Non-direct slibling matches
 Direct sibling matches
 </td>
 <td style="text-align:right;">
-172
+182
 </td>
 <td style="text-align:right;">
-171
+182
 </td>
 <td style="text-align:left;">
 50%
 </td>
 <td style="text-align:right;">
-36
+41
 </td>
 <td style="text-align:left;">
-10%
+11%
 </td>
 <td style="text-align:right;">
-170
+180
 </td>
 <td style="text-align:left;">
-50%
+49%
 </td>
 <td style="text-align:right;">
-343
+364
 </td>
 </tr>
 </tbody>

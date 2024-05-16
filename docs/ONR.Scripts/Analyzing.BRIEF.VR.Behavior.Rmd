@@ -62,13 +62,13 @@ setwd("C:/Users/lledesma.TIMES/Documents/ONR/GnG_and_Nback_behavioral_data_prepr
 GnG.performance <- read.csv("GnG.trial.type.csv")
 
 # Data cleaning- we are only interested in Day 1
-GnG.performance <- GnG.performance %>% filter(Day.Type == "Day 1" & BlockName == "Colors and Shape") %>% select(-X)
+GnG.performance <- GnG.performance %>% filter(Day.Type == "Day 1" & BlockName == "Colors and Shape") 
 
 # Load in the Nback data (Reacted)
 Nback.reacted <- read.csv("Nback.target.reacted.csv")
 
 # Data cleaning- we are only interested in Day 1
-Nback.performance <- Nback.reacted %>% filter(Day.Type == "Day 1" & BlockName == "2-Back AR w ND") %>% select(-X)
+Nback.performance <- Nback.reacted %>% filter(Day.Type == "Day 1" & BlockName == "2-Back AR w ND") 
 
 # Set working directory
 setwd("~/ONR/BRIEF")
@@ -92,7 +92,7 @@ demographics <- read.csv("complete.demographics.csv")
 
 # Clean demographics
 demographics <- demographics %>%
-  select(-c(X, email))
+  select(-email)
 
 ### Additionally we are going to load in reaction times
 # Set working directory
@@ -104,14 +104,12 @@ Nback.rt <- read.csv("Nback.reaction.time.csv")
 # Additional data cleaning
 # For GnG, we are only interested in Colors and Shape Condition for Day and for correct Go trials.
 GnG.rt <- GnG.rt %>%
-  filter(BlockName == "Colors and Shape" & Day.Type == "Day 1" & Trial.Type == "Go" & Correct == 1) %>%
-  select(-X)
+  filter(BlockName == "Colors and Shape" & Day.Type == "Day 1" & Trial.Type == "Go" & Correct == 1)
 
 # Additional data cleaning
 # For GnG, we are only interested in Colors and Shape Condition for Day and for correct Go trials.
 Nback.rt <- Nback.rt %>%
-  filter(BlockName == "2-Back AR w ND" & Day.Type == "Day 1" & Trial.Type == "Target" & Correct == 1) %>%
-  select(-X)
+  filter(BlockName == "2-Back AR w ND" & Day.Type == "Day 1" & Trial.Type == "Target" & Correct == 1) 
 
 ```
 
@@ -572,7 +570,7 @@ So basically, a higher d prime means better performance on both Target and Non-t
 Nback.data.wide <- Nback.performance.merged %>%
   select(-c(trial.num)) %>%
   pivot_wider(names_from = Trial.Type, values_from = target.mean.reacted) %>%
-  rename(Hit.rate = Target, False.Alarm.Rate = Distractor)
+  rename(Hit.rate = Target, False.Alarm.Rate = `Non-Target`)
 
 # View the range of scales for the target performance
 Nback.data.wide$Hit.rate %>% sort()
@@ -621,8 +619,8 @@ Nback.dprime %>%
   geom_point() +
   geom_smooth(method = "lm") +
   theme_bw() +
-  labs(title = "Scatterplot of Inhibition T Scores and Nback Trial Type d.prime",
-       x = "Inhibition T Scores",
+  labs(title = "Scatterplot of Working Memory T Scores and Nback Trial Type d.prime",
+       x = "Working Memory T Scores",
        y = "d.prime") +
   theme(plot.title = element_text(size = 15,
                                   hjust = 0.5),

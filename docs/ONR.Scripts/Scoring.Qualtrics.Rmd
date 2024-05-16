@@ -1,0 +1,146 @@
+---
+title: "Identifying Pilot"
+author: "Leandro Ledesma"
+date: "2024-04-19"
+output: html_document
+---
+
+---
+title: "Scoring Qualtrics"
+output: html_notebook
+---
+
+
+This contains all of the information relevant to scoring Qualtrics (with the exception of BRIEF and ASVAB).
+
+### Universal block code settings
+
+```{r universal block code setting}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = NULL)
+```
+
+### Load in the data manipulation packages first
+
+```{r load in packages, message= FALSE, warning = FALSE}
+# Load in packages
+library(tidyverse)
+```
+
+
+### Load in the data
+
+```{r load in the data, echo= F, warning = FALSE}
+#set working directory
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/Qualtrics")
+
+# Load in the ASVAB data 
+all.files <- list.files()
+Qualtrics.file <- all.files[grepl("Questionnaires", all.files)]
+Qualtrics <- read.csv(Qualtrics.file)
+
+```
+### Cleaning the data
+
+Remove the first 18 rows- they are meaningless.
+
+```{r asds}
+# Start on row 18 since that is real data. 
+Qualtrics2 <- Qualtrics[18:nrow(Qualtrics),]
+
+# Remove scientific notation
+options(scipen=999)
+
+# Transform the ID variable to numeric
+Qualtrics2$ID <- as.numeric(gsub("\\D", "", Qualtrics2$ID))
+
+# Check for duplicate ID's
+duplicate.IDs <- Qualtrics2 %>%
+  select(ID) %>%
+  count(ID) %>%
+  filter(n > 1) %>%
+  select(ID)
+
+duplicate.IDs
+
+# Remove duplicate IDs from the dataset
+paste("The following IDs were removed from further analysis for having duplicates", unlist(duplicate.IDs))
+
+# Remove the ID's that have duplicates
+Qualtrics2 <- Qualtrics2 %>%
+  filter(!(ID %in% unlist(duplicate.IDs)))
+
+```
+
+
+### Label members in our sample as ROTC/Military or not
+
+```{r label them bois}
+Qualtrics2 <- Qualtrics2 %>%
+  mutate(Military.Background = case_when(
+    
+    ROTC.Exp1 == "Yes" ~ "Yes",
+    ME1 == "Yes" ~ "Yes",
+    TRUE ~ "No"
+    
+  ))
+
+# Descriptives of our subjects with a military background
+table(Qualtrics2$Military.Background)
+
+# Filter our subjects with military experience
+ROTC.Mil.exp <- Qualtrics2 %>%
+  filter(Military.Background == "Yes")
+
+# Select variables of interest
+ROTC.Mil.exp.questions <- ROTC.Mil.exp %>%
+  select(ID, ROTC.Exp1, ROTC.Exp2, ROTC.Exp2_4_TEXT, ROTC.Exp3, ROTC.Exp4, ROTC.Exp5, ROTC.Exp6, ROTC.Exp6_4_TEXT, ROTC.Exp7,
+         ME1, ME2, ME2_6_TEXT, ME3, ME4, ME5, ME6, ME7, ME8, ME9 )
+```
+
+
+### Check from this sample who is still enlisted (ROTC/Military)
+
+```{r ROTC and military groups}
+### Still enlisting in either ROTC or Military
+ROTC.Mil.exp.questions <- ROTC.Mil.exp.questions %>%
+  mutate(Still.Enlisting = case_when(
+    
+    ROTC.Exp3 == "Yes" ~ "Yes",
+    ROTC.Exp3 == "No, I commissioned out of the program" ~ "Yes",
+    ME3 == "Yes" ~ "Yes",
+    TRUE ~ "No"
+  ))
+
+# Set the working directory to include demographics
+setwd("~/ONR/Demographics")
+
+# Load in demographics data
+demo <- read.csv("complete.demographics.csv")
+demo.cleaned <- demo %>%
+  select(ID, Sex, Age)
+
+# Include the demographics to our military sample
+ROTC.Mil.exp.questions <- ROTC.Mil.exp.questions %>%
+  left_join(demo.cleaned, by = "ID")
+
+ROTC.Mil.exp.questions %>%
+  group_by(Still.Enlisting) %>%
+  summarize(n = length(Still.Enlisting),
+            age = mean(Age))
+
+
+table(ROTC.Mil.exp.questions$Still.Enlisting)
+```
+### Set working directory to save
+
+```{r save information}
+# Set the directory to save this information
+setwd("C:/Users/lledesma.TIMES/Documents/ONR/Pilot Sample")
+
+# Save the dataset
+write_csv(ROTC.Mil.exp.questions, "Potential.Pilot.csv")
+
+```
+

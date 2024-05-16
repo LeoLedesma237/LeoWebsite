@@ -21,14 +21,16 @@ library(tidyverse)
 library(ggplot2)
 library(readxl)
 library(rempsyc) # Create APA tables with nice_table()
-library(flextable) # Adds aesthetic functions to the table from above
+library(flextable, exclude = "footnote") # Adds aesthetic functions to the table from above
 library(kableExtra) # Extra table formatting type
 library(corrtable) # Potential correlation matrix code
 library(broom) # Converts regression outputs into dataframes using the tidy() function
-library(car) # To calcualte vif
+library(car) # To calculate VIF
 library(broom)
 library(ggpubr) # ggarrange
-library(quantreg) # rq (quantile regreeion)
+library(quantreg) # rq (quantile regression)
+library(MASS, exclude = "select") # This package is loaded with QuantPsyc, must exclude "select" or you wont be able to use it. 
+library(QuantPsyc) # Can use the lm.beta function to calculate the standardized betas
 ```
 
 
@@ -40,6 +42,7 @@ setwd("~/OVC/ZAT")
 
 # load in the data
 ZAT.math <- read.csv("ZAT.math.scored.csv")
+ZAT.RC <- read.csv("ZAT.RC.scored.csv")
 
 # set working directory
 setwd("~/OVC/Demographics")
@@ -82,12 +85,20 @@ Physical <- Physical %>%
 setwd("~/OVC/LDSpan")
 
 # load in the data
-LDSpan <- read.csv("LDSpan.num.scored.csv")
+LDSpan.num <- read.csv("LDSpan.num.scored.csv")
+
+# data cleaning
+LDSpan.num <- LDSpan.num %>%
+  select(OVC_ID = ID,
+         LDSpan.num.Score)
+
+# load in the data
+LDSpan <- read.csv("LDSpan.scored.csv")
 
 # data cleaning
 LDSpan <- LDSpan %>%
   select(OVC_ID = ID,
-         LDSpan.num.Score)
+         LDSpan.scored)
 
 ```
 
@@ -99,10 +110,12 @@ LDSpan <- LDSpan %>%
 # merged dataset
 data <-
   ZAT.math %>%
+  full_join(ZAT.RC, by = "OVC_ID") %>%
   full_join(demo, by = "OVC_ID") %>%
   full_join(SES, by = "OVC_ID") %>%
   full_join(Physical, by = "OVC_ID") %>%
-  full_join(LDSpan, by = "OVC_ID")
+  full_join(LDSpan.num, by = "OVC_ID") %>%
+  full_join(LDSpan, by = "OVC_ID") 
 
 dim(data)
 
@@ -133,10 +146,12 @@ dim(data2)
 ```{r descriptive statistics of our predictor and outcome variable}
 # Table on continuous predictors
 continuous <- data2 %>%
-  select(Math.Score,
+  select(RC.Score,
          Child_age,
+         Math.Score,
          Weighted_SES_index,
-         BMI)
+         BMI,
+         LDSpan.scored)
 
 # We nee to have our continuous variables in one column
 continuous.long <- continuous %>%
@@ -150,22 +165,24 @@ continuous.summarize <- continuous.long %>%
   summarize(Mean = round(mean(values),2),
             Med. = round(median(values),2),
             SD = round(sd(values),2),
-            Min. = min(values),
-            Max. = max(values),
+            Min. = round(min(values),2),
+            Max. = round(max(values),2),
             N = nrow(continuous))
 
 # Table cleaning
 continuous.summarize <- continuous.summarize %>%
   mutate(Predictors = factor(Predictors, 
-                             labels = c("Math Score (ZAT)", 
+                             labels = c(
+                                        "Reading Comprehension (ZAT)",
                                         "Age",
+                                        "Math Score (ZAT)",
                                         "Weighted SES",
-                                        "BMI")))
-
+                                        "BMI",
+                                        "Verbal WM (Digit & Letter)")))
 
 # Create an APA style table with the results
 continuous.summarize %>%
-  nice_table(title = "Descriptive Statistics of Continuous Predictors") %>%
+  nice_table(title = "Descriptive Statistics of the Continuous Variables") %>%
   bold(part = "header")
 
 
@@ -190,25 +207,24 @@ categorical.df %>%
 ```
 
 
+## Check for assumptions
 
-### Visulize the outcome variable
+### Assumption 1: Normality (outcome variable)
 
-Let's create histograms of our outcome variable
-
-```{r creating histograms, out.width= "90%"}
+```{r checking assumption 1}
 # Create a histogram of the outcome variable
 data2 %>%
   ggplot(aes(x = LDSpan.num.Score)) +
   geom_histogram(fill = "white",
                  color = "black",
-                 bins = 20) +
-  scale_y_continuous(expand = c(0,0), limits = c(0,200)) + 
+                 bins = 12) +
+  #scale_y_continuous(expand = c(0,0), limits = c(0,200)) + 
   theme_classic() +
-  labs(title = "A Histogram of Digit Letter Span",
-       x = "Digit Letter Span Score",
+  labs(title = "A Histogram of Digit Span",
+       x = "Digit Span Score",
        y = "Frequency",
        #caption = "Figure 1: A histogram of graduation rates",
-       caption = bquote(bold("Figure 1:") ~ "A histogram of Digit Letter Span Performance.")) +
+       caption = bquote(bold("Figure 1:") ~ "A histogram of Digit Span performance.")) +
   theme(plot.title = element_text(size = 14,
                                   hjust = 0.5),
         axis.title = element_text(size = 12, 
@@ -217,51 +233,586 @@ data2 %>%
         plot.caption = element_text(size = 13,
                                     hjust = 0))
 
+# Use a Shapiro Wilk's test on graduation rates. 
+shapiro.test(data2$LDSpan.num.Score)
 ```
 
+### Assumption 2: Linearity
 
-### Visualizing relationship between predictors (Age and Zat Math) and outcome (Math WM)
-
-```{r create a scatterplot}
+```{r checking assumption of linearity}
+# Create a scatterplot between the predictor and outcome variable
 data2 %>%
-  ggplot(aes(x= Math.Score, y = LDSpan.num.Score)) +
-  geom_jitter() +
-  geom_smooth(method = "lm",
-              se = FALSE)
+  ggplot(aes(x = Math.Score, y = LDSpan.num.Score)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Scatterplot of ZAT Math Scores and Digit Span Performance",
+       x = "ZAT Math Scores",
+       y = "Digit Span Performance",
+  caption = bquote(bold("Figure 2:") ~ "A scatterplot of math ability and digit span performance.")) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 15,
+                                    hjust = 0))
 
 data2 %>%
   ggplot(aes(x = Child_age, y = LDSpan.num.Score)) +
-  geom_jitter() +
-  geom_smooth(method = "lm",
-              se = FALSE)
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Scatterplot of Age and Digit Span Performance",
+       x = "Age (years)",
+       y = "Digit Span Performance",
+  caption = bquote(bold("Figure 3:") ~ "A scatterplot of age and digit span performance.")) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 15,
+                                    hjust = 0))
+
+```
+
+### Assumption 3: Homoscedasticity
+
+
+```{r assumption 3 homoscedasticity}
+# Create the boxplots from predictor quintiles
+# Part 1: Obtain the quintiles of price and save it as a dataframe
+quantile.df <- quantile(data2$Math.Score, probs = seq(0, 1, .2)) %>%
+  data.frame(cut.off =.)
+
+# Part 2: Create a new categorical variable defining which quintile the data belongs to
+data.quant <- data2 %>%
+  select(x = Math.Score,
+         y = LDSpan.num.Score) %>%
+  arrange(x) %>%
+  mutate(quant.x = ifelse(x < quantile.df$cut.off[2], "Q1",
+                          ifelse(x < quantile.df$cut.off[3], "Q2",
+                                 ifelse(x < quantile.df$cut.off[4], "Q3",
+                                        ifelse(x < quantile.df$cut.off[5], "Q4", "Q5")))))
+
+
+# Plot the quintiles of x as boxplots + jitter for our y
+data.quant %>%
+  ggplot(aes(x = quant.x, y = y)) +
+  geom_boxplot() +
+  theme_classic() +
+  labs(title = "Digit Span Scores Grouped by ZAT Math Quintiles",
+       x = "ZAT Math Quintiles",
+       y = "Digit Span",
+       caption = bquote(bold("Figure 4:") ~ "Box plots of digit span by ZAT math quintiles.")) +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 15,
+                                    hjust = 0))
+
+
+# Create the boxplots from predictor quintiles
+# Part 1: Obtain the quintiles of price and save it as a dataframe
+quantile.df <- quantile(data2$Child_age, probs = seq(0, 1, .2)) %>%
+  data.frame(cut.off =.)
+
+# Part 2: Create a new categorical variable defining which quintile the data belongs to
+data.quant <- data2 %>%
+  select(x = Child_age,
+         y = LDSpan.num.Score) %>%
+  arrange(x) %>%
+  mutate(quant.x = ifelse(x < quantile.df$cut.off[2], "Q1",
+                          ifelse(x < quantile.df$cut.off[3], "Q2",
+                                 ifelse(x < quantile.df$cut.off[4], "Q3",
+                                        ifelse(x < quantile.df$cut.off[5], "Q4", "Q5")))))
+
+
+# Plot the quintiles of x as boxplots + jitter for our y
+data.quant %>%
+  ggplot(aes(x = quant.x, y = y)) +
+  geom_boxplot() +
+  theme_classic() +
+  labs(title = "Digit Span Scores Grouped Age Quintiles",
+       x = "Age Quintiles",
+       y = "Digit Span",
+       caption = bquote(bold("Figure 5:") ~ "Box plots of digit span by age quintiles.")) +
+  theme(plot.title = element_text(size = 15,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 15,
+                                    hjust = 0))
+```
+
+Assumption 4: Independence
+
+
+```{r checking assumption of independence}
+covariates <- data2 %>%
+  select(-c(OVC_ID, 
+            Head_Circum_cm, 
+            LDSpan.num.Score, 
+            LDSpan.scored, 
+            Math.Score, 
+            Sex,
+            Child_age)) 
+
+# dimensions of covariates
+dim(covariates)
+
+# Remove any missing data in our covariates
+covariates <- drop_na(covariates)
+
+# dimensions of covariates (Dropped 15 rows)
+dim(covariates)
+
+# Run a correlation matrix, but it is difficult to see- so let's change it a bit
+# 1. convert the correlation matrix into a data.frame
+cor.df <- cor(covariates) %>%
+  data.frame() 
+
+# 2. convert it to long then return only the correlations larger than .6 (Not including 1.00)
+cor.df %>%
+  mutate(variables = row.names(cor.df)) %>%
+  pivot_longer(-variables) %>%
+  filter(value > .6 & value != 1) %>%
+  arrange(value) %>%
+  mutate(value = round(value,2)) %>%
+  kbl() %>%
+  kable_paper(bootstrap_options = "striped", full_width = F)
+
 
 ```
 
 
-### Run a multiple regression
+### Creating a correlation Matrix of our Covariates
 
-```{r runing a multiple regression}
+```{r creating a correlation matrix of our covariates}
+# Change the name of the covariates so it's prettier
+names(covariates) <- c("ZAT Reading Comprehension",
+                       "Weighted SES",
+                       "BMI")
+
+# Create a correlation matrix
+correlation.matrix.df <- correlation_matrix(covariates) %>%
+  data.frame()
+
+# Reintroduce names to the correlation matrix dataframe
+names(correlation.matrix.df) <- names(covariates)
+
+# Print our APA correlation matrix
+correlation.matrix.df %>%
+  kbl(caption = "Table 1: Correlation matrix of our continuous covariates") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  footnote(general = c("*** indicates p <.001", "** indicates p <.01 ","* indicates p <.05 "))
+
+
+```
+
+
+### Which variables correlate with our outcome variable?
+
+
+```{r correlation matrix including outcome and predictors}
+# This time we will do it for all 
+exhaustive.continuous.predictors <- data2 %>%
+  select(-c(OVC_ID,
+            Sex, 
+            Head_Circum_cm, 
+            LDSpan.scored)) 
+
+# dimensions of covariates
+dim(exhaustive.continuous.predictors)
+
+# Remove any missing data in our covariates
+exhaustive.continuous.predictors <- drop_na(exhaustive.continuous.predictors)
+
+dim(exhaustive.continuous.predictors)
+
+# Data cleaning, have digit span and ZAT math and age as the first three variables in the dataframe
+exhaustive.continuous.predictors <- exhaustive.continuous.predictors %>%
+  select(LDSpan.num.Score, Math.Score, Child_age, everything())
+
+# Run a correlation matrix, but it is difficult to see- so let's change it a bit
+# 1. convert the correlation matrix into a data.frame
+cor.df <- cor(exhaustive.continuous.predictors) %>%
+  data.frame() 
+
+# 2. convert it to long then return only the correlations larger than .6 (Not including 1.00)
+cor.df %>%
+  mutate(variables = row.names(cor.df)) %>%
+  pivot_longer(-variables) %>%
+  filter(value > .6 & value != 1) %>%
+  arrange(value) %>%
+  mutate(value = round(value,2)) %>%
+  kbl() %>%
+  kable_paper(bootstrap_options = "striped", full_width = F)
+
+```
+
+### Creating a correlation Matrix - Part 2
+
+```{r creating a correlation matrix part 2}
+# Create a correlation matrix
+correlation.matrix.df <- correlation_matrix(exhaustive.continuous.predictors) %>%
+  data.frame()
+
+# Make the names prettier
+names(correlation.matrix.df) <- c("Digit Span",
+                                  "ZAT Math",
+                                  "Age",
+                                  "Reading Comprehension",
+                                  "Weighted SES",
+                                  "BMI")
+
+# Need to rearrange the order or rows to show strength descending order
+# Will have to get creative here
+correlation.matrix.df.orderd <- correlation.matrix.df %>%
+  mutate(order = as.numeric(gsub("\\D", "", `Digit Span`))) %>%
+  arrange(desc(order)) %>%
+  select(-order)
+
+# Change the row names to match the variable names
+row.names(correlation.matrix.df) <- names(correlation.matrix.df.orderd)
+
+# Print our APA correlation matrix
+correlation.matrix.df %>%
+  kbl(caption = "Table 2: Correlation matrix of continuous predictors, covariates, and the outcome") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  footnote(general = c("*** indicates p <.001", "** indicates p <.01 ","* indicates p <.05 "))
+
+```
+
+
+### Part 1: Run a multiple regression to investigate math ability and digit span performance
+
+Based on the results from above, we have decided to keep the following predictors/covariates
+
+- Zat math
+- Age
+- Weighted SES
+- Child Sex
+- Outcome: Digit Span
+
+```{r runing a multiple regression to investigate math ability}
+# Change scipen option back to normal
+options(scipen = 0)
+
+# Change our categorical variable into a dummy variable
+data2$SexM <- ifelse(data2$Sex == "M", 1, 0)
+
+# What is the outcome variable?
+Outcome = "digit span"
+
 # Create the model
-model1 <- lm(LDSpan.num.Score~ Math.Score*Child_age + Weighted_SES_index + BMI, data2)
+model1 <- lm(LDSpan.num.Score ~ Math.Score + Child_age + Math.Score*Child_age + Weighted_SES_index + SexM , data2)
 
-# get the summary of the model
-summary(model1)
+#################################### Part 1: Obtaining the R^2 and more #############################
+
+# Save the model summary into an object
+model.summary <- summary(model1)
+
+# Creating the foot note for the model
+# Create line 1
+line.1 <- paste("Residual standard error:",round(model.summary$sigma,4),", on",model1$df.residual,"degrees of freedom")
+
+# Create line 2
+line.2 <- paste("Multiple R-squared:",round(model.summary$r.squared,4),", Adjusted R-squared: ",round(model.summary$adj.r.squared,5), sep =" ")
+
+# Calculate p value for line 3
+regression.p.value <- pf(model.summary$fstatistic[1], model.summary$fstatistic[2], model.summary$fstatistic[3], lower.tail = FALSE)
+
+# Create line 3
+line.3 <- paste("F-statistic: ",round(model.summary$fstatistic[1],2)," on ",round(model.summary$fstatistic[2],4)," and ",round(model.summary$fstatistic[3],4)," DF,  p-value:", regression.p.value)
+
+
+################################ Part 2: Introduce VIF and more ######################3
+
+
+# Save the models as a dataframe
+model1.df <- broom::tidy(model1)
+
+# Calculate the standardized betas from the model and save them into the model.df
+model1.df$standardized.beta <- c(NA,lm.beta(model1))
+
+# Calculate the tolerance
+model1.df$Tolerance <- c(NA,1/vif(model1))
+
+# Calculate the VIF of the model
+model1.df$VIF <- c(NA,vif(model1))
+
 ```
+
+### Make the multiple regression look prettier
+
+```{r make the regression using reading comprehension look pretty}
+# Round only numeric variables in the dataframe
+model1.df.rounded <- model1.df %>%
+  mutate(across(where(is.numeric), ~round(.x, 2)))
+
+# Add a function to clean up the p-values
+model1.df.rounded <- model1.df.rounded %>%
+  mutate(p.value = case_when(p.value < .001 ~ paste(format(p.value, nsmall = 2),"***",sep=""),
+                              p.value < .01 ~ paste(format(p.value, nsmall = 2),"**",sep=""),
+                              p.value < .05 ~ paste(format(p.value,nsmall = 2),"*",sep=""),
+                              TRUE ~ paste(p.value)))
+
+# Change the term values
+model1.df.rounded$term <- c("(Intercept)",
+                            "ZAT Math",
+                            "Age",
+                            "Weighted SES",
+                            "SexM",
+                            "ZAT Math x Age")
+
+# Change the names of the model output
+names(model1.df.rounded) <- c("Model", 
+                              "Beta",
+                              "Std. Error",
+                              "t",
+                              "Sig.",
+                              "Std Beta",
+                              "Tolerance",
+                              "VIF")
+
+# Print to check the cleaning
+model1.df.rounded %>%
+  kbl(caption = paste("Table 3: Initial multiple regression predicting",Outcome),
+      align = "lccclcccc",
+      font = 20) %>%
+  kable_classic_2(font_size = 16,
+                  full_width = FALSE,
+                  html_font = "Times New Roman") %>%
+  gsub("font-size: initial !important;", "font-size: 14pt !important;", .) %>% # Title font size!
+  row_spec(0,bold=TRUE) %>%
+  footnote(general_title = "*** indicates p <.001; ** indicates p <.01; * indicates p <.05",
+           general =  c(line.1, 
+                        line.2, 
+                        line.3))
+
+```
+
+
+### Part 2: Run a multiple regression to investigate math ability and digit span performance (remove not significant predictors)
+
+```{r runing a multiple regression to investigate math ability part 2}
+
+
+# Create the model
+model2 <- lm(LDSpan.num.Score ~ Math.Score + Child_age + Math.Score*Child_age  , data2)
+
+#################################### Part 1: Obtaining the R^2 and more #############################
+
+# Save the model summary into an object
+model.summary <- summary(model2)
+
+# Creating the foot note for the model
+# Create line 1
+line.1 <- paste("Residual standard error:",round(model.summary$sigma,4),", on",model2$df.residual,"degrees of freedom")
+
+# Create line 2
+line.2 <- paste("Multiple R-squared:",round(model.summary$r.squared,4),", Adjusted R-squared: ",round(model.summary$adj.r.squared,5), sep =" ")
+
+# Calculate p value for line 3
+regression.p.value <- pf(model.summary$fstatistic[1], model.summary$fstatistic[2], model.summary$fstatistic[3], lower.tail = FALSE)
+
+# Create line 3
+line.3 <- paste("F-statistic: ",round(model.summary$fstatistic[1],2)," on ",round(model.summary$fstatistic[2],4)," and ",round(model.summary$fstatistic[3],4)," DF,  p-value:", regression.p.value)
+
+
+################################ Part 2: Introduce VIF and more ######################3
+
+
+# Save the models as a dataframe
+model2.df <- broom::tidy(model2)
+
+# Calculate the standardized betas from the model and save them into the model.df
+model2.df$standardized.beta <- c(NA,lm.beta(model2))
+
+# Calculate the tolerance
+model2.df$Tolerance <- c(NA,1/vif(model2))
+
+# Calculate the VIF of the model
+model2.df$VIF <- c(NA,vif(model2))
+
+```
+
+
+### Make the multiple regression look prettier (part 2)
+
+```{r make the regression using reading comprehension look pretty part 2}
+# Round only numeric variables in the dataframe
+model2.df.rounded <- model2.df %>%
+  mutate(across(where(is.numeric), ~round(.x, 2)))
+
+# Add a function to clean up the p-values
+model2.df.rounded <- model2.df.rounded %>%
+  mutate(p.value = case_when(p.value < .001 ~ paste(format(p.value, nsmall = 2),"***",sep=""),
+                              p.value < .01 ~ paste(format(p.value, nsmall = 2),"**",sep=""),
+                              p.value < .05 ~ paste(format(p.value,nsmall = 2),"*",sep=""),
+                              TRUE ~ paste(p.value)))
+
+# Change the term values
+model2.df.rounded$term <- c("(Intercept)",
+                            "ZAT Math",
+                            "Age",
+                            "ZAT Math x Age")
+
+# Change the names of the model output
+names(model2.df.rounded) <- c("Model", 
+                              "Beta",
+                              "Std. Error",
+                              "t",
+                              "Sig.",
+                              "Std Beta",
+                              "Tolerance",
+                              "VIF")
+
+# Print to check the cleaning
+model2.df.rounded %>%
+  kbl(caption = paste("Table 4: Final multiple regression predicting",Outcome),
+      align = "lccclcccc",
+      font = 20) %>%
+  kable_classic_2(font_size = 16,
+                  full_width = FALSE,
+                  html_font = "Times New Roman") %>%
+  gsub("font-size: initial !important;", "font-size: 14pt !important;", .) %>% # Title font size!
+  row_spec(0,bold=TRUE) %>%
+  footnote(general_title = "*** indicates p <.001; ** indicates p <.01; * indicates p <.05",
+           general =  c(line.1, 
+                        line.2, 
+                        line.3))
+
+```
+
+
+### Part 3: Run a multiple regression that is CENTERED to investigate math ability and digit span performance (remove not significant predictors)
+
+The goal here is to remove multicollinearity AND to make better sense of the y-intercept
+
+```{r runing a multiple regression to investigate math ability part 3}
+# Add the centered version of our predictors.
+data2$Math.Score.c <- data2$Math.Score - mean(data2$Math.Score)
+data2$Child_age.c <- data2$Child_age - mean(data2$Child_age)
+
+# Create the model
+model3 <- lm(LDSpan.num.Score ~ Math.Score.c * Child_age.c  , data2)
+
+#################################### Part 1: Obtaining the R^2 and more #############################
+
+# Save the model summary into an object
+model.summary <- summary(model3)
+
+# Creating the foot note for the model
+# Create line 1
+line.1 <- paste("Residual standard error:",round(model.summary$sigma,4),", on",model3$df.residual,"degrees of freedom")
+
+# Create line 2
+line.2 <- paste("Multiple R-squared:",round(model.summary$r.squared,4),", Adjusted R-squared: ",round(model.summary$adj.r.squared,5), sep =" ")
+
+# Calculate p value for line 3
+regression.p.value <- pf(model.summary$fstatistic[1], model.summary$fstatistic[2], model.summary$fstatistic[3], lower.tail = FALSE)
+
+# Create line 3
+line.3 <- paste("F-statistic: ",round(model.summary$fstatistic[1],2)," on ",round(model.summary$fstatistic[2],4)," and ",round(model.summary$fstatistic[3],4)," DF,  p-value:", regression.p.value)
+
+
+################################ Part 2: Introduce VIF and more ######################3
+
+
+# Save the models as a dataframe
+model3.df <- broom::tidy(model3)
+
+# Calculate the standardized betas from the model and save them into the model.df
+model3.df$standardized.beta <- c(NA,lm.beta(model3))
+
+# Calculate the tolerance
+model3.df$Tolerance <- c(NA,1/vif(model3))
+
+# Calculate the VIF of the model
+model3.df$VIF <- c(NA,vif(model3))
+
+```
+
+
+### Make the multiple regression look prettier (part 2)
+
+```{r make the regression using reading comprehension look pretty part 3}
+# Round only numeric variables in the dataframe
+model3.df.rounded <- model3.df %>%
+  mutate(across(where(is.numeric), ~round(.x, 2)))
+
+# Add a function to clean up the p-values
+model3.df.rounded <- model3.df.rounded %>%
+  mutate(p.value = case_when(p.value < .001 ~ paste(format(p.value, nsmall = 2),"***",sep=""),
+                              p.value < .01 ~ paste(format(p.value, nsmall = 2),"**",sep=""),
+                              p.value < .05 ~ paste(format(p.value,nsmall = 2),"*",sep=""),
+                              TRUE ~ paste(p.value)))
+
+# Change the term values
+model3.df.rounded$term <- c("(Intercept)",
+                            "ZAT Math",
+                            "Age",
+                            "ZAT Math x Age")
+
+# Change the names of the model output
+names(model3.df.rounded) <- c("Model", 
+                              "Beta",
+                              "Std. Error",
+                              "t",
+                              "Sig.",
+                              "Std Beta",
+                              "Tolerance",
+                              "VIF")
+
+# Print to check the cleaning
+model3.df.rounded %>%
+  kbl(caption = paste("Table 4: Final multiple regression predicting",Outcome),
+      align = "lccclcccc",
+      font = 20) %>%
+  kable_classic_2(font_size = 16,
+                  full_width = FALSE,
+                  html_font = "Times New Roman") %>%
+  gsub("font-size: initial !important;", "font-size: 14pt !important;", .) %>% # Title font size!
+  row_spec(0,bold=TRUE) %>%
+  footnote(general_title = "*** indicates p <.001; ** indicates p <.01; * indicates p <.05",
+           general =  c(line.1, 
+                        line.2, 
+                        line.3))
+
+```
+
+
 
 ### Visualize the interaction
 
-```{r visualize the interaction}
+```{r visualize the interaction for reading comprehension}
 library(interactions)
 
-interact_plot(model = model1, pred = Math.Score, modx = Child_age)
+interact_plot(model = model2, pred = Math.Score, modx = Child_age)
+
+library(psych)
+describe(data2$Child_age)
 ```
+
+### Another approach to visualizing the interaction
+
+```{r visualing interaction part 2}
+library(rockchalk)
+
+plotPlane(model2, 'Child_age', 'Math.Score',
+          phi = 10, theta = -55, ticktype = "detailed")
+
+```
+
 
 
 ### Visualizing residuals
 
-```{r visualizing residuals for model 1}
+```{r visualizing residuals for reading comprehension}
 # introduce the residuals into the datasets
-data2$studentized.residuals <- rstudent(model1)
+data2$studentized.residuals <- rstudent(model2)
 
 # Create a histogram of the outcome variable
 residual.plot1 <- data2 %>%
@@ -274,7 +825,7 @@ residual.plot1 <- data2 %>%
   labs(title = "A histogram of Studentized Residuals",
        x = "Studentized Residuals",
        y = "Frequency",
-       caption = bquote(bold("Figure 1:") ~ "A histogram of Studentized Residuals.")) +
+       caption = bquote(bold("Figure 6:") ~ "A histogram of Studentized Residuals.")) +
   theme(plot.title = element_text(size = 11,
                                   hjust = 0.5),
         axis.title = element_text(size = 10, face = "bold"),
@@ -288,10 +839,10 @@ residual.plot2 <- data2 %>%
   geom_qq() +
   stat_qq_line() +
   theme_classic() +
-  labs(title = "QQ Plot for predicting Digits WM",
+  labs(title = "QQ Plot",
        x = "Theoretical Quantiles",
        y = "Frequency",
-       caption = bquote(bold("Figure 2:") ~ "A QQ Plot of studentized residuals and theoretical quantiles.")) +
+       caption = bquote(bold("Figure 7:") ~ "A QQ Plot of studentized residuals and theoretical quantiles.")) +
   theme(plot.title = element_text(size = 11,
                                   hjust = 0.5),
         axis.title = element_text(size = 10, face = "bold"),
@@ -305,133 +856,55 @@ ggarrange(residual.plot1, residual.plot2)
 
 ```
 
+### Post-estimation techniques (homoscedasticity)
 
+```{r homoscedasiticyt, out.width= "70%"}
+library(lmtest) # bptest() function for homoscedasticity
 
-# Another approach
+# Run the Breusch-Pagan test
+bptest(model2)
 
-What if another way of investigating this relationship is by using quantile regressions?
+# Add fitted values and standardized residuals
+data2$fitted.values <- model2$fitted.values
+data2$standardized.residuals <- rstandard(model2)
 
-### Create a quantile regression for five quantiles
-
-```{r creating a correlation variable}
-# create three models
-#fit model
-model.10 <- rq(LDSpan.num.Score ~ Child_age* Math.Score + Weighted_SES_index + BMI, data = data2, tau = 0.10)
-
-#fit model
-model.25 <- rq(LDSpan.num.Score ~ Child_age* Math.Score + Weighted_SES_index + BMI, data = data2, tau = 0.25)
-
-#fit model
-model.50 <- rq(LDSpan.num.Score ~ Child_age* Math.Score + Weighted_SES_index + BMI, data = data2, tau = 0.50)
-
-#fit model
-model.75 <- rq(LDSpan.num.Score ~ Child_age* Math.Score + Weighted_SES_index + BMI, data = data2, tau = 0.75)
-
-#fit model
-model.95 <- rq(LDSpan.num.Score ~ Child_age* Math.Score + Weighted_SES_index + BMI, data = data2, tau = 0.95)
-
-# Place them all into one data frame
-model2_df <- 
-broom::tidy(model.10) %>%
-rbind(broom::tidy(model.25)) %>%
-rbind(broom::tidy(model.50)) %>%
-rbind(broom::tidy(model.75)) %>%
-rbind(broom::tidy(model.95))
-
-# Remove the covariates and place tau in the front
-model2_df <- model2_df %>%
-  filter(!(term %in% c("Weighted_SES_index",
-                       "BMI"))) %>%
-  select(tau, everything())
-
-
-# Keeping only two values for each variable (not p value)
-model2_df.rounded <- model2_df %>%
-  select(-p.value) %>%
-  mutate(across(where(is.numeric), ~ round(., 2)))
-
-# introduce p value rounded to four digits
-model2_df.rounded$p.value <- round(model2_df$p.value,3)
-
-# Adding astricks
-model2_df.astericks <- model2_df.rounded %>%
-  mutate(p.value = case_when(
-           p.value < .001 ~ paste(format(p.value),"***",sep=""),
-           p.value < .01 ~  paste(format(p.value),"**",sep=""),
-           p.value < .05 ~  paste(format(p.value),"*",sep=""),
-           TRUE ~ as.character(p.value)
-         ))
-
-# Do this or footnote() won't work
-detach("package:flextable", unload=TRUE)
-
-# Print to check the cleaning
-model2_df.astericks %>%
-  kbl(caption = "Quantile Multiple Regression") %>%
-  kable_classic(full_width = F, html_font = "Cambria")
-```
-
-### Graph the beta coefficients of the predictors of interest
-
-
-```{r visualize beta coefficients}
-# test
-all_quant <- rq(LDSpan.num.Score ~ Child_age* Math.Score + Weighted_SES_index + BMI, data = data2, tau = seq(from = .05,
-                                                                                                        to = .95,
-                                                                                                        by = .025))
-all_quant_df <- broom::tidy(all_quant)
-
-
-# Create a graph for the intercept
-all_quant_df %>%
-  filter(term == "(Intercept)") %>%
-  ggplot(aes(x = tau, y = estimate)) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .5) +
-  geom_line(size = 1) +
-  labs(x = "Digit Span Quantile",
-       y = "Intercept (Beta Estimate)") +
-  theme_light()
-
-
-# Create a graphs for Age 
-all_quant_df %>%
-  filter(term == "Child_age") %>%
-  ggplot(aes(x = tau, y = estimate)) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .5) +
-  geom_line(size = 1) +
-  labs(x = "Digit Span Quantile",
-       y = "Age (Beta Estimate)") +
-  theme_light()
-
-# Create a graph for Math performance
-all_quant_df %>%
-  filter(term == "Math.Score") %>%
-  ggplot(aes(x = tau, y = estimate)) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .5) +
-  geom_line(size = 1) +
-  labs(x = "Digit Span Quantile",
-       y = "ZAT Math Score (Beta Estimate)") +
-  theme_light()
-
-# Create a graph for the interaction 
-all_quant_df %>%
-  filter(term == "Child_age:Math.Score") %>%
-  ggplot(aes(x = tau, y = estimate)) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .5) +
-  geom_line(size = 1) +
-  labs(x = "Digit Span Quantile",
-       y = "Age:ZAT Math Score (Beta Estimate)") +
-  theme_light()
+# Plot to see if there is a problem with homoscedasticity
+data2 %>%
+  ggplot(aes(x = fitted.values, y=standardized.residuals)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "black") +
+  theme_bw() +
+  labs(title = "Standardized Residuals vs Fitted Values ",
+       x = "Fitted Values",
+       y = "Standardized Residuals",
+       caption = bquote(bold("Figure 8:") ~ "Investigating homoscedasticity")) +
+  theme(plot.title = element_text(size = 18,
+                                  hjust = .5),
+        axis.title = element_text(size = 14, face = "bold"),
+        axis.text = element_text(size = 14),
+        plot.caption = element_text(size = 15,
+                                    hjust = 0))
 ```
 
 
 
-### Plotting interaction effect
+### Create a correlation matrix of predictors
 
-```{r plotting interaction effect for quantile regressions}
-library(visreg)
+```{r lastly create a correlation matrix}
+data3 <- data2 %>%
+  mutate(Math.Age.Interaction = Math.Score * Child_age) %>%
+  select(Math.Score, Child_age, Math.Age.Interaction, LDSpan.num.Score)
 
-visreg(model.25, "Math.Score", by ="Child_age", overlay = TRUE)
-visreg(model.50, "Math.Score", by ="Child_age", overlay = TRUE)
-visreg(model.75, "Math.Score", by ="Child_age", overlay = TRUE)
-```
+library(GGally)
+
+data3 %>%
+  rename(`ZAT Math` = Math.Score, `Age` = Child_age, `ZAT Math x Age` = Math.Age.Interaction, `Digit Span` = LDSpan.num.Score) %>%
+  ggpairs(title = "Scatter Plot Matrix of Predictors in Final Model") +
+  labs(caption = bquote(bold("Figure 9:") ~ "Scatter plot matrix of predictors in the final model")) +
+  theme(plot.title = element_text(size = 18,
+                                  hjust = .5),
+        axis.title = element_text(size = 14, face = "bold"),
+        axis.text = element_text(size = 14),
+        plot.caption = element_text(size = 15,
+                                    hjust = 0))
+````

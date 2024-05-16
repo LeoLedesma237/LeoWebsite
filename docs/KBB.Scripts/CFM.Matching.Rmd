@@ -66,14 +66,23 @@ CFM2_4 <- CFM2_4 %>%
          Child_Date_of_Birth,
          BF,
          BM,
+         glasses,
+         hearing.aid,
+         walking.equipment,
+         Seeing = CF3_Seeing,
+         Hearing = CF6_Hearing,
+         Walking = CF10_Walking,
          sen_mot_difficulty,
          sen_mot_severity,
+         CFM_DD,
          KBB_DD,
          KBB_DD_num,
          CFM_DD_type,
          KBB_DD_type,
+         CFM.atleast.alot,
          epilepsy,
          KBB_DD_status,
+         CFM_DD_status,
          Child_ID)
 
 CFM5_17 <- CFM5_17 %>%
@@ -94,15 +103,29 @@ CFM5_17 <- CFM5_17 %>%
          Child_Date_of_Birth,
          BF,
          BM,
+         glasses,
+         hearing.aid,
+         walking.equipment,
+         Seeing = CF3_Seeing,
+         Hearing = CF6_Hearing,
+         Walking = CF13_Walking_500,
          sen_mot_difficulty,
          sen_mot_severity,
+         CFM_DD, 
          KBB_DD,
          KBB_DD_num,
          CFM_DD_type,
          KBB_DD_type,
+         CFM.atleast.alot,
          epilepsy,
          KBB_DD_status,
+         CFM_DD_status,
          Child_ID)
+
+
+# Create a variable indicating the screener type
+CFM2_4$Screener.Type <- rep("CFM2_4", nrow(CFM2_4))
+CFM5_17$Screener.Type <- rep("CFM5_17", nrow(CFM5_17))
 
 # Bind the datasets into one
 CFM_data_before_exclusion <- rbind(CFM2_4, CFM5_17)

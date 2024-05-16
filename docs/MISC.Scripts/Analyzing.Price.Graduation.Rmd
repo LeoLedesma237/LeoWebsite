@@ -34,8 +34,6 @@ library(corrtable) # Potential correlation matrix code
 library(broom) # Converts regression outputs into dataframes using the tidy() function
 library(car) # To calcualte vif
 
-
-
 ```
 
 

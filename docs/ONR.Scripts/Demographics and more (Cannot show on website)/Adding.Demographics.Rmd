@@ -29,6 +29,11 @@ paste("This code was last ran on:", Sys.Date())
 
 ```
 
+### Please Read
+
+For this code to work, you must manually obtain information from all three screeners and the PilotIDs.
+
+
 ### Load in the data
 
 We will be loading demographic information for the ONR study and then merging it with our GnG and Nback CSVs. Demographic information is saved in a screener that is used to assess whether participants are eligible to participate in the study. Unfortunately this screener does not contain ID numbers for the participants. However, we can get around this by merging it with the SharePoint ID's since they contain matching email addressed- this is what we will be doing below.
@@ -41,9 +46,20 @@ setwd("C:/Users/lledesma.TIMES/Documents/ONR/Demographics")
 
 # Load in the following data
 PilotIDs <- read.csv("PilotIDs.csv")
-Screener.Ano <- read.csv("Anonymous.Screener.csv")
-Screener.SONA <- read.csv("SONA.Screener.csv")
-Screener.ROTC <- read.csv("ROTC.Screener.csv")
+
+# Set working directory
+setwd("~/ONR/Qualtrics/Screeners")
+
+# Load in all file names
+all.screeners <- list.files()
+
+# Sort the names
+all.screeners.sorted <- sort(all.screeners)
+
+# Load in the screener information
+Screener.Ano <- read.csv(all.screeners.sorted[1])
+Screener.ROTC <- read.csv(all.screeners.sorted[2])
+Screener.SONA <- read.csv(all.screeners.sorted[3])
 
 # Clean the pilot data by dropping NA's from the ID variable
 PilotIDs <- PilotIDs %>%
@@ -150,6 +166,9 @@ demographics %>%
 demographics <- demographics %>%
   filter(complete.cases(.))
 
+# Remove any potential duplicates where they types in the information twice the same using unique
+demographics <- unique(demographics)
+
 # Check for duplicates in the data
 demographics %>%
   group_by(ID) %>%
@@ -224,6 +243,7 @@ length(unique(demographics$ID))
 
 ```
 
+
 ### Adding demographics manually
 
 Unfortunately, if participants enrolled reported an email for the screener that was mistyped or decided to participate in the study with a different email- then their demographic information would have been missed with the code above. Thus for these cases, their demographic information was added manually.  
@@ -269,6 +289,19 @@ paste("We have demographic information for:", length(unique(demographics$ID)),"p
 setwd("C:/Users/lledesma.TIMES/Documents/ONR/Demographics")
 
 # Save the data as a CSV
-write.csv(x = demographics, file = "complete.demographics.csv")
+write_csv(x = demographics, file = "complete.demographics.csv")
 
 ```
+
+
+### Save demographic information on the server
+
+```{r save demographic information on server, warning = FALSE}
+# Set save working directory
+setwd("M:/Qualtrics_Data/Processed data/Demographics")
+
+# Save the data as a CSV
+write_csv(x = demographics, file = "complete.demographics.csv")
+
+```
+

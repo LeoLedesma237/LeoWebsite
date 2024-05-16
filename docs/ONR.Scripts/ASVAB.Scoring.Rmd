@@ -1,0 +1,232 @@
+---
+title: "ASVAB Performance Data Manager"
+author: "Leandro Ledesma"
+date: "2023-01-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(comment="")
+knitr::opts_chunk$set(message=F)
+```
+
+```{r library packages, echo=F}
+# Load packages in library
+library(tidyverse)
+library(readxl)
+library(readr)
+library(ggplot2)
+library(kableExtra) # Makes pretty tables
+```
+
+```{r load in the data, echo= F}
+#set working directory
+setwd("~/ONR/ASVAB")
+
+# Load in the ASVAB data 
+all.files <- list.files()
+Qualtrics.file <- all.files[grepl("Questionnaires", all.files)]
+Qualtrics <- read.csv(Qualtrics.file)
+
+#load in answer key
+Answer_Key <- read_excel("ASVAB Answer Key.xlsx")
+```
+
+
+### Prepare the data for scoring
+
+The ASVAB portion from Qualtrics was extract along with the ID variable. Some rows in the beginning of the dataset were removed since they were practice rounds from testers- not participants. The data set was converted to long format and each test type was identified and associated with an item. 
+
+```{r data cleaning, echo=F}
+# Obtain data from the ASVAB
+ASVAB.extra <- Qualtrics %>%
+  select(ID,contains("ASVAB"))
+
+
+# Start on row 18 since that is real data. 
+ASVAB <- ASVAB.extra[18:nrow(ASVAB.extra),]
+
+# Remove scientific notation
+options(scipen=999)
+
+# Transform the ID variable to numeric
+ASVAB$ID <- as.numeric(gsub("\\D", "", ASVAB$ID))
+
+
+# Check for duplicate ID's
+duplicate.IDs <- ASVAB %>%
+  select(ID) %>%
+  count(ID) %>%
+  filter(n > 1) %>%
+  select(ID)
+
+duplicate.IDs
+
+# Remove duplicate IDs from the dataset
+paste("The following IDs were removed from further analysis for having duplicates", unlist(duplicate.IDs))
+
+ASVAB <- ASVAB %>%
+  filter(!(ID %in% unlist(duplicate.IDs)))
+
+
+# Convert the data to long
+ASVAB.long <- ASVAB %>%
+  pivot_longer(-ID)
+
+# Create a data frame that contains the subtype of the item
+split.string <- str_split(ASVAB.long$name, pattern = "_", 3) %>%
+  do.call(rbind,.) %>%
+  data.frame()
+
+# Introduce this back into the original dataframe
+ASVAB.long$`Question #` <- as.numeric(gsub("\\D", "", split.string$X3))
+ASVAB.long$Subject <- split.string$X2
+
+
+# Data cleaning
+ASVAB.long2 <- ASVAB.long %>%
+  select(ID, Subject, `Question #`, Response = value) %>%
+  filter(Subject %in% c("GS",
+                          "AR",
+                          "WK",
+                          "PC",
+                          "MK",
+                          "EI",
+                          "ASI",
+                          "MC",
+                          "AO"))
+
+unique(ASVAB.long2$Subject)
+```
+
+### Scoring the data 
+
+```{r scoring the data}
+# Add the correct responses as a variable
+ASVAB.long2 %>% 
+  group_by(ID, Subject) %>%
+  summarize(length = length(Subject))
+
+# join the ASVAB responses and the correct responses together
+ASVAB.joined <- ASVAB.long2 %>%
+  full_join(Answer_Key, by = c("Subject", "Question #"))
+
+# Create a received variable, as in was the question asked
+ASVAB.joined <- ASVAB.joined %>%
+  mutate(Received = ifelse(Response == "", 0, 1))
+
+# Rearrange the order of the variables
+ASVAB.joined <- ASVAB.joined %>%
+  select(ID, Type, Subject, `Question #`, Received, Response, Answer)
+
+
+# Extra cleaning before scoring the data [IMPORTANT]
+ASVAB.joined <- ASVAB.joined %>%
+  mutate(Response = ifelse(Response == "Both perform similar functions in different food chains ",
+                                       "Both perform similar functions in different food chains",
+                                        Response))
+
+# Create a scoring variable
+ASVAB.scored <- ASVAB.joined %>%
+  mutate(Score = ifelse(Response == Answer, 1, 0))
+
+# Obtain a proportion score for correct responses by Subject
+ASVAB.final <- ASVAB.scored %>%
+  group_by(ID, Subject) %>%
+  summarize(num.correct = sum(Score),
+            total.Q = sum(Received),
+            mean.percent = round(num.correct/total.Q,3)*100)
+
+```
+
+### Quality Check
+
+There may be cases where subjects get a correct answer incorrectly because the string saved from qualtrics has an additional space in the text. This mismatch will make the item scored as a 0 instead of a 1. We can identify which responses have this extra space and then correct for it in the previous code chunck. 
+
+
+The following has been inspected manually and deemed to be correct. Fuzzy matching is comparing all answers in one vector vs another, however, there are cases where (A) 20 will be the wrong answer in one question but the right answer in another, thus that's why it looks like there are errors- but there are none. 
+
+Additionally, below is a table showing the number of items from each subtest presented to participants. It seems not everyone got the same number of items, but most did. 
+
+```{r Quality check}
+# Checking how many items there are per question
+Subject.item.count <- ASVAB.final %>%
+  mutate(total.Q = as.character(total.Q)) %>%
+  count(Subject, total.Q)
+
+table(Subject.item.count$Subject, Subject.item.count$total.Q)
+
+# Manually inspect some
+Subject.item.count %>%
+  filter(Subject == "AR" & total.Q == "26")
+
+
+# View all questions that were received that were marked as incorrect
+should.be.incorrect_df <- ASVAB.scored %>%
+  filter(Received == 1 & Score == 0)
+
+
+response_df <- should.be.incorrect_df %>%
+  select(ID, Subject, Answer = Response)
+
+answer_df <- should.be.incorrect_df %>%
+  select(ID, Subject, Answer)
+
+
+library(fuzzyjoin)
+# Fuzzy matching between incorrect answers and correct responses
+stringdist_join(response_df, answer_df, 
+                by='Answer', #match based on team
+                mode='left', #use left join
+                method = "jw", #use jw distance metric
+                max_dist=99, 
+                distance_col='dist') %>%
+  group_by(Subject.x) %>%
+  slice_min(order_by=dist, n=1) %>%
+  select(-ID.y) %>%
+  unique() %>%
+  arrange(dist)
+
+```
+
+### Check overall performance
+
+```{r create a distribution for each variable}
+all.subjects <- unique(ASVAB.final$Subject)
+
+
+all.plots <- list()
+
+for(ii in 1:length(all.subjects)) {
+
+all.plots[[ii]] <- ASVAB.final %>%
+  filter(Subject == all.subjects[ii]) %>%
+  ggplot(aes(x = mean.percent)) +
+  geom_histogram(bins = 12, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+  ggtitle(paste(all.subjects[ii],"score distribution")) +
+  theme(axis.title.x = element_blank()) +
+  theme(plot.title = element_text(size=25))
+
+}
+
+
+all.plots
+
+```
+
+### Save the data
+
+
+```{r save the data}
+# Save the data
+setwd("~/ONR/ASVAB/Processed Data")
+
+write_csv(ASVAB.final, file = "ASVAB.scored.csv")
+
+```
+## ASVAB Subtests
+
+The following document demonstrates performance on the ASVAB, a standardized test used by the military that assess abilities in science, math, language and other knowledge domains, in a mostly college student population. The ASVAB is comprised of nine subtests, General Science (GS), Arithmetic Reasoning (AR), Word Knowledge (WD), Paragraph Comprehension (PC), Mathematical Knowledge (MK), Electronics Information (EI), Auto and Shop (ASI), Mechanical Comprehension (MC), and Assembling Objects (AO). Each subtest varies in how many items are presented. We administered a portion of these subtests to each participant. Each participant received the same 5 questions from each subtest with additional questions chosen at random from a larger pool of questions that relate to the respective subtest.  The table below shows how many items all participants should have received.
+
+
