@@ -182,7 +182,7 @@ library(lmerTest)
 null.model <- lmer(normexam ~ 1 + (1|school), Exam)
 ```
 
-Above we saved the null model as an object called 'null.model', now we can use the summary function to obtain information about our model. What we are most interested in is the variance portion, which is mentioned under 'Random effects:' We can see that there is a column named variance, the values below indicate the variance for the group-level ($\tau_{00}$ = .17) and the individual-level ($\sigma^2$ = .85). We can also use the section right underneath to double check the number of observations (4059) and the number of schools (65) that the model was fitted on. These components of variance are going to function as a baseline of variance for future models that include predictors. The idea is that the inclusion of predictors will reduce the variance, since some of it can start to be explained. If including predictors does not decrease the variance much, then we can conclude that they are not very good and neither is the model. 
+Above we saved the null model as an object called 'null.model', now we can use the summary function to obtain information about our model. What we are most interested in is the variance portion, which is mentioned under 'Random effects:' We can see that there is a column named variance, the values below indicate the variance for the group-level ($\tau_{00}$ = .172) and the individual-level ($\sigma^2$ = .848). We can also use the section right underneath to double check the number of observations (4059) and the number of schools (65) that the model was fitted on. These components of variance are going to function as a baseline of variance for future models that include predictors. The idea is that the inclusion of predictors will reduce the variance, since some of it can start to be explained. If including predictors does not decrease the variance much, then we can conclude that they are not very good and neither is the model. 
 
 ```{r running summary on the unconditional or null multilevel model}
 # Print out the summary of the model
@@ -192,4 +192,21 @@ summary(null.model)
 
 ### Computing the intraclass correlation coefficient (ICC)
 
-The last thing we want to do is calculate the intraclass correlation coefficient (ICC)
+The last thing we want to do is calculate the **intraclass correlation coefficient (ICC)** or p ("rho"). This is also known as the variance partition coefficient. This can only be calculated from the null model. It basically tells you the proportion of variance of the outcome that can be explained by grouping-level or level-2 unit variables. The ICC can also be interprested as the similarity between two subjects when they are randomly selected from the same group. Thus, the higher the ICC, then the more group is a stronger predictor of the outcome or the more similar subjects within a group are compared to another group. The formulat to calculate the ICC is very simple and shown below.
+
+
+\begin{align*}
+ICC = \frac{\tau_{00}} {\tau_{00} + \sigma^2} = \frac{.172}{.172 + .848} = .169
+\end{align*}
+
+These notation are not new, $\tau_{00}$ represents the variance of the outcome variable partitioned by group and $\sigma^2$ is the partitioned variance represented by individuals. Thus, we take the variance explained by group and divide it by the sum of its variance with the variance of individuals and that produces the ICC. In the Exam dataset, the ICC is .169, which means that is how much variance is explained by grouping. It can also be written as "16.9% of the variance in the outcome can be attributed to school-level factors." This can be calculated easily by hand or you can also use the icc function from the performance packaged to double check.
+
+```{r calculating the ICC using the function}
+# Calculate the ICC
+performance::icc(null.model)
+```
+Since the ICC is measuring how much grouping can explain variance in the outcome, then it may reasoned that a very low iCC (.01) would indicate the MLM is not needed. This is not always the case!
+
+### Understanding the ICC further 
+
+The ICC is a value that ranges from 0 to 1. 0 indicates that there is no effect of group (group means are not good for explaining variance), which means that if you were to calculate the groups means and compare them, they would all be pretty similar to each other. Additionally, if you were to compare each individual score within each group to each other, that is where the variation would be. On the otherhand, if the ICC was the value of 1, then that would mean that when comparing group means to each other, they would all be pretty different and the variation of individual scores within each group would be similar or the same. 
