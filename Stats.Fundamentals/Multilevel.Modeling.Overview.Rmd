@@ -1,0 +1,195 @@
+---
+title: "Multilevel Modeling Using R"
+author: "Leandro Ledesma"
+date: "2024-05-16"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(comment = "")
+
+```
+
+
+```{r loading in the packages, warning = FALSE, echo = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(kableExtra)
+library(ggpubr)
+```
+
+
+# Chapter 1: Introduction
+
+### Brief overview of the importance for implementing multilevel modeling
+
+The function of this document is to summarize several chapters from 'Practical Multilevel Modeling Using R' by Francis L. Huang. This textbook is tailor made to learn the basics of multilevel modeling (also known as hierarchical linear modeling, etc.) to run appropriate analyses in data that would be best explained from this type of modeling. Essentially, this model builds on multiple regression by introducing the categorization of variables into different levels. The most basic data structure that would require multilevel modeling is two levels, with level-1 units nested within higher-level groups or clusters. A clear example of this can be shown with predicting school performance. Level-1 units in this case could be related to students overall such as IQ, attendance, motivation, etc. For the level-2 units, it could be classes, since it is expected that teaching performance across classrooms would vary, which could also influence the level-1 outcome. It is important in this context to have classes as a level-2 unit in the model, because students within classrooms are more likely to perform similar to each other than other classrooms. Ignoring this fact by running a multiple regression (ignoring classifying variables into lower or higher-level units) would violate the assumption of independence (since in this cases the performance of one student is likely to predict the performance of another student) and will lead to incorrect parameter estimates. Thus, knowing when to use multilevel modeling will lead to better and more accurate results. 
+
+
+### Group-level and individual-level correlations are not the same
+
+We know when we have hierarchical data because values of a predictor will be shared many subjects and values of another predictor will for the most part vary person from person. In this case, the former would be the level-2 unit and the latter would be the level-1 unit. One interesting finding from a study that analyzed the correlation between literacy rates and foreign born status is that the correlation between a level-1 predictor/outcome and a level-2 predictor/outcome respectively will not be the same. This is not always the case but it just so happens in this example that the level-1 correlation led to a positive relationship while the level-2 correlation (**ecological correlation**) led to a negative relationship- showing the opposite conclusion. 
+
+### Dangers of running a OLS multiple regression with the inclusion of level-2 group predictors
+
+In your dataset, if you see a predictor value (such as group) that is greatly shared by subjects (aka the subjects are nested within this group category) and this predictor is included into a regular OLS multiple regression, then your results **will** be biased. This comes back to the idea that larger sample sizes will in the end make almost everything significant. The larger then n, the smaller than the standard errors become, which makes it easier to reject the null hypothesis when it was not supposed to be rejected (Type I error). 
+
+### Other reasons for using MLM (research questions)
+
+Having hierarchical data where MLM is appropriate can also allow for investigating several types of research questions. For example, we could engage in any of the following:
+
+1) Do two level-2 predictors have an effect on a level-1 outcome?
+2) .. come back to this
+
+
+# Chapter 2: The Unconditional Means Model
+
+We first need to try to understand a bit about notation since more complicated versions of MLM will only build on this notation. We will be discussing the 'level' notation.
+
+### Review of multiple regression notation
+
+Below are the typical notations of a multiple regression. The first shows the notation of a multiple regression in the population (I think). Y represents the scores of the outcome variable and they are equal to the scores of X multiplied by a fixed constant (slope) plus another fixed constant (intercept) plus any error not accounted for in the model. The second notation shows an estimated multiple regression from sample data. In this case, $\hat{Y}$ represents the estimate scores of Y by the inputs of scores from X. The r, which represents error, is removed from this notation because we are interested in the estimated Y scores- its inclusion will just give us Y/the observed scores for the outcome variable. 
+
+\begin{align*}
+Y = \beta_{0} + \beta_{1}X_{1} + r
+\end{align*}
+
+\begin{align*}
+\hat{Y} = b_{1}X_{1} + a
+\end{align*}
+
+### Unconditional Means/Null Model
+
+This is typically the first step when running a multilevel model analysis. Start by creating a model with no predictors whatsoever and then look at the variance of the outcome variable. This null model will have two functions, to 1) partition the variance into different levels and to 2) establish baseline levels of variance. 
+
+**Level 1 equation:** Below is an example of a regression without predictors (with additional information in the subscripts that is important). We have the outcome variable expressed as Y (aka the actual observed values for Y) which is equal to the intercept ($\beta_{0j}$) plus error ($r_{ij}$). In this case the intercept refers to the mean of the outcome variable, which is expressed as $\bar{Y}$. However, the subscripts are also very important because it changes the meaning of this a bit. The introduction of the subscript 'i' is nothing new and represents an individual's score. The 'j' subscript changes the meaning quite a bit because it is a notation for group type. Thus, when we mentioned that the intercept would be the mean of the outcome variable ($\bar{Y}$), one would assume this would be the **grand mean** however that is not the case. Instead, this would correspond to the mean of the outcome variable ($\bar{Y}_{j}$) for group j. Additionally, the error ($r_{ij}$) also includes a 'j' subscript. This indicates that the error (residual- distance the observed values are from the fitted values) is dependent on the group mean of j as well. 
+
+
+\begin{align*}
+Y_{ij} = \beta_{0j} + r_{ij}
+\end{align*}
+
+
+**Level 2 equation:** This includes notation that may be less familiar. It is written in the same format that a regression would be but has less common symbols. Starting from the left side, gamma with the two zeroes ($\gamma_{00}$) represents the **grand mean** of the outcome ($\bar{Y}$). This is pretty straight-forward, it takes the function of what a regular regression intercept would when predictors are absent. The second portion complicates things a bit further. $\mu_{0j}$ I think functions similarly to $r$ because it represents the distance the group of mean j is from the grand mean. We can see then that the addition of these two symbols for respective j groups leads to the outcome means of j. Ex: grand mean of Y + residuals of group mean from the grand mean = group means of Y. 
+
+
+\begin{align*}
+\beta_{0j} = \gamma_{00} + \mu_{0j}
+\end{align*}
+
+**Combining equations:** We discuss the logic and specifics of the last two equations so we can merge them into one equation that represents multilevel modeling. The final product is the equation shown below. Starting from left to right, the goal of this model is to predict observed values of the outcome ($Y_{ij}$) for each individual in their respective 'j' group by taking the grand mean of the outcome ($\bar{Y}$) and adding two sets of residuals (no predictors). The first set of residuals (level-2) is the distance of the group mean j from the grand mean and the second set (level-1) is the distance of the observed value from the group mean of j. This can make more sense with the graph below.
+
+
+\begin{align*}
+Y_{ij} = \gamma_{00} + \mu_{0j} + r_{ij}
+\end{align*}
+
+
+**Visualizing the combined equation:** As mentioned, one reason for running a multilevel model is the ability to take the variance of the outcome variable ($Y$) and partitioning it into the individual-level and group-level variance. This can be seen in the plot below. We start with the grand mean ($\gamma_{00}$) represented by the dashed horizontal line going through the plot. The group-level variance ($\mu_{0j}$)is the distance of the group means respectively from the grand mean, squared, summed together (one for each observation) and then divided by the degrees of freedom (number of groups minus one- I think). The individual-level variance ($r_{0j}$) starts at the group mean of j and is the distance the observed Y value is from it, squared, summed together, then divided by the degrees of freedom (n-k?). Again, the main point from this visualization of the unconditional means model is that we can split the variance into group and individual levels. But it is interesting how this follows the same idea for one-way ANOVAs, where the variance is split between and within groups. 
+
+```{r creating a graph showing individual and group variance, warning = FALSE, out.width= "60%", fig.align='center', echo = FALSE}
+# Set seed
+set.seed(123)
+
+# Create some dummy data containing two groups and three individuals per group
+dummy.data <- data.frame(groups = rep(c(1, 2), each = 3),
+                         individuals = c(1,2,3,4,5,6),
+                         group_means = c(2,2,2,5,5,5))
+
+# Plot the points as a scatterplot
+dummy.data %>%
+  ggplot(aes(x = groups, y = individuals)) + # Add the individual observed y scores
+  geom_jitter(width = .1,
+              shape = 3,
+              size = 3) +
+  geom_point(aes(x = groups, y = group_means), # Add the group means of the observed y scores
+             shape = 21, 
+             size = 4,
+             color = "red") +
+  geom_hline(yintercept=mean(dummy.data$individuals), linetype="dashed", size=1) + # Add the grand mean of y
+  scale_x_discrete(name ="groups", 
+                    limits=c("1","2")) +
+  geom_segment(aes(x = .75, y = 2, xend = 1.25, yend = 2),size = 1) + # Add group mean 1
+  geom_segment(aes(x = 1.75, y = 5, xend = 2.25, yend = 5), size = 1) + # Add group mean 2 
+  theme_light() +
+  labs(title = "Visualizing the split in variance from the unconditional means/null model")
+```
+
+### Exam dataset (Hierarchical data)
+
+We can now move to creating/fitting an unconditional model on a hierarchical dataset in R. Following the examples of the textbook, we are going to load in the 'Exam' data from the "mlmRev" packaged.  
+
+```{r load the exam data, warning = FALSE}
+# Load in the pacakage
+library(mlmRev)
+
+# Load in the data
+data(Exam)
+```
+
+```{r getting to know our data, results='asis', echo = FALSE}
+cat("- There are",nrow(Exam), "rows in the Exam dataset \n\n")
+cat("- The variable school contains",length(unique(Exam$school)), "unique schools \n\n")
+
+```
+
+Let's view the first 6 rows.
+
+```{r fitting an unconditional model, warning = FALSE}
+# View the first 6 rows
+head(Exam) %>%
+  kbl(caption = "First 6 rows of the Exam hierarchical data") %>%
+  kable_paper(full_width = F)
+
+```
+
+To get a better look of what our data consists, we can use the 'glimpse' function.
+
+```{r using the glimpse function}
+glimpse(Exam)
+
+```
+
+Our outcome of interest for this dataset is 'normexam'. This is the student's standardized exam score. Standardized in this case means they are z-scores, with the mean equalling close to zero and the standard deviation being equal close to 1. 
+
+```{r exploring the outcome variable, warning = F}
+# Load in the psych package
+library(psych)
+
+# Use the describe function on the outcome variable
+round(data.frame(describe(Exam$normexam)),2) %>%
+  kbl(caption = "Outcome variable descriptive statistics") %>%
+  kable_paper(full_width = F)
+```
+
+
+### Fitting the unconditional/null model on the Exam data set
+
+This might be kind of odd, but we will now be fitting a model of this data with no predictors. As mentioned, the goal of doing this will be to obtain the variance of group-level and within-level and to use this as a baseline for later comparisons with models that include predictors. Also, it is important to mention that this unconditional/null model is also called the **unconditional random intercept model**. 
+
+The code to run a multilevel model is called the 'lmer' function which comes in the lmerTest package. Even though we say there are no predictors in the model, what that really means mathematically and code wise is that we are only using the intercept as a predictor. Additionally, we need to specify what our random effects are. While I am not 100% sure what this means, it seems that we want this to apply to group variables, such as school. Doing this will allow all scores/individuals within schools to produce regression lines with the same slope but with different y-intercepts. Code wise, this part is programmed with the (1|school) argument, where 1 indicates that we want to the intercepts to vary randomly and school is the name of the group/cluster variable of interest. 
+
+```{r creating an unconditional or null multilevel model, warning = FALSE}
+# Load in the lmerTest package
+library(lmerTest)
+
+# Run an unconditional/null model/unconditional random intercept model
+null.model <- lmer(normexam ~ 1 + (1|school), Exam)
+```
+
+Above we saved the null model as an object called 'null.model', now we can use the summary function to obtain information about our model. What we are most interested in is the variance portion, which is mentioned under 'Random effects:' We can see that there is a column named variance, the values below indicate the variance for the group-level ($\tau_{00}$ = .17) and the individual-level ($\sigma^2$ = .85). We can also use the section right underneath to double check the number of observations (4059) and the number of schools (65) that the model was fitted on. These components of variance are going to function as a baseline of variance for future models that include predictors. The idea is that the inclusion of predictors will reduce the variance, since some of it can start to be explained. If including predictors does not decrease the variance much, then we can conclude that they are not very good and neither is the model. 
+
+```{r running summary on the unconditional or null multilevel model}
+# Print out the summary of the model
+summary(null.model)
+
+```
+
+### Computing the intraclass correlation coefficient (ICC)
+
+The last thing we want to do is calculate the intraclass correlation coefficient (ICC)
