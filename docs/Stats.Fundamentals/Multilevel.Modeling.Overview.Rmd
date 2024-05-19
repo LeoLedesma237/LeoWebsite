@@ -211,7 +211,7 @@ Since the ICC is measuring how much grouping can explain variance in the outcome
 
 The ICC is a value that ranges from 0 to 1. 0 indicates that there is no effect of group (group means are not good for explaining variance), which means that if you were to calculate the groups means and compare them, they would all be pretty similar to each other. Additionally, if you were to compare each individual score within each group to each other, that is where the variation would be. On the otherhand, if the ICC was the value of 1, then that would mean that when comparing group means to each other, they would all be pretty different and the variation of individual scores within each group would be similar or the same. 
 
-```{r showing high and low ICC using graphs}
+```{r showing high and low ICC using graphs, echo = FALSE}
 # Create a data frame for high ICC
 high.ICC <- data.frame(scores = c(1,1,1,2,2,2,3,3,3),
                        individuals = rep(c("Individual1", "Individual2", "Individual3")),
@@ -276,7 +276,7 @@ low.ICC %>%
 ggarrange(high.ICC.plot, low.ICC.plot)
 ```
 
-# Chapter 3: Adding Predcitors to a Random Intercept Model
+# Chapter 3: Adding Predictors to a Random Intercept Model
 
 We will now continue with the same dataset from the previous chapter (Exam) and introduce predictors. Let's start by first visualizing the notation of a MLM when a level-1 predictor is included. For the Exam dataset, let's do this for the variable 'standLRT', which is the standardized London Reading Test. Again, our outcome variable is 'normexam', which is the standardized scores on some exam. Including this predictor in notation would look like the following:
 
@@ -296,4 +296,42 @@ Y_{ij} = \beta_{0j} + \beta_{1j}standLRT_{ij} + r_{ij}
 \beta_{1j} = \gamma_{10}
 \end{align*}
 
-**Combining equations:**
+**Combining equations:** The combined equation gives us the clearest understading of what is going on. This is not confirmed in the book but an interpretation from what makes sense to me. Again, starting from left to right, Y represents scores of the outcome variable while keeping track of each individual in each j group. The outcome is equal to $\gamma_{00}$, which is the grand mean of the outcome variable and a fixed effect. By this notation it is probably functioning as the y-intercept of the model. Next is $\gamma_{10}$, which is another fixed effect. Notice this is infront of the predictor 'standLRT', so that means $\gamma_{10}$ is functioning as the slope of the model and it is **not** changing. Lastly, what follows in the model are the random effects of the group-level ($u_{0j}$) and the individual-level ($r_{ij}$).
+
+
+\begin{align*}
+Y_{ij} = \gamma_{00} + \gamma_{10}standLRT_{ij} + u_{0j} + r_{ij}
+\end{align*}
+
+### Summary statistics of standLRT
+
+Just like our outcome variable, the predictor standLRT is comprised of standardized scores. This means that the original scores were transformed by taking each score, subtracting it by the mean and then dividing it by the standard deviation. Thus, the outcome is a vector of scores where the mean is equal to 0 and the standard deviation is equal to 1. We can also call these **z-scores** and acknowledge that this is a form of grand mean centering. 
+
+```{r show the descriptive statistics of the level 1 predictor variable, echo = FALSE}
+# Show descriptive statistics of the predictor variable
+round(data.frame(describe(Exam$standLRT)),2) %>%
+  kbl(caption = "Level-1 predictor variable descriptive statistics") %>%
+  kable_paper(full_width = F)
+```
+
+### Introducing the predictor into the model (Conditional, random intercept model)
+
+This next code chunk shows the introduction of a level-1 predictor into the model. Time time we will not specify or write in ~1 as we did in the null model since this is by default added in. This means the code will automatically include the intercept as a predictor. Also, the model intuitively knows whether the predictor being added is a level-1 predictor or a level-2, so that does not need to be specified. This model is now called a **conditional, random intercept model**, in which the intercept is allowed to vary by school (1|school).
+
+
+```{r create the model with standLRT as a predictor}
+# Create a new model with one predictor and save it as an object
+mod1 <- lmer(normexam ~ standLRT + (1|school), data = Exam)
+
+```
+
+Below is the summary of the model we just created. We set the argument cor = FALSE to prevent printing the Correlation of Fixed Effects which is not meaningful information. For quality control, let's first compare the Number of observations and Number of groups for each model (mod1 vs null). We see that these are the same so that is a good start. Next, we notice that the variance for group-level (school) and individual-level (Residual) both differ in mod1 compared to null.model. This is interesting because it confirms that the inclusion of a level-1 predictor does not only reduce the variance (error) of the outcome explained by level-1 predictors but also the variance of the outcome that is explained by level-2 predictors. Lastly, mod1 introduces a predictor to the model which is shown under Fixed effects. Here we can see the intercept and standLRT. The estimate (slope of the line) is present which is `0.563` and it is statistically significant (p<.05). Thus visually we can see not only that introducing standLRT into the model explained some of the variance (had a smaller variance output compare to the null model) but that standLRT was also significant. 
+
+```{r print out the summary of mod1}
+# Print out the summary of the model
+summary(mod1, cor = FALSE)
+
+# Print out the summary of the null model for comparison
+summary(null.model, cor = FALSE)
+
+```
