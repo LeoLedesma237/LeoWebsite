@@ -155,7 +155,7 @@ glimpse(Exam)
 
 ```
 
-Our outcome of interest for this dataset is 'normexam'. This is the student's standardized exam score. Standardized in this case means they are z-scores, with the mean equalling close to zero and the standard deviation being equal close to 1. 
+Our outcome of interest for this dataset is 'normexam'. This is the student's standardized exam score. Standardized in this case means they are z-scores, with the mean equaling close to zero and the standard deviation being equal close to 1. 
 
 ```{r exploring the outcome variable, warning = F}
 # Load in the psych package
@@ -182,7 +182,7 @@ library(lmerTest)
 null.model <- lmer(normexam ~ 1 + (1|school), Exam)
 ```
 
-Above we saved the null model as an object called 'null.model', now we can use the summary function to obtain information about our model. What we are most interested in is the variance portion, which is mentioned under 'Random effects:' We can see that there is a column named variance, the values below indicate the variance for the group-level ($\tau_{00}$ = .17) and the individual-level ($\sigma^2$ = .85). We can also use the section right underneath to double check the number of observations (4059) and the number of schools (65) that the model was fitted on. These components of variance are going to function as a baseline of variance for future models that include predictors. The idea is that the inclusion of predictors will reduce the variance, since some of it can start to be explained. If including predictors does not decrease the variance much, then we can conclude that they are not very good and neither is the model. 
+Above we saved the null model as an object called 'null.model', now we can use the summary function to obtain information about our model. What we are most interested in is the variance portion, which is mentioned under 'Random effects:' We can see that there is a column named variance, the values below indicate the variance for the group-level ($\tau_{00}$ = .172) and the individual-level ($\sigma^2$ = .848). We can also use the section right underneath to double check the number of observations (4059) and the number of schools (65) that the model was fitted on. These components of variance are going to function as a baseline of variance for future models that include predictors. The idea is that the inclusion of predictors will reduce the variance, since some of it can start to be explained. If including predictors does not decrease the variance much, then we can conclude that they are not very good and neither is the model. 
 
 ```{r running summary on the unconditional or null multilevel model}
 # Print out the summary of the model
@@ -192,4 +192,108 @@ summary(null.model)
 
 ### Computing the intraclass correlation coefficient (ICC)
 
-The last thing we want to do is calculate the intraclass correlation coefficient (ICC)
+The last thing we want to do is calculate the **intraclass correlation coefficient (ICC)** or p ("rho"). This is also known as the variance partition coefficient. This can only be calculated from the null model. It basically tells you the proportion of variance of the outcome that can be explained by grouping-level or level-2 unit variables. The ICC can also be interprested as the similarity between two subjects when they are randomly selected from the same group. Thus, the higher the ICC, then the more group is a stronger predictor of the outcome or the more similar subjects within a group are compared to another group. The formulat to calculate the ICC is very simple and shown below.
+
+
+\begin{align*}
+ICC = \frac{\tau_{00}} {\tau_{00} + \sigma^2} = \frac{.172}{.172 + .848} = .169
+\end{align*}
+
+These notation are not new, $\tau_{00}$ represents the variance of the outcome variable partitioned by group and $\sigma^2$ is the partitioned variance represented by individuals. Thus, we take the variance explained by group and divide it by the sum of its variance with the variance of individuals and that produces the ICC. In the Exam dataset, the ICC is .169, which means that is how much variance is explained by grouping. It can also be written as "16.9% of the variance in the outcome can be attributed to school-level factors." This can be calculated easily by hand or you can also use the icc function from the performance packaged to double check.
+
+```{r calculating the ICC using the function}
+# Calculate the ICC
+performance::icc(null.model)
+```
+Since the ICC is measuring how much grouping can explain variance in the outcome, then it may reasoned that a very low iCC (.01) would indicate the MLM is not needed. This is not always the case!
+
+### Understanding the ICC further 
+
+The ICC is a value that ranges from 0 to 1. 0 indicates that there is no effect of group (group means are not good for explaining variance), which means that if you were to calculate the groups means and compare them, they would all be pretty similar to each other. Additionally, if you were to compare each individual score within each group to each other, that is where the variation would be. On the otherhand, if the ICC was the value of 1, then that would mean that when comparing group means to each other, they would all be pretty different and the variation of individual scores within each group would be similar or the same. 
+
+```{r showing high and low ICC using graphs}
+# Create a data frame for high ICC
+high.ICC <- data.frame(scores = c(1,1,1,2,2,2,3,3,3),
+                       individuals = rep(c("Individual1", "Individual2", "Individual3")),
+                       group = rep(c("Group1", "Group2", "Group3"), each = 3))
+
+# Create a data frame for low ICC
+low.ICC <- data.frame(scores = c(1,2,3,1,2,3,1,2,3),
+                      individuals = rep(c("Individual1", "Individual2", "Individual3")),
+                      group = rep(c("Group1", "Group2", "Group3"), each = 3))
+
+# Plot the high ICC data frame
+high.ICC.plot <- 
+high.ICC %>%
+  ggplot(aes(x= group, y = scores, fill = individuals)) +
+  geom_bar(stat = "identity",
+           position = "dodge",
+           color = "black") +
+  scale_fill_manual(values=c("grey", "darkgrey", "black")) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,4)) + 
+  labs(title = "ICC of value 1",
+       caption = "The graph above shows an ICC of 1\n
+       because there is no variability at the individual\n
+       level and all the variability is explained by the\n
+       group level.") +
+  guides(fill="none") +
+  theme_classic() +
+  theme(plot.title = element_text(size = 14,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, 
+                                  face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 9,
+                                    hjust = 0))
+
+
+
+# Plot the low ICC data frame
+low.ICC.plot <- 
+low.ICC %>%
+  ggplot(aes(x= group, y = scores, fill = individuals)) +
+  geom_bar(stat = "identity",
+           position = "dodge",
+           color = "black") +
+  scale_fill_manual(values=c("grey", "darkgrey", "black")) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,4)) + 
+  labs(title = "ICC of value 0",
+       caption = "The graph above shows an ICC of 0\n
+       because there is no variability at the group\n
+       level and all the variability is explained by\n
+       the individual level.") +
+  guides(fill="none") +
+  theme_classic() +
+  theme(plot.title = element_text(size = 14,
+                                  hjust = 0.5),
+        axis.title = element_text(size = 12, 
+                                  face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.caption = element_text(size = 9,
+                                    hjust = 0))
+
+# Show both plots together
+ggarrange(high.ICC.plot, low.ICC.plot)
+```
+
+# Chapter 3: Adding Predcitors to a Random Intercept Model
+
+We will now continue with the same dataset from the previous chapter (Exam) and introduce predictors. Let's start by first visualizing the notation of a MLM when a level-1 predictor is included. For the Exam dataset, let's do this for the variable 'standLRT', which is the standardized London Reading Test. Again, our outcome variable is 'normexam', which is the standardized scores on some exam. Including this predictor in notation would look like the following:
+
+**Level 1:** We can make-out some important information from the symbols present and the subscripts as well. In continuation to what we covered in Chapter 2, the i subscript represents individual scores and j represents the group that the scores are within. Starting from left to right, the Y variable represents the scores of the outcome ('normexam') and it's equal to the intercept ($\beta_{0j}$) which varies in value based on group j + the slope ($\beta_{1j}$) of the first predictor 'standLRT' which also varies by group j + any error $r_{ij}$ that the model does not capture. 
+
+\begin{align*}
+Y_{ij} = \beta_{0j} + \beta_{1j}standLRT_{ij} + r_{ij}
+\end{align*}
+
+**Level 2:** Unfortunately, the textbook does not explain these formulas clearly, just provides them. We can infer that as before, the intercept used in the equation for level 1 ($\beta_{0j}$) is equal to the grand mean of the outcome variable ($\gamma_{00}$) plus the difference of the observed Y values from j group means respectively ($u_{0j}$).Unsure about what $\gamma_{10}$ means. It may be related to it being a fixed effect. For example, in Chapter 2, while not mentioned but confirmed in [centerstat.org](https://centerstat.org/wp-content/uploads/2021/08/MLM-Chapter-2-Notes-2021.pdf), the grand mean of the outcome variable ($\gamma_{00}$) functioned as the fixed effect while $u_{0j}$ and $r_{ij}$ functioned as the group-level and individual-level random effect. Thus, using gamma with the subscript 10 can indicate to the reader that this is the fixed effect for the first predictor. If this interpretation is correct, then we will predict that the inclusion of a second level-1 predictor will result in this notation $\gamma_{20}$
+
+\begin{align*}
+\beta_{0j} = \gamma_{00} + u_{0j}
+\end{align*}
+
+\begin{align*}
+\beta_{1j} = \gamma_{10}
+\end{align*}
+
+**Combining equations:**
