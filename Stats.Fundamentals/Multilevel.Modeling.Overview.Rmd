@@ -325,7 +325,7 @@ mod1 <- lmer(normexam ~ standLRT + (1|school), data = Exam)
 
 ```
 
-Below is the summary of the model we just created. We set the argument cor = FALSE to prevent printing the Correlation of Fixed Effects which is not meaningful information. For quality control, let's first compare the Number of observations and Number of groups for each model (mod1 vs null). We see that these are the same so that is a good start. Next, we notice that the variance for group-level (school) and individual-level (Residual) both differ in mod1 compared to null.model. This is interesting because it confirms that the inclusion of a level-1 predictor does not only reduce the variance (error) of the outcome explained by level-1 predictors but also the variance of the outcome that is explained by level-2 predictors. Lastly, mod1 introduces a predictor to the model which is shown under Fixed effects. Here we can see the intercept and standLRT. The estimate (slope of the line) is present which is `0.563` and it is statistically significant (p<.05). Thus visually we can see not only that introducing standLRT into the model explained some of the variance (had a smaller variance output compare to the null model) but that standLRT was also significant. 
+Below is the summary of the model we just created. We set the argument cor = FALSE to prevent printing the Correlation of Fixed Effects which is not meaningful information. For quality control, let's first compare the Number of observations and Number of groups for each model (mod1 vs null). We see that these are the same so that is a good start. Next, we notice that the variance for group-level (school) and individual-level (Residual) both differ in mod1 compared to null.model. This is interesting because it confirms that the inclusion of a level-1 predictor does not only reduce the variance (error) of the outcome explained by level-1 predictors but also the variance of the outcome that is explained by level-2 predictors. Lastly, mod1 introduces a predictor to the model which is shown under Fixed effects. Here we can see the intercept and standLRT. The estimate (slope of the line or $\gamma_{10}$) is present which is `0.563` and it is statistically significant (p<.05). The degrees of freedom showed are called Satterthwaite degrees of freedom (more information in the textbook). Thus visually we can see not only that introducing standLRT into the model explained some of the variance (had a smaller variance output compare to the null model) but that standLRT was also significant. 
 
 ```{r print out the summary of mod1}
 # Print out the summary of the model
@@ -334,4 +334,66 @@ summary(mod1, cor = FALSE)
 # Print out the summary of the null model for comparison
 summary(null.model, cor = FALSE)
 
+
 ```
+
+### Calculating pseudo R^2
+
+The pseudo R^2 functions the same as the typical R^2 reported in regressions. It is a proportion that describes how much of the outcome variable is explained by the predictors. To calculate the pseudo R^2, we take the variance at level 1 from the null model ($\sigma^2_{NULL}$) and then subtract it by the level 1 variance of the predictor model ($\sigma^2_{FULL}$) and subtract it from the former ($\sigma^2_{NULL}$).
+
+
+\begin{align*}
+Pseudo R^2 = \frac{\sigma^2_{NULL} - \sigma^2_{FULL}}{\sigma^2_{NULL}}
+\end{align*}
+
+We can now use this formula to calculate the pseudo R^2 of mod1.
+
+```{r calculating pseudo R2}
+# Obtaining the variance of mod 1
+mod1.var <- as.data.frame(VarCorr(mod1))[,c(1,4)]
+
+# Obtaining the variance of the null model
+null.model.var <- as.data.frame(VarCorr(null.model))[,c(1,4)]
+
+# join the models variance types
+joined.model.var <- mod1.var %>%
+  left_join(null.model.var, by = "grp")
+
+# Calculate pseudo R^2
+joined.model.var<- joined.model.var %>%
+  mutate(vcov.x = round(vcov.x,3),
+         vcov.y = round(vcov.y,3),
+         PseudoR2 = round((vcov.y - vcov.x)/vcov.y,3))
+
+# Print the data frame
+joined.model.var %>%
+  kbl(caption = "Pseudo R^2 of mod1") %>%
+  kable_paper(full_width = F)
+```
+
+
+```{r printing the pseudo R2 of model 1, results='asis', echo = FALSE}
+cat("- The Pseudo R^2 of mod1 is ",joined.model.var$PseudoR2[2],". This means that ",paste(joined.model.var$PseudoR2[2]*100," %",sep="")," of the variance in normexam is explained by the predictor standLRT. However, this estimate is biased for we did not calculate a pure within group effect.", sep="")
+
+
+```
+
+
+### ICC of the predictor model
+
+Below is the ICC of the predictor model. We can see that the adjusted ICC is 0.142, which is pretty high. Additionally, the book mentions that our results are somewhat contaminated because the estimate is a mixture of both between and within group effects. We are really interested in the effect of the within group, since we introduced a level one predictor. There is a way, however, to obtain a pure within group effect of standLRT.
+
+```{r ICC of the predictor model}
+# Calculate the ICC
+performance::icc(mod1)
+
+```
+
+
+
+### Creating and adding level-2 predictors
+
+
+
+
+
