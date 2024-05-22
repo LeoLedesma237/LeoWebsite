@@ -302,3 +302,58 @@ write.xlsx(final.send.to.Ackim,
            "New ID Tracker (send to Ackim).xlsx")
 
 ```
+
+
+### Send information to Mei
+
+The ID tracker we created is missing a lot of minute information and just focuses on the summary. We can create two new excel sheets that will contain this summary information plus the responses for the CFM questions. We will use processed (intermediate) excel sheets created from CFM2-4 and CFM5-17 respectively since these contain that information. 
+
+
+```{r comprehensive excel sheet, warning = FALSE}
+# Load in the intermediate excel sheets with specific information on CFM DD difficulty
+setwd("~/KBB_new_2/1_screener/processed_data")
+
+# Load in both datasets
+CFM5_17.clean <- read.csv("CFM5_17_clean.csv")
+CFM2_4.clean <- read.csv("CFM2_4_clean.csv")
+
+# Create a variable x for each dataset
+CFM5_17.clean <- CFM5_17.clean %>% mutate(x = paste(HOH_First_Name, HOH_Last_Name, Child_First_Name, Child_Last_Name))
+CFM2_4.clean <- CFM2_4.clean %>% mutate(x = paste(HOH_First_Name, HOH_Last_Name, Child_First_Name, Child_Last_Name))
+
+# Join these CFM datasets with the ID's we have
+CFM5_17.clean.joined <- CFM5_17.clean %>%
+  left_join(new.ID.tracker, by = "x") %>%
+  drop_na(ID) %>%
+  arrange(ID)
+
+CFM2_4.clean.joined <- CFM2_4.clean %>%
+  left_join(new.ID.tracker, by = "x")  %>%
+  drop_na(ID) %>%
+  arrange(ID)
+
+# Clean the datasets to include the information that is useful/meaningful
+CFM5_17.clean.joined2 <- CFM5_17.clean.joined %>%
+  select(ID,5:17,57,66:76,78,83,85,88,89)
+
+CFM2_4.clean.joined2 <- CFM2_4.clean.joined %>%
+  select(ID, 5:17,49,58:62,64,68,70,72,73)
+
+# To make viewing easier, it the column states no difficulty, change it into a '-' cell
+CFM5_17.clean.joined3 <- CFM5_17.clean.joined2 %>%
+  mutate_all(~ str_replace_all(., "No difficulty|Never", "-"))
+
+CFM2_4.clean.joined3 <- CFM2_4.clean.joined2 %>%
+  mutate_all(~ str_replace_all(., "No difficulty", "-"))
+
+# Set a save directory
+setwd("~/KBB_new_2/matched_siblings")
+
+
+# Save these datasets in the matched_sibling directory
+write.xlsx(CFM5_17.clean.joined3,
+           "CFM5_17 ID Tracker (send to Mei).xlsx")
+
+write.xlsx(CFM2_4.clean.joined3,
+           "CFM2_4 ID Tracker (send to Mei).xlsx")
+```

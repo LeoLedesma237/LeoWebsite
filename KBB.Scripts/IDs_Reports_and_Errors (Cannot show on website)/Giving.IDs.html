@@ -804,7 +804,7 @@ new.existing.IDs &lt;- existing.IDs %&gt;%
   filter(!(ID %in% IDs.We.Must.Recycle))</code></pre>
 <pre><code>Warning in left_join(., all.data.dd.status, by = &quot;x&quot;): Detected an unexpected many-to-many relationship between `x` and `y`.
 ℹ Row 61 of `x` matches multiple rows in `y`.
-ℹ Row 183 of `y` matches multiple rows in `x`.
+ℹ Row 190 of `y` matches multiple rows in `x`.
 ℹ If a many-to-many relationship is expected, set `relationship =
   &quot;many-to-many&quot;` to silence this warning.</code></pre>
 <pre class="r"><code># Set working directory
@@ -888,7 +888,7 @@ vector &lt;- 1:max.ID.num
 
 # See if we missed to give an ID number
 setdiff(vector, new.ID.tracker$ID)</code></pre>
-<pre><code>[1] 221 222 223 224</code></pre>
+<pre><code>integer(0)</code></pre>
 </div>
 <div id="send-information-to-ackim" class="section level3">
 <h3>Send information to Ackim</h3>

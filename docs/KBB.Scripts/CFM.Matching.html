@@ -562,7 +562,7 @@ potential_errors_households &lt;- do.call(rbind, one_child_household) %&gt;%
 
 # Obtain the dimensions of the potential error households
 dim(potential_errors_households)</code></pre>
-<pre><code>[1] 38 36</code></pre>
+<pre><code>[1] 42 36</code></pre>
 <pre class="r"><code># Remove these children from CFM data
 CFM_data &lt;- CFM_data %&gt;%
   filter(!(Child_ID %in% potential_errors_households$Child_ID))
@@ -751,17 +751,17 @@ sections, let’s ensure that no children/rows got lost along the way. To
 do this, we are going to count the rows of the original dataset, and
 then take the sum of all the datasets we created and add them up. If the
 numbers matched then everyone was accounted for.</p>
-<pre><code>[1] &quot;The original data set contains 1612 rows&quot;</code></pre>
-<pre><code>[1] &quot;Number of unique children in our dataset 1612&quot;</code></pre>
-<pre><code>[1] &quot;We excluded 84 children.&quot;</code></pre>
-<pre><code>[1] &quot; - 76 non-DD children were excluded for having some type of sensory or motor difficulty&quot;</code></pre>
+<pre><code>[1] &quot;The original data set contains 1697 rows&quot;</code></pre>
+<pre><code>[1] &quot;Number of unique children in our dataset 1697&quot;</code></pre>
+<pre><code>[1] &quot;We excluded 87 children.&quot;</code></pre>
+<pre><code>[1] &quot; - 79 non-DD children were excluded for having some type of sensory or motor difficulty&quot;</code></pre>
 <pre><code>[1] &quot; - 8 DD children were excluded because they had Cannot at all for at least one sensory or motor domain&quot;</code></pre>
-<pre><code>[1] &quot;Their exlusion left us with 1528 children&quot;</code></pre>
-<pre><code>[1] &quot;38 children were temporarily removed because of an incorrect HOH_ID spelling&quot;</code></pre>
-<pre><code>[1] &quot;After their removal, we were left with 1490 children.&quot;</code></pre>
-<pre><code>[1] &quot;From these eligible households, 404 children were able to be matched and 1086 were not.&quot;</code></pre>
-<pre><code>[1] &quot;Overall, we had 170 unique households that can participate&quot;</code></pre>
-<pre><code>[1] &quot;The sum of excluded children, children removed from not having a sibling, children with a match, and those without a match is: 1612&quot;</code></pre>
+<pre><code>[1] &quot;Their exlusion left us with 1610 children&quot;</code></pre>
+<pre><code>[1] &quot;42 children were temporarily removed because of an incorrect HOH_ID spelling&quot;</code></pre>
+<pre><code>[1] &quot;After their removal, we were left with 1568 children.&quot;</code></pre>
+<pre><code>[1] &quot;From these eligible households, 436 children were able to be matched and 1132 were not.&quot;</code></pre>
+<pre><code>[1] &quot;Overall, we had 183 unique households that can participate&quot;</code></pre>
+<pre><code>[1] &quot;The sum of excluded children, children removed from not having a sibling, children with a match, and those without a match is: 1697&quot;</code></pre>
 </div>
 <div id="save-the-data" class="section level3">
 <h3>Save the data</h3>

@@ -68,15 +68,16 @@ fuzzy.matching <- stringdist_join(potential.HOH_ID.errors, correct.HOH_IDs,
   filter(dist < 4) %>%
   unique()
 
-
 paste("From the Fuzzy Matching code, there are potentially",nrow(fuzzy.matching),"typo IDs that were matched to real HOH_IDs")
 
+# Save only the unique matches
+fuzzy.matching <- unique(fuzzy.matching)
 
 # Print out the options
-unique(fuzzy.matching) %>%
+fuzzy.matching %>%
   arrange(desc(Date_of_Evaluation.x)) %>%
   kbl() %>%
-    kable_paper(bootstrap_options = "striped", full_width = F)
+  kable_paper(bootstrap_options = "striped", full_width = F)
 
 
 # Remove the typo HOH_IDs that were matched to a correct HOH_ID from the 'potential.HOH_ID.errors' data frame

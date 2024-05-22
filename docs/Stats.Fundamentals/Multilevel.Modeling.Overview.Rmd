@@ -325,13 +325,894 @@ mod1 <- lmer(normexam ~ standLRT + (1|school), data = Exam)
 
 ```
 
-Below is the summary of the model we just created. We set the argument cor = FALSE to prevent printing the Correlation of Fixed Effects which is not meaningful information. For quality control, let's first compare the Number of observations and Number of groups for each model (mod1 vs null). We see that these are the same so that is a good start. Next, we notice that the variance for group-level (school) and individual-level (Residual) both differ in mod1 compared to null.model. This is interesting because it confirms that the inclusion of a level-1 predictor does not only reduce the variance (error) of the outcome explained by level-1 predictors but also the variance of the outcome that is explained by level-2 predictors. Lastly, mod1 introduces a predictor to the model which is shown under Fixed effects. Here we can see the intercept and standLRT. The estimate (slope of the line) is present which is `0.563` and it is statistically significant (p<.05). Thus visually we can see not only that introducing standLRT into the model explained some of the variance (had a smaller variance output compare to the null model) but that standLRT was also significant. 
+Below is the summary of the model we just created. We set the argument cor = FALSE to prevent printing the Correlation of Fixed Effects which is not meaningful information. For quality control, let's first compare the Number of observations and Number of groups for each model (mod1 vs null). We see that these are the same so that is a good start. Next, we notice that the variance for group-level (school) and individual-level (Residual) both differ in mod1 compared to null.model. This is interesting because it confirms that the inclusion of a level-1 predictor does not only reduce the variance (error) of the outcome explained by level-1 predictors but also the variance of the outcome that is explained by level-2 predictors. Lastly, mod1 introduces a predictor to the model which is shown under Fixed effects. Here we can see the intercept and standLRT. The estimate (slope of the line or $\gamma_{10}$) is present which is `0.563` and it is statistically significant (p<.05). The degrees of freedom showed are called Satterthwaite degrees of freedom (more information in the textbook). Thus visually we can see not only that introducing standLRT into the model explained some of the variance (had a smaller variance output compare to the null model) but that standLRT was also significant. 
+
+To compare models, we will be using the output shown in a [NCRM YouTube video](https://www.youtube.com/watch?v=KmbtZNjvsNM&list=PL-XAd1-IhZXZxcWfV0ErYVwPSvGzZ2Lup&index=2) where the models make up the last two columns and show the fixed effect estimates at the top and the random variance at the bottom. The pseudo R^2 will be calculate in the next section. 
+
+The code below is a little complex- essentially we are extracting information that we need from the tidy and VarCorr functions. Then transforming the data to clean and make it more presentable. Then binding this information into an informative data frame. This code is **not** the final version- the final version will be in the next chapter. However, from these output, we can calculate the ICC from the variances reported in the null model and the pseudo R^2 by comparing the variances between model 1 and the null. 
 
 ```{r print out the summary of mod1}
-# Print out the summary of the model
-summary(mod1, cor = FALSE)
+# Extract mod1 fixed estimate and random effects
+mod1.fixed <- broom.mixed::tidy(mod1, "fixed") %>% select(2:4)
+mod1.random <- tibble(as.data.frame(VarCorr(mod1))[,c(1,4:5)])
 
-# Print out the summary of the null model for comparison
-summary(null.model, cor = FALSE)
+# Round numbers three points 
+mod1.fixed2 <- cbind(mod1.fixed[,1], round(mod1.fixed[,2:3],3)) %>% tibble()
+mod1.random2 <- cbind(mod1.random[,1], round(mod1.random[,2],3)) %>% tibble()
+
+# Extract the null mod fixed estimate and random effects
+null.fixed <- broom.mixed::tidy(null.model, "fixed") %>% select(2:4)
+null.random <- tibble(as.data.frame(VarCorr(null.model))[,c(1,4:5)])
+
+# Round numbers three points 
+null.fixed2 <- cbind(null.fixed[,1], round(null.fixed[,2:3],3)) %>% tibble()
+null.random2 <- cbind(null.random[,1], round(null.random[,2],3)) %>% tibble()
+
+# Construct a new table from this information
+joined.fixed <- mod1.fixed2[,1] %>%
+  left_join(null.fixed2, by = "term") %>%
+  left_join(mod1.fixed2, by = "term")
+
+joined.random <- mod1.random2[,1] %>%
+  left_join(null.random2, by = "grp") %>%
+  left_join(mod1.random2, by = "grp")
+
+# Combining the estimate and standard deviation into one variable
+joined.fixed.char <- joined.fixed %>%
+  transmute(term,
+            estimate.x = ifelse(is.na(estimate.x), NA, 
+                                paste(estimate.x," (",std.error.x,")",sep ="")),
+            estimate.y = ifelse(is.na(estimate.y), NA, 
+                                paste(estimate.y," (",std.error.y,")",sep ="")))
+
+
+# Rename the variables for each data frame so we can then stack them together
+names(joined.fixed.char) <- c(" ", "Null Model", "Model 1")
+names(joined.random) <- c(" ", "Null Model", "Model 1")
+
+# Stack them together into one
+joined.fixed.random <- rbind(joined.fixed.char,
+                             joined.random)
+
+# Print the information as a nice data table
+joined.fixed.random %>%
+  kbl(caption = "Random Intercept Model") %>%
+  kable_paper(full_width = F) %>%
+  pack_rows("Fixed Part", 1, 2) %>%
+  pack_rows("Random Part", 3, 4)
+```
+
+### How much variance is explained at level one? (Calculating pseudo R^2)
+
+The pseudo R^2 functions the same as the typical R^2 reported in regressions. It is a proportion that describes how much of the outcome variable is explained by the predictors. To calculate the pseudo R^2, we take the variance at level 1 from the null model ($\sigma^2_{NULL}$) and then subtract it by the level 1 variance of the predictor model ($\sigma^2_{FULL}$) and subtract it from the former ($\sigma^2_{NULL}$).
+
+
+\begin{align*}
+Pseudo R^2 = \frac{\sigma^2_{NULL} - \sigma^2_{FULL}}{\sigma^2_{NULL}}
+\end{align*}
+
+We can now use this formula to calculate the pseudo R^2 of mod1.
+
+```{r calculating pseudo R2}
+# Obtaining the variance of mod 1
+mod1.var <- as.data.frame(VarCorr(mod1))[,c(1,4)]
+
+# Obtaining the variance of the null model
+null.model.var <- as.data.frame(VarCorr(null.model))[,c(1,4)]
+
+# join the models variance types
+joined.model.var <- mod1.var %>%
+  left_join(null.model.var, by = "grp")
+
+# Calculate pseudo R^2
+joined.model.var<- joined.model.var %>%
+  mutate(vcov.x = round(vcov.x,3),
+         vcov.y = round(vcov.y,3),
+         PseudoR2 = round((vcov.y - vcov.x)/vcov.y,3))
+
+# Print the data frame
+joined.model.var %>%
+  kbl(caption = "Pseudo R^2 of mod1 (Residual)") %>%
+  kable_paper(full_width = F)
+```
+
+
+```{r printing the pseudo R2 of model 1, results='asis', echo = FALSE}
+cat("- The Pseudo R^2 of mod1 is ",joined.model.var$PseudoR2[2],". This means that ",paste(joined.model.var$PseudoR2[2]*100," %",sep="")," of the variance in normexam is explained by the predictor standLRT. However, this estimate is biased for we did not calculate a pure within group effect.", sep="")
+
 
 ```
+
+
+
+### Creating and adding level-2 predictors
+
+We will now introduce a level-2 predictor. Except, this level-2 predictor will be one that we will create from our level-1 predictor. We will use the ave function to obtain the mean standLRT for each school in our sample. This function will return a vector the same size as the rows for the data frame Exam, which is needed for us to run the model correctly. Every row apart of the same school should have the same mean score. Thus, when this variable is introduced into the next MLM, the code will know that this will function as a level-2 predictor since there is no within variability in this variable whatsoever (again, each score for each school will be identical). Below we will create the vector and show some descriptive statistics of our level-2 predictor. 
+
+When compared to the level-1 standLRT, which has a min of -2.935 and a max of 3.016, the level-2 m.standLRT has a more limited range, with a min of -.756 and a max of .638. This makes sense since these are means, so the scores that make up this variable would be closer to the actual mean of standLRT. 
+
+```{r creating a level 2 predictor}
+# Create the level-2 predictor
+Exam$m.standLRT <- ave(Exam$standLRT, Exam$school)
+
+```
+
+```{r descriptive statistics of our level 1 and level 2 predictors, echo = FALSE}
+# Obtain descriptive statistics of the level 2 predictor
+data.frame(describe(Exam$m.standLRT)) %>%
+  round(.,3) %>%
+  kbl(caption = "Descriptive statistics of m.standLRT") %>%
+  kable_paper(full_width = F)
+
+# Print out the descriptive statistics of its level 1 counterpart
+describe(Exam$standLRT) %>%
+  round(.,3) %>%
+  kbl(caption = "Descriptive statistics of standLRT") %>%
+  kable_paper(full_width = F)
+```
+
+
+### Notation of our second model
+
+This model builds on mod1, which includes the level-1 predictor standLRT. Thus, the level one notation stays the same. 
+
+**Level 1:** This is the same notation from the previous section. 
+
+\begin{align*}
+Y_{ij} = \beta_{0j} + \beta_{1j}standLRT_{ij} + r_{ij}
+\end{align*}
+
+
+**Level 2:** The difference takes place in this part of the formula. Now we have included the variable m.standLRT, a second-level predictor. As mentioned before, the gamma notation ($\gamma_{01}$) infront of the predictor is a fixed effect, so this is likely representing the slope of the line created from this type of predictor. The following part of the code remains unchanged and the group-level random effects ($u_{0j}$) are still present. 
+
+\begin{align*}
+\beta_{0j} = \gamma_{00} + \gamma_{01}m.standLRT_{j}+ u_{0j}
+\end{align*}
+
+
+\begin{align*}
+\beta_{1j} = \gamma_{10}
+\end{align*}
+
+
+**combined equations:** Viewing the equation below, we are stating that the outcome variable Y is equal to the first fixed effect ($\gamma_{00}$), which is the grand mean of the outcome ($\bar{Y}$), plus the fixed slope of the level-2 predictor m.standLRT + the fixed slope of the individual-level predictor standLRT. Additionally, the random effects of group ($u_{0j}$) and individual level ($r_{ij}$) remain. 
+
+
+\begin{align*}
+Y_{ij} = \gamma_{00} + \gamma_{01}m.standLRT_{j} + \gamma_{10}standLRT_{ij} + u_{0j} + r_{ij}
+\end{align*}
+
+### Creating the mod2 MLM
+
+Now we will create a new MLM model which includes the level-2 predictor into it. The code for it is below. 
+
+```{r create mod2}
+# Create the second model
+mod2 <- lmer(normexam ~ m.standLRT + standLRT  + (1|school), Exam)
+
+```
+
+We now want to print out the meaningful results of this model and compare it to the last two we created (the null model and mod1). Code has been constructed to do this. First, we need to manually input the models we want to compare into a list- that is shown below. 
+
+```{r create a list of models to input to create comparison summaires}
+# Create a list with the models we want to compare - place in order from least complex to most!
+# ALWAYS INSERT NULL MODE FIRST
+model.list <- list(null.model,
+                   mod1,
+                   mod2)
+
+# Insert the names of the model as a character
+names(model.list) <- c("Null Model",
+                       "Model 1",
+                       "Model 2")
+```
+
+
+The outcomes should be interpreted as the following: The variable m.standLRT, which is significant, is known as the **contextual** or **composition** effect. The interpretation of this estimate is that when controlling for the effects of standLRT (having a sub group of individuals with the same standLRT scores), that being in a school with a one point higher m.standLRT will lead to an increase in the outcome (normexam) by .3577. Conversely, when interpreting standLRT, this is saying that after controlling for the effects of m.standLRT (aka, everyone in this sample all went to the same school), that having a one-point increase in standLRT led to an increase in the outcome by .5595. Thus the estimate of the latter can be interpreted as the **pure-within group effect** ($\gamma_{10}$).
+
+When comparing the estimates for standLRT between mod1 (no group predictor) and mod2 (group predictor), we can see that they are pretty similar. This will not always be case. 
+
+The code below is almost done- it just needs to include p-values and then it will be finalized! But overall this is a very good start. 
+
+```{r displaying the outputs of several models}
+# Create two empty lists, one to save fixed effects and the other to save random effects
+fixed.effects.list <- list()
+random.effects.list <- list()
+
+# Run a for loop to extract the following from each model: 1) Fixed Estimates; 2) Random Effects
+for(ii in 1:length(model.list)) {
+
+  # Extract the fixed estimates and random effects
+  mod.fixed <- broom.mixed::tidy(model.list[[ii]], "fixed") %>% select(2:4)
+  mod.random <- tibble(as.data.frame(VarCorr(model.list[[ii]]))[,c(1,4:5)])
+  
+  # Data cleaning: Round numbers three points 
+  fixed.effects.list[[ii]] <- cbind(mod.fixed[,1], round(mod.fixed[,2:3],3)) %>% tibble()
+  random.effects.list[[ii]] <- cbind(mod.random[,1], round(mod.random[,2],3)) %>% tibble()
+
+}  
+   
+# Merge the lists respectively
+fixed.effects <- Reduce(function(x, y) merge(x, y, by="term", all = TRUE), fixed.effects.list)
+random.effects <- Reduce(function(x, y) merge(x, y, by="grp", all = TRUE), random.effects.list)
+
+# Create a list to save fixed estimates char
+fixed.effects.char.list <- list()
+
+# Combine the estimates and std error columns for fixed effects (will need to create a for loop)
+for(ii in 1:length(model.list)) {
+  
+  # Assign current estimate and std pair
+  cols = c(2*ii, 2*ii + 1)
+  
+  # Extract the estimate and std pair
+  fixed.effects.pair <- fixed.effects %>%
+    select(all_of(cols))
+ 
+  # Rename these variables so they can be manipulated using the mutate function
+  names(fixed.effects.pair) <- c("estimate","std")
+  
+  # Mutate them so they can be pasted together
+  fixed.effects.char.list[[ii]] <- transmute(fixed.effects.pair, Estimate = ifelse(is.na(estimate),
+                                                  "-",
+                                                  paste(estimate," (",std,")",sep="")))
+}
+
+# Merge the fixed effects char and make a copy for the variance and call it char (This is so we can continue to use the original for other calculations)
+fixed.effects.char <- cbind(fixed.effects$term,
+                            do.call(cbind,fixed.effects.char.list))
+
+random.effects.char <- random.effects
+
+# Rename the fixed effects and random effects data frames by the models
+names(fixed.effects.char) <- c("_", names(model.list))
+names(random.effects.char) <- c("_", names(model.list))
+  
+# Stack them together into one
+stacked.fixed.random <- rbind(fixed.effects.char,
+                              random.effects.char)
+
+# Print the information as a nice data table
+stacked.fixed.random %>%
+  kbl(caption = "Random Intercept Model") %>%
+  kable_paper(full_width = F) %>%
+  pack_rows("Fixed Part", 1, nrow(fixed.effects.char)) %>%
+  pack_rows("Random Part", nrow(fixed.effects.char) + 1 , nrow(fixed.effects.char) + 2)
+
+
+```
+
+We can also use the information created from the objects above to make an additional table with information on model's performance. This is done by calculating Pseudo R^2, which is a measure of how much variance was explained by the introduction of predictors into the model. We can calculate the Pseudo R^2 for both individual and group-level variance. 
+
+
+```{r calculate pseudo R2}
+# Need to calculate pseudo R^2 for each model by comparing the variance to the null model
+pseudo.R2.individual.list <- list()
+pseudo.R2.group.list <- list()
+
+for(ii in 1:(length(model.list)-1)) {
+
+  # Filter out the individual and group variance
+  individual.variance <- random.effects %>% filter(grp == "Residual")
+  group.variance <- random.effects %>% filter(grp == "school")
+  
+  # Calculate the PseudoR2 respectively 
+  pseudo.R2.individual.list[[ii]] <- round((individual.variance[[2]] - individual.variance[[ii+2]])/individual.variance[[2]],3)
+  pseudo.R2.group.list[[ii]] <- round((group.variance[[2]] - group.variance[[ii+2]])/group.variance[[2]],3)
+  
+}
+
+# Transform the lists into data frames and merge them
+PseudoR2.df <- rbind(do.call(cbind,pseudo.R2.individual.list),
+                     do.call(cbind,pseudo.R2.group.list)) %>% data.frame()
+
+# Add a name variable
+PseudoR2.df2 <- cbind(c("Individual level R^2",
+                        "Group level R^2"), PseudoR2.df)
+
+# Rename the data frame
+names(PseudoR2.df2) <- c("_", names(model.list)[2:length(model.list)])
+
+# Print out the table
+PseudoR2.df2 %>%
+  kbl(caption = "Pseudo R^2 for each model") %>%
+  kable_paper(full_width = F)
+```
+
+
+### Introducing a group mean centered (GPC) level 1 variable
+
+Now that we created the variable, m.standLRT, we can use this to create a group mean centered (GPC) variable from standLRT. This variable is also known as the **centered within context** variable. We can create this variable easily with the code below and introduce it into the Exam dataset. 
+
+```{r creating a level 1 GPC variable}
+Exam$standLRT.gpc <- Exam$standLRT - Exam$m.standLRT
+
+```
+
+It is also important to know how this variable is notated in the MLM equation, which is shown below (ex: for **Level 1**).
+
+\begin{align*}
+Y_{ij} = \beta_{0j} + \beta_{1j}(standLRT_{ij} - m.standLRT_{j}) + r_{ij}
+\end{align*}
+
+
+With this variable created, we can now use it to create a new model with it replacing the original standLRT variable. 
+
+```{r creating a model with a level 1 GPC variable}
+mod2.gpc <- lmer(normexam ~ m.standLRT + standLRT.gpc + (1|school), data = Exam)
+
+```
+
+Below is the summary tables of each model (code not shown but is the same as the one from the previous section). 
+
+
+```{r create a list of models to make comparisons including CPG, echo = FALSE}
+# Create a list with the models we want to compare - place in order from least complex to most!
+# ALWAYS INSERT NULL MODE FIRST
+model.list <- list(null.model,
+                   mod1,
+                   mod2,
+                   mod2.gpc)
+
+# Insert the names of the model as a character
+names(model.list) <- c("Null Model",
+                       "Model 1",
+                       "Model 2",
+                       "Model 2 (GPC)")
+
+```
+
+The table below is identical to Table 3.1 in the textbook- thus this confirms that the code for this creation is credible and reliable! Model 1 was not included because it was not important. Here is the important take aways from these models (This is from the textbook). 
+
+- 1) The regression coefficient and the standard error are the same for standLRT and standLRT.gpc when m.standLRT is included (Note it is different in Model 1).
+- 2) The residual variances are the same for both Model 2 and Model 2 (GPC).
+- 3) The m.standLRT coefficient is what differs between Model 2 and Model 2 (GPC).
+
+**Contextual effect:** The estimate for m.standLRT in Model 2 functions as the contextual effect. 
+
+**Between-group effect:** The estimate for m.standLRT in Model 2 (GPC) functions as the between-group effect.
+
+**Within-group effect:** In both Model 2 and Model 2 (GPC), the estimate for standLRT and standLRT.gpc is the within-group effect. 
+
+```{r obtaining the fixed and random effects from these models one with gpc, echo = FALSE, warning = FALSE}
+# Create two empty lists, one to save fixed effects and the other to save random effects
+fixed.effects.list <- list()
+random.effects.list <- list()
+
+# Run a for loop to extract the following from each model: 1) Fixed Estimates; 2) Random Effects
+for(ii in 1:length(model.list)) {
+  
+  # Extract the fixed estimates and random effects
+  mod.fixed <- broom.mixed::tidy(model.list[[ii]], "fixed") %>% select(2:4)
+  mod.random <- tibble(as.data.frame(VarCorr(model.list[[ii]]))[,c(1,4:5)])
+  
+  # Data cleaning: Round numbers three points 
+  fixed.effects.list[[ii]] <- cbind(mod.fixed[,1], round(mod.fixed[,2:3],3)) %>% tibble()
+  mod.random2 <- cbind(mod.random[,1], round(mod.random[,2],3)) %>% tibble()
+    
+  # Data cleaning: Changing the names of the var variables
+  names(mod.random2) <- c("grp", paste("vcov",ii,sep=""))
+  
+  # Save the named changed var data frames
+  random.effects.list[[ii]] <- mod.random2
+
+}  
+   
+# Merge the lists respectively
+fixed.effects <- Reduce(function(x, y) merge(x, y, by="term", all = TRUE), fixed.effects.list)
+random.effects <- Reduce(function(x, y) merge(x, y, by="grp", all = TRUE), random.effects.list)
+
+# Create a list to save fixed estimates char
+fixed.effects.char.list <- list()
+
+# Combine the estimates and std error columns for fixed effects (will need to create a for loop)
+for(ii in 1:length(model.list)) {
+  
+  # Assign current estimate and std pair
+  cols = c(2*ii, 2*ii + 1)
+  
+  # Extract the estimate and std pair
+  fixed.effects.pair <- fixed.effects %>%
+    select(all_of(cols))
+ 
+  # Rename these variables so they can be manipulated using the mutate function
+  names(fixed.effects.pair) <- c("estimate","std")
+  
+  # Mutate them so they can be pasted together
+  fixed.effects.char.list[[ii]] <- transmute(fixed.effects.pair, Estimate = ifelse(is.na(estimate),
+                                                  "-",
+                                                  paste(estimate," (",std,")",sep="")))
+}
+
+# Merge the fixed effects char and make a copy for the variance and call it char (This is so we can continue to use the original for other calculations)
+fixed.effects.char <- cbind(fixed.effects$term,
+                            do.call(cbind,fixed.effects.char.list))
+
+# Introduce a Total for the variance (this will be used in the next section to calculate overall R^2)
+random.effects <- cbind("grp" = c(random.effects[,1],"Total"),
+                        rbind(random.effects[2:length(random.effects)],colSums(random.effects[2:length(random.effects)])))
+    
+
+# This is to continue with the data frame we are creating in this chunk block
+random.effects.char <- random.effects
+                             
+# Rename the fixed effects and random effects data frames by the models
+names(fixed.effects.char) <- c("_", names(model.list))
+names(random.effects.char) <- c("_", names(model.list))
+  
+# Stack them together into one
+stacked.fixed.random <- rbind(fixed.effects.char,
+                              random.effects.char)
+
+# Print the information as a nice data table
+stacked.fixed.random %>%
+  kbl(caption = "Random Intercept Model: Predicting exam scores from test performance") %>%
+  kable_paper(full_width = F) %>%
+  pack_rows("Fixed Part", 1, nrow(fixed.effects.char)) %>%
+  pack_rows("Random Part", nrow(fixed.effects.char) + 1 , nrow(fixed.effects.char) + 3)
+
+```
+
+
+Explaining the results above further (copied directly from the textbook), the **contextual effect** is the difference between two individuals with the same level-1 variables but is different by one unit on the aggregated variable. The **between-group effect** is the expected differences of the group means of the outcome between two groups (i.e., schools) which differ by one unit of m.standLRT (the aggregated predictor at level two). 
+
+The between group effect (BG) is the within-group (WG) plus the contextual (C) effect (i.e., WG + C = BG or 0.559 + 0.358 = 0.917). In the same way, the contextual effect is the BG effect less the WG effect (i.e. C = BG - WG or 0.917 - 0.559 = 0.358). 
+
+
+### Reporting Pseudo R^2
+
+The Pseudo R^2 are comparisons to the null model. This is not the only way of doing it. You can also do a comparison of Model 2 (group predictors included) to Model 1 (only level 1 predictor included) and see how much variance is explained at level-2 (this is not what is shown here).
+
+```{r calculating the pseudo R2 for the one with GPC, echo = FALSE}
+# Need to calculate pseudo R^2 for each model by comparing the variance to the null model
+pseudo.R2.individual.list <- list()
+pseudo.R2.group.list <- list()
+
+for(ii in 1:(length(model.list)-1)) {
+
+  # Filter out the individual and group variance
+  individual.variance <- random.effects %>% filter(grp == "Residual")
+  group.variance <- random.effects %>% filter(grp == "school")
+  
+  # Calculate the PseudoR2 respectively 
+  pseudo.R2.individual.list[[ii]] <- round((individual.variance[[2]] - individual.variance[[ii+2]])/individual.variance[[2]],3)
+  pseudo.R2.group.list[[ii]] <- round((group.variance[[2]] - group.variance[[ii+2]])/group.variance[[2]],3)
+  
+}
+
+# Transform the lists into data frames and merge them
+PseudoR2.df <- rbind(do.call(cbind,pseudo.R2.individual.list),
+                     do.call(cbind,pseudo.R2.group.list)) %>% data.frame()
+
+# Add a name variable
+PseudoR2.df2 <- cbind(c("Individual level R^2",
+                        "Group level R^2"), PseudoR2.df)
+
+# Rename the data frame
+names(PseudoR2.df2) <- c("_", names(model.list)[2:length(model.list)])
+
+# Print out the table
+PseudoR2.df2 %>%
+  kbl(caption = "Pseudo R^2 for each model") %>%
+  kable_paper(full_width = F)
+```
+
+### Reporting an Overall R^2
+
+A common mistake is to think that the pseudo R^2 functions as an effect size. It is not! What you want to report instead is known as the overall R^2. This is a measure of overall variance accounted for in the outcome by the inclusion of all predictors in a model. To calculate this, we will be using the sum of residual group and individual level variance from the model and dividing it by the sum of residual group and individual level variance from the null then subtracting it from 1. The equation below is what we want to do: The subscript FULL indicates the variance of the model with the predictors (numerator) and the subscript NULL represents the variance of the null model (denominator). 
+
+\begin{align*}
+R^2 = 1 - \frac{\tau_{00.FULL} + \sigma^2_{FULL}}{\tau_{00.NULL} + \sigma^2_{NULL}} = 1 - \frac{0.645}{1.02} = .37
+\end{align*}
+
+```{r reporting an overall R2 for the models above}
+# extract only the total variance row (This is what we need to calculate Overall R^2)
+random.effects.total <- filter(random.effects, grp == "Total") 
+
+# Calculate Overall R^2 for each model (not including the null model)
+All.models <- random.effects.total[3:length(random.effects.total)]
+All.models.R2 <- data.frame(rbind(1 - round(All.models/random.effects.total$vcov1,2)))
+
+# Name the overall R2 data frame
+names(All.models.R2) <- names(model.list)[2:length(model.list)]
+
+# Print the data frame as a nice table
+All.models.R2 %>%
+  kbl(caption = "Overall R^2 for each model") %>%
+  kable_paper(full_width = F)
+```
+
+
+### Introducing Categorical Predictors at Level Two
+
+The Exam dataset includes another group level variable named 'schgend'. This variable describes the gender of the school as 1) mixed, boys, or girls. It is a group level variable because every row within one school will have the same value for schgend. Below are some descriptive information about this variable. Using the table function gives us an idea of the sample size for each group. Additionally, the table function is really important because the first column (variable) indicates that will function as the reference to the others. Thus, our reference will be 'mixed'.
+
+```{r descriptives of the schgend variable}
+str(Exam$schgend)
+
+table(Exam$schgend)
+```
+
+You can also change the reference group in a factor variable with the code below. We will keep mixed as the reference group for now. You can confirm that this worked by running table again or by looking at your output from the model. What ever group is labeled as the reference will not be present in the output. 
+
+```{r changing the reference group of mod3 not really}
+Exam$schgend <- relevel(Exam$schgend, ref = 'mixed')
+
+```
+
+### Including schgend variable into the equation
+ 
+ This is a group-level variable so it will be included into the equation for level 2. 
+ 
+
+**Level 1:**
+ 
+ \begin{align*}
+Y_{ij} = \beta_{0j} + \beta_{1j}standLRT.gpc_{ij} + r_{ij}
+\end{align*}
+
+
+**Level 2:** Notice the introduction of a second group-level variable is notated with gamma subscript increasing by 1. Since this group level variable is categorical and has three levels, it is essentially translated to two additional predictors. Since 'mixed' is the reference, it is not present in the equation but it predicts Y in the combined equation when schgend (boys) an schgend (girls) are both equal to 0. 
+
+\begin{align*}
+\beta_{0j} = \gamma_{00} + \gamma_{01}m.standLRT_{j}+ \gamma_{02}schgend(boys)_{j} + \gamma_{03}schgend(girls)_{j} + u_{0j}
+\end{align*}
+
+
+\begin{align*}
+\beta_{1j} = \gamma_{10}
+\end{align*}
+
+### Creating the model with the Categorical Predictors
+
+```{r creating model 3 which contains categorical predictors}
+mod3 <- lmer(normexam ~ m.standLRT + schgend + standLRT.gpc + (1|school), data  = Exam)
+
+```
+
+Comparing its performance to the other models we have created so far. 
+
+
+```{r create a list of models to make comparisons including mod3, echo = FALSE}
+# Create a list with the models we want to compare - place in order from least complex to most!
+# ALWAYS INSERT NULL MODE FIRST
+model.list <- list(null.model,
+                   mod1,
+                   mod2,
+                   mod2.gpc,
+                   mod3)
+
+# Insert the names of the model as a character
+names(model.list) <- c("Null Model",
+                       "Model 1",
+                       "Model 2",
+                       "Model 2 (GPC)",
+                       "Model 3")
+
+```
+
+
+```{r obtaining the fixed and random effects from these models one with mod3, echo = FALSE, warning = FALSE}
+# Create two empty lists, one to save fixed effects and the other to save random effects
+fixed.effects.list <- list()
+random.effects.list <- list()
+
+# Run a for loop to extract the following from each model: 1) Fixed Estimates; 2) Random Effects
+for(ii in 1:length(model.list)) {
+  
+  # Extract the fixed estimates and random effects
+  mod.fixed <- broom.mixed::tidy(model.list[[ii]], "fixed") %>% select(2:4)
+  mod.random <- tibble(as.data.frame(VarCorr(model.list[[ii]]))[,c(1,4:5)])
+  
+  # Data cleaning: Round numbers three points 
+  fixed.effects.list[[ii]] <- cbind(mod.fixed[,1], round(mod.fixed[,2:3],3)) %>% tibble()
+  mod.random2 <- cbind(mod.random[,1], round(mod.random[,2],3)) %>% tibble()
+    
+  # Data cleaning: Changing the names of the var variables
+  names(mod.random2) <- c("grp", paste("vcov",ii,sep=""))
+  
+  # Save the named changed var data frames
+  random.effects.list[[ii]] <- mod.random2
+
+}  
+   
+# Merge the lists respectively
+fixed.effects <- Reduce(function(x, y) merge(x, y, by="term", all = TRUE), fixed.effects.list)
+random.effects <- Reduce(function(x, y) merge(x, y, by="grp", all = TRUE), random.effects.list)
+
+# Create a list to save fixed estimates char
+fixed.effects.char.list <- list()
+
+# Combine the estimates and std error columns for fixed effects (will need to create a for loop)
+for(ii in 1:length(model.list)) {
+  
+  # Assign current estimate and std pair
+  cols = c(2*ii, 2*ii + 1)
+  
+  # Extract the estimate and std pair
+  fixed.effects.pair <- fixed.effects %>%
+    select(all_of(cols))
+ 
+  # Rename these variables so they can be manipulated using the mutate function
+  names(fixed.effects.pair) <- c("estimate","std")
+  
+  # Mutate them so they can be pasted together
+  fixed.effects.char.list[[ii]] <- transmute(fixed.effects.pair, Estimate = ifelse(is.na(estimate),
+                                                  "-",
+                                                  paste(estimate," (",std,")",sep="")))
+}
+
+# Merge the fixed effects char and make a copy for the variance and call it char (This is so we can continue to use the original for other calculations)
+fixed.effects.char <- cbind(fixed.effects$term,
+                            do.call(cbind,fixed.effects.char.list))
+
+# Introduce a Total for the variance (this will be used in the next section to calculate overall R^2)
+random.effects <- cbind("grp" = c(random.effects[,1],"Total"),
+                        rbind(random.effects[2:length(random.effects)],colSums(random.effects[2:length(random.effects)])))
+    
+
+# This is to continue with the data frame we are creating in this chunk block
+random.effects.char <- random.effects
+                             
+# Rename the fixed effects and random effects data frames by the models
+names(fixed.effects.char) <- c("_", names(model.list))
+names(random.effects.char) <- c("_", names(model.list))
+  
+# Stack them together into one
+stacked.fixed.random <- rbind(fixed.effects.char,
+                              random.effects.char)
+
+# Print the information as a nice data table
+stacked.fixed.random %>%
+  kbl(caption = "Random Intercept Model: Predicting exam scores from test performance") %>%
+  kable_paper(full_width = F) %>%
+  pack_rows("Fixed Part", 1, nrow(fixed.effects.char)) %>%
+  pack_rows("Random Part", nrow(fixed.effects.char) + 1 , nrow(fixed.effects.char) + 3)
+
+```
+
+```{r calculating the pseudo R2 for mod3, echo = FALSE}
+# Need to calculate pseudo R^2 for each model by comparing the variance to the null model
+pseudo.R2.individual.list <- list()
+pseudo.R2.group.list <- list()
+
+for(ii in 1:(length(model.list)-1)) {
+
+  # Filter out the individual and group variance
+  individual.variance <- random.effects %>% filter(grp == "Residual")
+  group.variance <- random.effects %>% filter(grp == "school")
+  
+  # Calculate the PseudoR2 respectively 
+  pseudo.R2.individual.list[[ii]] <- round((individual.variance[[2]] - individual.variance[[ii+2]])/individual.variance[[2]],3)
+  pseudo.R2.group.list[[ii]] <- round((group.variance[[2]] - group.variance[[ii+2]])/group.variance[[2]],3)
+  
+}
+
+# Transform the lists into data frames and merge them
+PseudoR2.df <- rbind(do.call(cbind,pseudo.R2.individual.list),
+                     do.call(cbind,pseudo.R2.group.list)) %>% data.frame()
+
+# Add a name variable
+PseudoR2.df2 <- cbind(c("Individual level R^2",
+                        "Group level R^2"), PseudoR2.df)
+
+# Rename the data frame
+names(PseudoR2.df2) <- c("_", names(model.list)[2:length(model.list)])
+
+# Print out the table
+PseudoR2.df2 %>%
+  kbl(caption = "Pseudo R^2 for each model") %>%
+  kable_paper(full_width = F)
+```
+
+
+```{r reporting an overall R2 for the models above including mod3}
+# extract only the total variance row (This is what we need to calculate Overall R^2)
+random.effects.total <- filter(random.effects, grp == "Total") 
+
+# Calculate Overall R^2 for each model (not including the null model)
+All.models <- random.effects.total[3:length(random.effects.total)]
+All.models.R2 <- data.frame(rbind(1 - round(All.models/random.effects.total$vcov1,2)))
+
+# Name the overall R2 data frame
+names(All.models.R2) <- names(model.list)[2:length(model.list)]
+
+# Print the data frame as a nice table
+All.models.R2 %>%
+  kbl(caption = "Overall R^2 for each model") %>%
+  kable_paper(full_width = F)
+```
+
+### MLM results compared to OLS
+
+Will not show the code or the tables here, but in the book it is very clear that if we ran the analysis from Model 3 in OLS, as in we included gender the way we did for MLM that the result would be similar regression coefficients bur **smaller** standard deviations. This is bad because it increases the probability (quite highly) of making type 1 errors. Again, this is a result of the data structure we have. We have group-level variables which represent redudent data. For example, each school has the same value of 'mixed', 'boy', or 'girl', depending on the number of subjects that attend it. This redundant information in the OLS model gives it more power than it should have, which results in smaller standard errors and higher chances of finding false significant findings. 
+
+### Should using MLM be optional when ICC is Low?
+
+No. There is an example in textbook where authors investigating deworming medicine effects on weight reported significant differences between groups. These groups (two treatment vs control) were made up of children that belong to different parishes (churches), which means the data structure was hierarchical. Their results showed that using deworming medicine led to statistically significant weight gain compared to controls. However, later the paper had to be correct for because when the clustering was introduced into the model (they used MLM) the results were no longer significant. Interesting, the ICC was low too (.014) yet it made a big difference on whether the results were significant or not. 
+
+### Chapter 3 Test Yourself
+
+(copied directly from the textbook) Building off the model in the Test Yourself section of the last chapter using Hsb82 dataset in the mlmRev package, add meanses (average socioeconomic status [ses] at the school) to the random intercept model predicting mAch with school as the cluster variable. 
+
+```{r creating models using the Hsb82 dataset}
+null.model <- lmer(mAch~ 1 + (1|school),data = Hsb82)
+mod1 <- lmer(mAch ~ meanses + (1|school), data = Hsb82)
+mod2 <- lmer(mAch ~ meanses + ses + (1|school), data = Hsb82)
+mod2.gpc <- lmer(mAch ~ meanses + cses + (1|school), data = Hsb82)
+```
+
+```{r create a list of models to make comparisons from Hsb82, echo = FALSE}
+# Create a list with the models we want to compare - place in order from least complex to most!
+# ALWAYS INSERT NULL MODE FIRST
+model.list <- list(null.model,
+                   mod1,
+                   mod2,
+                   mod2.gpc)
+
+# Insert the names of the model as a character
+names(model.list) <- c("Null Model",
+                       "Model 1",
+                       "Model 2",
+                       "Model 2 (GPC)")
+
+```
+
+
+```{r obtaining the fixed and random effects from these models Hsb82, echo = FALSE, warning = FALSE}
+# Create two empty lists, one to save fixed effects and the other to save random effects
+fixed.effects.list <- list()
+random.effects.list <- list()
+
+# Run a for loop to extract the following from each model: 1) Fixed Estimates; 2) Random Effects
+for(ii in 1:length(model.list)) {
+  
+  # Extract the fixed estimates and random effects
+  mod.fixed <- broom.mixed::tidy(model.list[[ii]], "fixed") %>% select(2:4)
+  mod.random <- tibble(as.data.frame(VarCorr(model.list[[ii]]))[,c(1,4:5)])
+  
+  # Data cleaning: Round numbers three points 
+  fixed.effects.list[[ii]] <- cbind(mod.fixed[,1], round(mod.fixed[,2:3],3)) %>% tibble()
+  mod.random2 <- cbind(mod.random[,1], round(mod.random[,2],3)) %>% tibble()
+    
+  # Data cleaning: Changing the names of the var variables
+  names(mod.random2) <- c("grp", paste("vcov",ii,sep=""))
+  
+  # Save the named changed var data frames
+  random.effects.list[[ii]] <- mod.random2
+
+}  
+   
+# Merge the lists respectively
+fixed.effects <- Reduce(function(x, y) merge(x, y, by="term", all = TRUE), fixed.effects.list)
+random.effects <- Reduce(function(x, y) merge(x, y, by="grp", all = TRUE), random.effects.list)
+
+# Create a list to save fixed estimates char
+fixed.effects.char.list <- list()
+
+# Combine the estimates and std error columns for fixed effects (will need to create a for loop)
+for(ii in 1:length(model.list)) {
+  
+  # Assign current estimate and std pair
+  cols = c(2*ii, 2*ii + 1)
+  
+  # Extract the estimate and std pair
+  fixed.effects.pair <- fixed.effects %>%
+    select(all_of(cols))
+ 
+  # Rename these variables so they can be manipulated using the mutate function
+  names(fixed.effects.pair) <- c("estimate","std")
+  
+  # Mutate them so they can be pasted together
+  fixed.effects.char.list[[ii]] <- transmute(fixed.effects.pair, Estimate = ifelse(is.na(estimate),
+                                                  "-",
+                                                  paste(estimate," (",std,")",sep="")))
+}
+
+# Merge the fixed effects char and make a copy for the variance and call it char (This is so we can continue to use the original for other calculations)
+fixed.effects.char <- cbind(fixed.effects$term,
+                            do.call(cbind,fixed.effects.char.list))
+
+# Introduce a Total for the variance (this will be used in the next section to calculate overall R^2)
+random.effects <- cbind("grp" = c(random.effects[,1],"Total"),
+                        rbind(random.effects[2:length(random.effects)],colSums(random.effects[2:length(random.effects)])))
+    
+
+# This is to continue with the data frame we are creating in this chunk block
+random.effects.char <- random.effects
+                             
+# Rename the fixed effects and random effects data frames by the models
+names(fixed.effects.char) <- c("_", names(model.list))
+names(random.effects.char) <- c("_", names(model.list))
+  
+# Stack them together into one
+stacked.fixed.random <- rbind(fixed.effects.char,
+                              random.effects.char)
+
+# Print the information as a nice data table
+stacked.fixed.random %>%
+  kbl(caption = "Random Intercept Model: Predicting math scores from SES variables") %>%
+  kable_paper(full_width = F) %>%
+  pack_rows("Fixed Part", 1, nrow(fixed.effects.char)) %>%
+  pack_rows("Random Part", nrow(fixed.effects.char) + 1 , nrow(fixed.effects.char) + 3)
+
+```
+
+```{r calculating the pseudo R2 for Hsb82 dataset, echo = FALSE}
+# Need to calculate pseudo R^2 for each model by comparing the variance to the null model
+pseudo.R2.individual.list <- list()
+pseudo.R2.group.list <- list()
+
+for(ii in 1:(length(model.list)-1)) {
+
+  # Filter out the individual and group variance
+  individual.variance <- random.effects %>% filter(grp == "Residual")
+  group.variance <- random.effects %>% filter(grp == "school")
+  
+  # Calculate the PseudoR2 respectively 
+  pseudo.R2.individual.list[[ii]] <- round((individual.variance[[2]] - individual.variance[[ii+2]])/individual.variance[[2]],3)
+  pseudo.R2.group.list[[ii]] <- round((group.variance[[2]] - group.variance[[ii+2]])/group.variance[[2]],3)
+  
+}
+
+# Transform the lists into data frames and merge them
+PseudoR2.df <- rbind(do.call(cbind,pseudo.R2.individual.list),
+                     do.call(cbind,pseudo.R2.group.list)) %>% data.frame()
+
+# Add a name variable
+PseudoR2.df2 <- cbind(c("Individual level R^2",
+                        "Group level R^2"), PseudoR2.df)
+
+# Rename the data frame
+names(PseudoR2.df2) <- c("_", names(model.list)[2:length(model.list)])
+
+# Print out the table
+PseudoR2.df2 %>%
+  kbl(caption = "Pseudo R^2 for each model") %>%
+  kable_paper(full_width = F)
+```
+
+
+```{r reporting an overall R2 for the models made from Hsb82, echo = FALSE}
+# extract only the total variance row (This is what we need to calculate Overall R^2)
+random.effects.total <- filter(random.effects, grp == "Total") 
+
+# Calculate Overall R^2 for each model (not including the null model)
+All.models <- random.effects.total[3:length(random.effects.total)]
+All.models.R2 <- data.frame(rbind(1 - round(All.models/random.effects.total$vcov1,2)))
+
+# Name the overall R2 data frame
+names(All.models.R2) <- names(model.list)[2:length(model.list)]
+
+# Print the data frame as a nice table
+All.models.R2 %>%
+  kbl(caption = "Overall R^2 for each model") %>%
+  kable_paper(full_width = F)
+```
+
+
+- 1) Interpret the coefficient of meanses predicting mAch.
+- For model 1, this is saying that being in a group with higher SES (I think by 1 point higher) leads to a 5.864 increase in math scores.  
+- 2) What is the pseudo R^2 for meanses at level two?
+- This is still for model 1, the pseudo R^2 is calculated by comparing model 1 to the null model, which produces a pseudo R^2 of .694 in the group-level. This means that the variable meanses is able to explain 69.4% of math scores.
+
+- 3) Now add the ses variable as a level-1 predictor. Interpret the coefficient.
+- The ses variable is the within-group effect. This effect (I think) represents the change in the outcome by 1 unit change in the predictor. Thus, after controlling for the group effects of SES, for each increase in 1 unit for individual SES there is an increase of 2.191 points for math scores. 
+
+- 4) What is the pseudo R^2 for ses at level one?
+- This was calculated by hand since the table shows the Pseudo R^2 compared to the null model. This question is asking for a value that represents the variance in math scores explained by the introduction of the level-1 predictor ses. To do this, we need to use Model 1 Residuals ($\sigma^2_{PRIOR}$ = 39.157) and subtract it by the Model 2 Residuals ($Sigma^2_{FULL}$ = 37.019) and divide it by $\sigma^2_{PRIOR}$. Thus Pseudo R^2 = .055. This means that the inclusion of ses to the model explains 5.5% of the variance in the outcome (I think).
+
+- 5) What is the level-2 effect ofmeanses now referred to (i.e., what kind of effect is it?)?
+- When you have a model with the regular level-1 predictor (not GPC) and a level-2 predictor made out its mean, then that level-2 predictor is referred to as the **contextual effect**. This means that for individuals with identical level-1 ses scores, that their math scores will differ by 3.675 for every one unit increase in the means of SES groups. 
+
+- 6) Replace the ses variable in the model instead with the cses variable (which is a group mean centered ses variable). What is the level-2 effect of meanses now referred to and how does this differ from the results in #5?
+- This is now referred to as the **between-group effects**. It is the expected differences of the group means of the math scores (5.866) between two groups (i.e., schools) which differ by one unit of meanses.  
+
+- 7) What is the design effect (DEFF) for mAch?
+
+
+# Chapter 4: Investigating cross-level interactions and random slope models
+
+
+
+

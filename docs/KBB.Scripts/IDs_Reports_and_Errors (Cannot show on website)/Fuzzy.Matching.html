@@ -640,14 +640,16 @@ fuzzy.matching &lt;- stringdist_join(potential.HOH_ID.errors, correct.HOH_IDs,
   filter(dist &lt; 4) %&gt;%
   unique()
 
-
 paste(&quot;From the Fuzzy Matching code, there are potentially&quot;,nrow(fuzzy.matching),&quot;typo IDs that were matched to real HOH_IDs&quot;)</code></pre>
-<pre><code>[1] &quot;From the Fuzzy Matching code, there are potentially 5 typo IDs that were matched to real HOH_IDs&quot;</code></pre>
-<pre class="r"><code># Print out the options
-unique(fuzzy.matching) %&gt;%
+<pre><code>[1] &quot;From the Fuzzy Matching code, there are potentially 10 typo IDs that were matched to real HOH_IDs&quot;</code></pre>
+<pre class="r"><code># Save only the unique matches
+fuzzy.matching &lt;- unique(fuzzy.matching)
+
+# Print out the options
+fuzzy.matching %&gt;%
   arrange(desc(Date_of_Evaluation.x)) %&gt;%
   kbl() %&gt;%
-    kable_paper(bootstrap_options = &quot;striped&quot;, full_width = F)</code></pre>
+  kable_paper(bootstrap_options = &quot;striped&quot;, full_width = F)</code></pre>
 <table class=" lightable-paper" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
@@ -681,6 +683,151 @@ dist
 </tr>
 </thead>
 <tbody>
+<tr>
+<td style="text-align:left;">
+Zolasi Sukanzila Muchanga 1956-10-01
+</td>
+<td style="text-align:left;">
+2024-05-07
+</td>
+<td style="text-align:left;">
+Lweendo
+</td>
+<td style="text-align:right;">
+103
+</td>
+<td style="text-align:left;">
+Zolasi Sukanzila Muchanga 1956-10-01
+</td>
+<td style="text-align:left;">
+2024-05-07
+</td>
+<td style="text-align:left;">
+Lweendo
+</td>
+<td style="text-align:right;">
+103
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Siboombi Moono 1975-01-01
+</td>
+<td style="text-align:left;">
+2024-05-06
+</td>
+<td style="text-align:left;">
+Mbilu
+</td>
+<td style="text-align:right;">
+110
+</td>
+<td style="text-align:left;">
+Sibombi Moono 1975-01-01
+</td>
+<td style="text-align:left;">
+2024-05-06
+</td>
+<td style="text-align:left;">
+Mbilu
+</td>
+<td style="text-align:right;">
+103
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Dangluos Munkombwe 1979-03-01
+</td>
+<td style="text-align:left;">
+2024-05-06
+</td>
+<td style="text-align:left;">
+Mbilu
+</td>
+<td style="text-align:right;">
+103
+</td>
+<td style="text-align:left;">
+Dangluos Munkombwe 1979-12-01
+</td>
+<td style="text-align:left;">
+2024-04-15
+</td>
+<td style="text-align:left;">
+Simbuta
+</td>
+<td style="text-align:right;">
+103
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Dangluos Munkombwe 1979-03-01
+</td>
+<td style="text-align:left;">
+2024-05-06
+</td>
+<td style="text-align:left;">
+Mbilu
+</td>
+<td style="text-align:right;">
+103
+</td>
+<td style="text-align:left;">
+Dangluos Munkombwe 1979-12-01
+</td>
+<td style="text-align:left;">
+2024-05-06
+</td>
+<td style="text-align:left;">
+Mbilu
+</td>
+<td style="text-align:right;">
+103
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Sibombi Moono 1980-01-01
+</td>
+<td style="text-align:left;">
+2024-05-06
+</td>
+<td style="text-align:left;">
+Mbilu
+</td>
+<td style="text-align:right;">
+103
+</td>
+<td style="text-align:left;">
+Sibombi Moono 1975-01-01
+</td>
+<td style="text-align:left;">
+2024-05-06
+</td>
+<td style="text-align:left;">
+Mbilu
+</td>
+<td style="text-align:right;">
+103
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
 <tr>
 <td style="text-align:left;">
 Renford B Mweetwa 1982-11-29
