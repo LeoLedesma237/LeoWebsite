@@ -1213,6 +1213,56 @@ All.models.R2 %>%
 
 # Chapter 4: Investigating cross-level interactions and random slope models
 
+We are now going to switch to a more advance topic which is investigating interactions. We will do this with the Exam dataset and build upon the MLM models we created for the Exam data set. The code for the refresher are below.
 
+```{r refresher of the models we created for the Exam dataset}
+library(lmerTest) # lmer function with p-values
+library(mlmRev) # Exam dataset
+data(Exam)
+Exam$m.standLRT <- ave(Exam$standLRT, Exam$school) # means per group
+Exam$standLRT.gpc <- Exam$standLRT - Exam$m.standLRT
+mod3 <- lmer(normexam ~ m.standLRT + schgend + standLRT.gpc + (1|school), data = Exam)
+
+```
+
+We are really interested in making changed to Model 3, which investigate if the gender of students in a school ("mixed", "boys", or "girls") may moderate the relationship of out level-1 standLRT.gpc and the outcome normexam. Another way of asking this questions is if there is an interaction between schgend and standLRT.gpc. When investigating an interaction that includes variables of more than one level, that is called a **cross-level interaction**. We can notate an interaction by the following. What gets modified is the second part of level 2. Here we place the predictors for schgend at the bottom and change gamma from 02 and 03 to 11 and 12 respectively. Thus, having a predictor with a gamma in the 10's indicates that they are being used to test for an interaction.
+
+**Level 1:**
+ 
+ \begin{align*}
+Y_{ij} = \beta_{0j} + \beta_{1j}standLRT.gpc_{ij} + r_{ij}
+\end{align*}
+
+
+**Level 2:** Notice that when we are investigating interaction effects we keep the same notation as we would with main effects but also include the predictors we want to investigate as moderators to the second part of level 2. 
+
+\begin{align*}
+\beta_{0j} = \gamma_{00} + \gamma_{01}m.standLRT_{j}+ \gamma_{02}schgend(boys)_{j} + \gamma_{03}schgend(girls)_{j} + u_{0j}
+\end{align*}
+
+
+\begin{align*}
+\beta_{1j} = \gamma_{10} + \gamma_{11}schgend(boys)_{j} + \gamma{12}schgend(girls)_{j}
+\end{align*}
+
+**Combined Equation:** Using the equations from level 1 and level 2 and combining them results in the equation below. Notice how now the additions are replaced to multiplications. Also notice how this gives us a hint on how to enter the variables into a MLM in R. Also not note, this time in th begining we express the categorical 'schgend' generally without specifying the type of group. 
+
+
+ \begin{align*}
+Y_{ij} = \gamma_{00} + \gamma_{01}m.standLRT_{j}+ \gamma_{02}schgend_{j} + \gamma_{10}standLRT.gpc_{ij} + \gamma_{11}schgend(boys)_{j} X standLRT.gpc_{ij} +  \gamma{12}schgend(girls)_{j} X standLRT.gpc_{ij} + u_{0j} + r_{ij}
+\end{align*}
+
+To create this model in R, simply write in your main effects and then multiply the two variables you are interested in investigating an interaction. Additionally, let's view the basic summary output from R. 
+
+```{r creating model 4 an interaction}
+mod4 <- lmer(normexam ~ m.standLRT + schgend + standLRT.gpc + schgend * standLRT.gpc + (1|school), data = Exam)
+
+summary(mod4)
+```
+
+We can see from the output above that the two interaction terms produced by the model were not significant!
+
+
+### Using a Likelihood Ratio Test (LRT) for Fixed Effects
 
 
